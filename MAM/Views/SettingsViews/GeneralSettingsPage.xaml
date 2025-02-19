@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.SettingsViews.GeneralSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.SettingsViews"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Background="{ StaticResource ThemeSecondaryBackgroundColor}" Padding="50" Height="450" Width="600" CornerRadius="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Orientation="Vertical" Spacing="30">
+            <TextBlock Text="Language"/>
+            <TextBlock Text="Confirm Movement"/>
+            <TextBlock Text="Search On Archive"/>
+            <TextBlock Text="Show story Board"/>
+            <TextBlock Text="Existing File Timeout"/>
+            <TextBlock Text="Default Page Size"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="17">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <DropDownButton Width="200" >
+                </DropDownButton>
+                <TextBlock Text="Required restart!" Foreground="Red" VerticalAlignment="Center"/>
+            </StackPanel>
+            <CheckBox x:Name="ChbConfirmMovement" Checked="ChbConfirmMovement_Checked" />
+            <CheckBox x:Name="ChbSearchOnArchive" Checked="ChbSearchOnArchive_Checked"/>
+            <CheckBox x:Name="ChbshowStoryBoard" Checked="ChbshowStoryBoard_Checked"/>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+
+                <TextBox Width="auto"/>
+                <TextBlock Text="Sec." VerticalAlignment="Center"/>
+                <CheckBox x:Name="ChbNeverTimeout" Checked="ChbNeverTimeout_Checked" VerticalAlignment="Bottom" Margin="10,0,0,0"/>
+                <TextBlock Text="Never" VerticalAlignment="Center" Foreground="Red" Margin="-100,0,0,0"/>
+            </StackPanel>
+            <DropDownButton Width="60">
+            </DropDownButton>
+            <StackPanel  x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
+                <Button Click="SaveButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf0c7;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20" Margin="0,0,5,0"/>
+                        <TextBlock Text="Save" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button  Margin="6,0,0,0" Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf00d;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20"  Margin="0,0,5,0"/>
+                        <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>

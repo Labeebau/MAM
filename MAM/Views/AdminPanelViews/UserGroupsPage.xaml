@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.AdminPanelViews.UserGroupsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.AdminPanelViews"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls" 
+    d:DataContext="{d:DesignInstance Type=local:UserGroup}"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <!-- Define CollectionViewSource to bind to GroupedUsers in code-behind -->
+        <CollectionViewSource  x:Key="GroupedUsersSource"
+                              Source="{Binding GroupedUsersList}"
+                              IsSourceGrouped="True" />
+    </Page.Resources>
+    <Grid x:Name="MainGrid" Background="{StaticResource PageBackgroundColor}" CornerRadius="10" 
+        HorizontalAlignment="Center"   Height="570" Width="auto" Padding="48" >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid x:Name="LeftGrid" Grid.Column="0" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="8*"/>
+                <RowDefinition Height="*"/>
+
+            </Grid.RowDefinitions>
+            <Grid  Grid.Row="0" >
+                <TextBlock Grid.Row="1" Text="Groups" FontWeight="SemiBold"  VerticalAlignment="Center"></TextBlock>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+
+                    <Button x:Name="BtnRefreshGroup" Style="{StaticResource SmallIconButton}" 
+                          VerticalAlignment="Center" Click="RefreshGroups_Click">
+                        <FontIcon  Glyph="&#xf2f9;" />
+                    </Button>
+                    <Button x:Name="BtnAdd" Style="{StaticResource SmallIconButton}" 
+                        Margin="0,0,0,0" VerticalAlignment="Center" Click="AddUserGroup_Click">
+                        <FontIcon  Glyph="&#x2b;" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+            <Border Grid.Row="1" CornerRadius="15">
+                <controls:DataGrid x:Name="DgvGroups" 
+                                   Height="auto" 
+                                   Width="auto"    
+                                   AutoGenerateColumns="False"
+                                   Background="{StaticResource ThemeSecondaryBackgroundColor}"
+                                   ItemsSource="{x:Bind UserGroupsList ,Mode=TwoWay}"
+                                   CurrentCellChanged="DgvGroup_CurrentCellChanged"
+                                   SelectionChanged="DgvGroups_SelectionChanged"
+                                   IsReadOnly="False">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTemplateColumn Header="Group Name">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding GroupName}"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                            <controls:DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding GroupName,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly,Mode=TwoWay}"  />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellEditingTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="A.D Group">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsAdGroup,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}"  />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+
+                        <controls:DataGridTemplateColumn Header="Active">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsActive,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}"  />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Width="auto">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate >
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                                        <Button Click="DeleteUserGroup_Click" Tag="{Binding}" Background="Transparent" BorderThickness="0">
+                                            <FontIcon FontFamily="{StaticResource FontAwesome}" Glyph="&#xf2ed;" FontSize="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                    </controls:DataGrid.Columns>
+                    <!-- other columns below -->
+                </controls:DataGrid>
+            </Border>
+            <StackPanel Grid.Row="2" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
+                <Button Click="SaveButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf0c7;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20" Margin="0,0,5,0"/>
+                        <TextBlock Text="Save" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button  Margin="6,0,0,0" Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf00d;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20"  Margin="0,0,5,0"/>
+                        <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="RightGrid" Grid.Column="1" Margin="50,0,0,0" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="8*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0"  Text="User Groups" FontWeight="SemiBold"  VerticalAlignment="Center"></TextBlock>
+            <Button x:Name="BtnRefreshUserGroup" Grid.Row="0" Grid.Column="2"   Style="{StaticResource SmallIconButton}" 
+                        HorizontalAlignment="Right" VerticalAlignment="Center" Click="RefreshGroupedUsers_Click">
+                <FontIcon  Glyph="&#xf2f9;" />
+            </Button>
+            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" CornerRadius="15">
+                <!--<ListView ItemsSource="{Binding Source={StaticResource GroupedUsersSource}}">
+                    <ListView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding GroupName,Mode=OneTime}" FontWeight="Bold" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+
+                    <ListView.Items>
+                        <DataTemplate x:DataType="local:UserForGrouping">
+                            <TextBlock Text="{Binding UserName}" FontWeight="Normal" />
+                        </DataTemplate>
+                    </ListView.Items>
+                </ListView>-->
+                <!--<GridView ItemsSource="{Binding Source={StaticResource GroupedUsersSource}}" IsItemClickEnabled="True">
+                    --><!-- Define Group Style for displaying GroupName as header --><!--
+                    <GridView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding GroupName,Mode=TwoWay}" FontWeight="Bold" FontSize="18" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </GridView.GroupStyle>
+
+                    --><!-- Item Template for displaying individual User names under each group -->
+                    <!-- Item Template for displaying UserName under each group --><!--
+                    <GridView.ItemTemplate>
+                        <DataTemplate >
+                            <TextBlock Text="{Binding UserName,Mode=TwoWay}" FontSize="16" />
+                        </DataTemplate>
+
+                    </GridView.ItemTemplate>
+                    
+                </GridView>-->
+
+                <controls:DataGrid x:Name="DgvUserGroup" 
+                                    Height="auto" 
+                                    Width="auto"
+                                    AutoGenerateColumns="False"
+                                    Background="{StaticResource ThemeSecondaryBackgroundColor}"
+                                    CornerRadius="10"
+                                    IsReadOnly="True"
+                                    LoadingRowGroup="dg_loadingRowGroup" 
+    RowGroupHeaderPropertyNameAlternative="Range">
+                    <controls:DataGrid.RowGroupHeaderStyles>
+                        <!-- Override the default Style for groups headers -->
+                        <Style TargetType="controls:DataGridRowGroupHeader">
+                            <Setter Property="Background" Value="LightGray" />
+                        </Style>
+                    </controls:DataGrid.RowGroupHeaderStyles>
+                    <controls:DataGrid.Columns>
+                        
+                        <controls:DataGridTemplateColumn Header="Group" Width="auto">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate >
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                                        <TextBlock  Padding="12,0,0,0" VerticalAlignment="Center"  Text="{Binding GroupName}" FontWeight="Light"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+                        <controls:DataGridTemplateColumn Header="User" Width="auto">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate >
+                                    <ItemsControl ItemsSource="{Binding Users}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+
+                                                <TextBlock Text="{Binding UserName}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                    </controls:DataGrid.Columns>
+                     <!--other columns below--> 
+                </controls:DataGrid>
+            </Border>
+            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="10"
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                <ComboBox  Width="200"
+                      ItemsSource="{Binding UserGroupsList}"
+                  DisplayMemberPath="GroupName"
+                  SelectedItem="{Binding SelectedUserGroup, Mode=TwoWay}"
+                      SelectionChanged="UserGroupComboBox_SelectionChanged"
+                  PlaceholderText="Select a user group"/>
+                <ComboBox  Width="200"
+          ItemsSource="{Binding UserList,Mode=TwoWay}"
+      DisplayMemberPath="UserName"
+      SelectedItem="{Binding SelectedUser, Mode=TwoWay}"
+      PlaceholderText="Select a user "/>
+
+                <Button x:Name="BtnAddUser" Style="{StaticResource SmallIconButton}" 
+                       HorizontalAlignment="Right" VerticalAlignment="Center" Click="AddUSerToGroup_Click">
+                    <FontIcon  Glyph="&#x2b;" />
+                </Button>
+            </StackPanel>
+            <!--</StackPanel>-->
+            <!--</Grid>-->
+        </Grid>
+    </Grid>
+</Page>

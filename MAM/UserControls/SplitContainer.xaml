@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="MAM.UserControls.SplitContainer"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.UserControls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <Canvas x:Name="MainCanvas" Background="LightGray" SizeChanged="MainCanvas_SizeChanged">
+            <!-- Left Panel -->
+            <Border x:Name="LeftPanel" Background="LightBlue" Width="300" Canvas.Left="0">
+                <TextBlock Text="Left Panel" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Border>
+
+            <!-- VerticalSplitter (Rectangle as the draggable divider) -->
+            <Rectangle x:Name="VerticalSplitter" Width="5" Fill="Black" Canvas.Left="300" PointerEntered="Splitter_PointerEntered" PointerPressed="Splitter_PointerPressed" PointerMoved="Splitter_PointerMoved" PointerReleased="Splitter_PointerReleased"  />
+
+            <!-- Right Panel -->
+            <Border x:Name="RightPanel" Background="LightCoral" Canvas.Left="305">
+                <TextBlock Text="Right Panel" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Border>
+        </Canvas>
+
+    </Grid>
+</UserControl>

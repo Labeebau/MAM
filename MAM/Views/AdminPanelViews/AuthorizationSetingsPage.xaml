@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.AdminPanelViews.AuthorizationSetingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.AdminPanelViews"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls" 
+    xmlns:local1="using:MAM.Utilities"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid x:Name="MainGrid" Background="{StaticResource PageBackgroundColor}" CornerRadius="10" 
+HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
+        <Grid.RowDefinitions>
+            <!--<RowDefinition Height="40"/>-->
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="4*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="4*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="User Group Authorization Settings" Padding="0,20,0,0"></TextBlock>
+        <Border Grid.Row="1" CornerRadius="15" Padding="0,0,0,10 ">
+            <controls:DataGrid x:Name="DgvUserGroupRights" 
+             Height="180" 
+             AutoGenerateColumns="False"
+            Background="{StaticResource ThemeSecondaryBackgroundColor}"
+             ItemsSource="{x:Bind UserGroupRightsList,Mode=TwoWay}">
+                <controls:DataGrid.Columns>
+
+                    <!--<controls:DataGridTextColumn Header="Nombre">
+                        Binding="{Binding Nombre}">
+                        <controls:DataGridTextColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="HorizontalContentAlignment"
+                 Value="Center" />
+                            </Style>
+                        </controls:DataGridTextColumn.HeaderStyle>
+                        </controls:DataGridTextColumn>-->
+
+
+                    <controls:DataGridTemplateColumn Header="User Group" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock  Padding="12,0,0,0" VerticalAlignment="Center"  Text="{x:Bind GroupName }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+
+
+                    <controls:DataGridTemplateColumn Header="Read" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20" >
+                                    <CheckBox x:Name="ChbADGroup" IsChecked="{x:Bind Read,Mode=TwoWay}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Write" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight" >
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center"  HorizontalAlignment="Center"  Width="20"  >
+                                    <CheckBox x:Name="ChbAdmin" IsChecked="{x:Bind Write,Mode=TwoWay}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Edit" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20"  >
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Edit,Mode=TwoWay}" ></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Delete" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20" >
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Delete,Mode=TwoWay}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+
+                    <controls:DataGridTemplateColumn Header="Org.Download" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20" >
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind OrgDownload,Mode=TwoWay}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Pre.Download" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"   Width="20" >
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind PrxDownload,Mode=TwoWay}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Archive" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Archive,Mode=TwoWay}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Broadcast" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserGroupRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Broadcast,Mode=TwoWay}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                </controls:DataGrid.Columns>
+                <!-- other columns below -->
+            </controls:DataGrid>
+        </Border>
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <ComboBox  Width="200"
+    ItemsSource="{Binding UserGroupList,Mode=TwoWay}"
+DisplayMemberPath="GroupName"
+SelectedItem="{Binding SelectedUserGroup, Mode=TwoWay}"
+PlaceholderText="Select user group "
+                       SelectionChanged="ComboBoxUserGroup_SelectionChanged"
+                       SelectedIndex="0"/>
+            <!--SelectionChangedTrigger="Always" SelectedIndex="0"-->
+            <Button x:Name="BtnSaveUserGroupRights" Style="{StaticResource SmallIconButton}" 
+                    VerticalAlignment="Center" Click="SaveUserGroupRights_Click">
+                <FontIcon  Glyph="&#x2b;" />
+            </Button>
+        </StackPanel>
+        <TextBlock Grid.Row="3" Text="User Authorization Settings" Margin="0,27,0,0" Padding="0,0,0,10"></TextBlock>
+        
+        <Border Grid.Row="4" CornerRadius="15" Padding="0,0,0,10">
+            <controls:DataGrid x:Name="DgvUserRights" 
+      Height="300" 
+      AutoGenerateColumns="False"
+     Background="{StaticResource ThemeSecondaryBackgroundColor}"
+      ItemsSource="{x:Bind UserRightsList }">
+                <controls:DataGrid.Columns>
+
+                    <controls:DataGridTemplateColumn Header="User" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind UserName }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+
+                    <controls:DataGridTemplateColumn Header="User Group" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind UserGroup.GroupName }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+                    
+                    <controls:DataGridTemplateColumn Header="Read" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="ChbADGroup" IsChecked="{x:Bind Read }"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Write" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight" >
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center"  HorizontalAlignment="Center"  Width="20"  >
+                                    <CheckBox x:Name="ChbAdmin" IsChecked="{x:Bind Write}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Edit" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Edit}" ></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Delete" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20" >
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Delete}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+
+                    <controls:DataGridTemplateColumn Header="Org.Download" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind OrgDownload}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Pre.Download" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind PrxDownload}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Archive" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Archive}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Broadcast" Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:UserRight">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Broadcast}"></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                </controls:DataGrid.Columns>
+                <!-- other columns below -->
+            </controls:DataGrid>
+        </Border>
+        <StackPanel Grid.Row="5" Orientation="Horizontal">
+
+            <!--Command="{x:Bind ViewModel.ChangeLanguageCommand}"-->
+            <ComboBox  Width="200"
+    ItemsSource="{Binding UserList,Mode=TwoWay}"
+DisplayMemberPath="UserName"
+SelectedItem="{Binding SelectedUser, Mode=TwoWay}"
+PlaceholderText="Select a user "
+                       SelectionChanged="ComboBoxUSer_SelectionChanged"/>
+
+            <Button x:Name="BtnAddUser" Style="{StaticResource SmallIconButton}" 
+             VerticalAlignment="Center" Click="BtnAddUser_Click">
+                <FontIcon  Glyph="&#x2b;" />
+            </Button>
+        </StackPanel>
+        <StackPanel Grid.Row="6" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
+            <Button Click="SaveButton_Click">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xf0c7;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20" Margin="0,0,5,0"/>
+                    <TextBlock Text="Save" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button  Margin="6,0,0,0" Click="CancelButton_Click">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xf00d;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20"  Margin="0,0,5,0"/>
+                    <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Page>

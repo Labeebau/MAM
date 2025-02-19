@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="MAM.Windows.AssetCreationConfirmationWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Height="160" Width="360" Background="{StaticResource ThemePrimaryBackgroundColor}" Padding="20"  >
+        <StackPanel Orientation="Vertical">
+            <TextBlock Text="{Binding viewModel.Asset.FileName,Mode=TwoWay}" />
+            <RadioButtons Header="Actions">
+                <RadioButton Content="Create new asset but keep existing file" Checked="RadioButton_Checked" />
+                <RadioButton Content="Create new asset and delete existing file" Checked="RadioButton_Checked"/>
+                <RadioButton Content="Nothing" Checked="RadioButton_Checked"/>
+            </RadioButtons>
+            <TextBlock Text="Old Files" FontWeight="SemiBold"/>
+            <ListBox ItemsSource="{x:Bind viewModel.Asset.PathList,Mode=TwoWay}" DisplayMemberPath="Item1" SelectedValuePath="Item2" Height="164" />
+            <StackPanel Orientation="Horizontal">
+                <CheckBox HorizontalAlignment="Left"/>
+                <Button HorizontalAlignment="Right"/>
+            </StackPanel>
+        </StackPanel>
+
+    </Grid>
+</Window>

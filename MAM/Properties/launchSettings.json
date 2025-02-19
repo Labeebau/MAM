@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MAM (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MAM (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
