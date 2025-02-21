@@ -39,16 +39,16 @@ namespace MAM.Windows
         DataAccess dataAccess = new DataAccess();
         // Static instance to track the window
         public static AddNewAssetWindow _instance;
-        private static ArchivePage archivePage;
+        private static MediaLibraryPage MediaLibraryPage;
         //public static UploadHistoryPage uploadHistory { get; set; }
         public ObservableCollection<Asset> AssetList { get; set; } = new ObservableCollection<Asset>();
 
-        public AddNewAssetWindow(ArchivePage archive)
+        public AddNewAssetWindow(MediaLibraryPage mediaLibrary)
         {
             this.InitializeComponent();
             SetWindowSizeAndPosition(1000, 800);
             DgvFiles.DataContext = this;
-            archivePage = archive;
+            MediaLibraryPage = mediaLibrary;
             //uploadHistory = new UploadHistoryPage();
             // LoadDataGrid();
         }
@@ -81,11 +81,11 @@ namespace MAM.Windows
             }
         }
         // Method to get the instance of the window or create it if it doesn't exist
-        public static void ShowWindow(ArchivePage archive)
+        public static void ShowWindow(MediaLibraryPage mediaLibrary)
         {
             if (_instance == null)
             {
-                _instance = new AddNewAssetWindow(archive);
+                _instance = new AddNewAssetWindow(mediaLibrary);
                 _instance.Activate(); // Show the window
             }
             else
@@ -96,7 +96,7 @@ namespace MAM.Windows
         private void LoadDataGrid()
         {
             AssetList.Clear();
-            foreach (var media in archivePage.MediaPlayerItems)
+            foreach (var media in MediaLibraryPage.MediaPlayerItems)
             {
                 AssetList.Add(new Asset(media));// { FileName = media.Title, AssetPath = archivePage.archive.BinName, OriginalPath = media.MediaSource.ToString() });
             }
@@ -151,8 +151,8 @@ namespace MAM.Windows
                             CreationDate=DateOnly.FromDateTime(DateTime.Today.Date),
                             Duration = duration,
                             DurationString = duration.ToString(@"hh\:mm\:ss"),
-                            MediaSource=new Uri(Path.Combine(archivePage.archive.BinName,file.Name)),
-                            MediaPath= archivePage.archive.BinName,
+                            MediaSource=new Uri(Path.Combine(MediaLibraryPage.MediaLibrary.BinName,file.Name)),
+                            MediaPath= MediaLibraryPage.MediaLibrary.BinName,
                             OriginalPath = file.Path,
                             Size = fileSize,
                             Title = file.Name,
@@ -223,14 +223,14 @@ namespace MAM.Windows
             List<string> oldFileList;
             bool isExist = false;
             bool closeWindow = true;
-            var folder = await StorageFolder.GetFolderFromPathAsync(archivePage.archive.BinName);
+            var folder = await StorageFolder.GetFolderFromPathAsync(MediaLibraryPage.MediaLibrary.BinName);
 
             var files = await folder.GetFilesAsync();
             // Create a Proxy Folder
             var proxyFolder = await folder.CreateFolderAsync("Proxy", CreationCollisionOption.OpenIfExists);
             if (proxyFolder != null)
             {
-                archivePage.archive.ProxyFolder = proxyFolder.Path;
+                MediaLibraryPage.MediaLibrary.ProxyFolder = proxyFolder.Path;
             }
 
             foreach (Asset asset in AssetList)
@@ -265,8 +265,8 @@ namespace MAM.Windows
                                 var originalFile = await StorageFile.GetFileFromPathAsync(asset.Media.OriginalPath);
                                 await GenerateThumbnailAsync(originalFile, thumbnailFile);
                                 var proxyPath = new Uri(Path.Combine(proxyFolder.Path, "Proxy_" + asset.Media.Title));
-                                archivePage.MediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath),MediaPath= Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
-                                archivePage.archive.FileCount = archivePage.MediaPlayerItems.Count;
+                                MediaLibraryPage.MediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath),MediaPath= Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
+                                MediaLibraryPage.MediaLibrary.FileCount = MediaLibraryPage.MediaPlayerItems.Count;
                                 //if (closeWindow)
                                 //    this.Close();
                                 if (UploadHistoryPage.uploadHistory != null)
@@ -315,7 +315,7 @@ namespace MAM.Windows
         public async Task RunFFmpegWithProgressAsync(Asset asset, string[] inputFiles, string outputFolder, IProgress<string> progress)
         {
 
-            var folder = await StorageFolder.GetFolderFromPathAsync(archivePage.archive.BinName);
+            var folder = await StorageFolder.GetFolderFromPathAsync(MediaLibraryPage.MediaLibrary.BinName);
             var files = await folder.GetFilesAsync();
             // Create a Proxy Folder
             var proxyFolder = await folder.CreateFolderAsync("Proxy", CreationCollisionOption.OpenIfExists);
@@ -443,7 +443,7 @@ namespace MAM.Windows
                     }
                 }
             });
-            string outputFile = Path.Combine(archivePage.archive.ProxyFolder, "Proxy_" + Path.GetFileNameWithoutExtension(asset.Media.OriginalPath) + ".mp4");
+            string outputFile = Path.Combine(MediaLibraryPage.MediaLibrary.ProxyFolder, "Proxy_" + Path.GetFileNameWithoutExtension(asset.Media.OriginalPath) + ".mp4");
             string arguments = $"-i \"{asset.Media.OriginalPath}\" -vf scale=640:-1 -c:v libx264 -b:v 200k  -c:a aac -b:a 128k \"{outputFile}\"";
             // Update status to 'transferring' just before starting
             App.UIDispatcherQueue.TryEnqueue(() =>
@@ -470,10 +470,10 @@ namespace MAM.Windows
 
         private void RunFFmpegProcessWithProgress(string arguments, IProgress<string> progress)
         {
-            string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
+            //string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
 
             using var process = new Process();
-            process.StartInfo.FileName = ffmpegPath;
+            process.StartInfo.FileName = GlobalClass.Instance.ffmpegPath;
             process.StartInfo.Arguments = arguments;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
@@ -533,7 +533,7 @@ namespace MAM.Windows
             var proxyFile = await proxyFolder.CreateFileAsync($"Proxy_{originalFile.Name}", CreationCollisionOption.ReplaceExisting);
 
             // Example: Use FFmpeg to compress the video
-            string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
+            //string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
 
             // string arguments = $"-i \"D:\\sample.mp4\" - c:v libx264 -crf 23 - preset medium - c:a aac -b:a 128k -f mp4 \"D:\\output.mp4\"";
 
@@ -547,7 +547,7 @@ namespace MAM.Windows
 
             // await RunProcessAsync(ffmpegPath, arguments);
 
-            await RunFFmpegAsync(originalFile.Path, proxyFile.Path, ffmpegPath);
+            await RunFFmpegAsync(originalFile.Path, proxyFile.Path, GlobalClass.Instance.ffmpegPath);
 
 
             // Generate Thumbnail

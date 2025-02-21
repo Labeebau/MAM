@@ -33,16 +33,16 @@ namespace MAM.Windows
         // Static instance to track the window
         private static AddNewBinWindow _instance;
         public BinViewModel viewModel { get; set; }
-        private static ArchivePage parentArchivePage { get; set; }
-        public AddNewBinWindow(ArchivePage currentPage)
+        private static MediaLibraryPage parentMediaLibraryPage { get; set; }
+        public AddNewBinWindow(MediaLibraryPage currentPage)
         {
             this.InitializeComponent();
             SetWindowSizeAndPosition(400, 200);
             viewModel = new BinViewModel();
-            parentArchivePage = currentPage;
+            parentMediaLibraryPage = currentPage;
 
         }
-        public static void ShowWindow(ArchivePage currentPage)
+        public static void ShowWindow(MediaLibraryPage currentPage)
         {
             if (_instance == null)
             {
@@ -89,14 +89,14 @@ namespace MAM.Windows
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             string parentFolder, subFolder;
-            if (!string.Equals(parentArchivePage.archive.BinName, "Archive"))
+            if (!string.Equals(parentMediaLibraryPage.MediaLibrary.BinName, "Archive"))
             {
-                parentFolder = Path.Combine(GlobalClass.Instance.ArchivePath, parentArchivePage.archive.BinName);
+                parentFolder = Path.Combine(GlobalClass.Instance.MediaLibraryPath, parentMediaLibraryPage.MediaLibrary.BinName);
                 subFolder = viewModel.Bin.BinName;
                 CreateSubfolder(parentFolder, subFolder);
                 this.Close();
                 // Find the parent FileSystemItem in the tree
-                FileSystemItem parentItem = FindFileSystemItemByPath(parentArchivePage.FileSystemItems, parentFolder);
+                FileSystemItem parentItem = FindFileSystemItemByPath(parentMediaLibraryPage.FileSystemItems, parentFolder);
                 if (parentItem != null)
                 {
                     // Add the new folder as a child

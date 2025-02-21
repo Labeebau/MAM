@@ -52,7 +52,7 @@ namespace MAM.Data
         // You can add more properties as needed, like:
         public int SessionTimeout { get; set; }
         public bool IsLoggedIn { get; set; }
-        public string ArchivePath { get; set; } = @"F:\MAM";
+        public string MediaLibraryPath { get; set; } = @"F:\MAM";
         public string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
 
 

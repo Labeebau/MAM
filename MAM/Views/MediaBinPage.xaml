@@ -20,8 +20,8 @@
                  ItemInvoked="navMediaBin_ItemInvoked"
                  BackRequested="navMediaBin_BackRequested">
             <NavigationView.MenuItems>
+                <NavigationViewItem  Content="Media Library" Tag="MediaLibraryPage" />
                 <NavigationViewItem  Content="Archive" Tag="ArchivePage" />
-                <NavigationViewItem  Content="Search" Tag="SearchPage" />
                
             </NavigationView.MenuItems>
             <ScrollViewer>

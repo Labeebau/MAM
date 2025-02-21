@@ -28,6 +28,7 @@ using MediaPlayerItem = MAM.Views.MediaBinViews.MediaPlayerItem;
 using Composition = Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Media.Animation;
 using MAM.Views.MediaBinViews.AssetMetadata;
+using MAM.Data;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
@@ -440,17 +441,16 @@ namespace MAM.Windows
 
             // Generate a unique thumbnail path
             string thumbnailPath = Path.Combine(tempFolder, $"thumbnail_{timeSeconds}_{Guid.NewGuid()}.jpg");
-            string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
+            //string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
 
             //string ffmpegArguments = $"-y -i \"{videoFile.Path}\" -ss {timeSeconds} -vframes 1 \"{thumbnailPath}\" -loglevel debug";
             string ffmpegArguments = $"-y -hwaccel auto -ss {timeSeconds} -i \"{videoFile.Path}\" -vframes 1 -vf scale=320:-1 -an \"{thumbnailPath}\" -loglevel error";
 
             Debug.WriteLine($"FFmpeg Command: {ffmpegArguments}");
             Debug.WriteLine($"Processing video file: {videoFile.Path}");
-
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = ffmpegPath,
+                FileName =GlobalClass.Instance.ffmpegPath ,
                 Arguments = ffmpegArguments,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,

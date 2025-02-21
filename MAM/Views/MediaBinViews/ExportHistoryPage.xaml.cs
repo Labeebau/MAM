@@ -24,7 +24,7 @@ namespace MAM.Views.MediaBinViews
     /// </summary>
     public sealed partial class ExportHistoryPage : Page
     {
-        private static ArchivePage archivePage;
+        private static MediaLibraryPage mediaLibraryPage;
 
         public ExportHistoryPage()
         {
@@ -34,17 +34,17 @@ namespace MAM.Views.MediaBinViews
     public class ExportHistoryViewModel : ObservableObject
     {
         private MediaPlayerItem media;
-        private Archive archive;
+        private MediaLibrary mediaLibrary;
         private string path;
 
         public ExportHistoryViewModel()
         {
             media = new MediaPlayerItem();
-            archive = new Archive();
+            mediaLibrary = new MediaLibrary();
         }
 
         public MediaPlayerItem MediaObj { get => media; set => SetProperty(ref media, value); }
-        public Archive ArchiveObj { get => archive; set => SetProperty(ref archive, value); }
+        public MediaLibrary mediaLibraryObj { get => mediaLibrary; set => SetProperty(ref mediaLibrary, value); }
 
     }
 }

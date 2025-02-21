@@ -64,8 +64,6 @@
     <None Remove="Views\HomePage.xaml" />
     <None Remove="Views\MainProjectPage.xaml" />
     <None Remove="Views\MediaBinPage.xaml" />
-    <None Remove="Views\MediaBinViews\ArchivePage.xaml" />
-    <None Remove="Views\MediaBinViews\SearchPage.xaml" />
     <None Remove="Views\ProcessesPage.xaml" />
     <None Remove="Views\ProcessesViews\ProcessStatusPage.xaml" />
     <None Remove="Views\ProjectPage.xaml" />
@@ -346,12 +344,12 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Views\MediaBinViews\SearchPage.xaml">
+    <Page Update="Views\MediaBinViews\ArchivePage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Views\MediaBinViews\ArchivePage.xaml">
+    <Page Update="Views\MediaBinViews\MediaLibraryPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

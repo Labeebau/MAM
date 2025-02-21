@@ -38,8 +38,8 @@ namespace MAM.Views
 		
         private readonly List<(string Tag, Type Page)> _pages = new List<(string Tag, Type Page)>
         {
+            ("MediaLibraryPage",typeof(MediaLibraryPage)),
             ("ArchivePage",typeof(ArchivePage)),
-            ("SearchPage",typeof(SearchPage)),
         };
         private void navMediaBin_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
@@ -101,7 +101,7 @@ namespace MAM.Views
             //////	// If navigation occurs on SelectionChanged, this isn't needed.
             //////	// Because we use ItemInvoked to navigate, we need to call Navigate
             //////	// here to load the home page.
-            navMediaBin_Navigate("ArchivePage", new EntranceNavigationTransitionInfo());
+            navMediaBin_Navigate("MediaLibraryPage", new EntranceNavigationTransitionInfo());
             //  ContentFrame.Navigate(typeof([0]), null, new EntranceNavigationTransitionInfo());
 
         }
