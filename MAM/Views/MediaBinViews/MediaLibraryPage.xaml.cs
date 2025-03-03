@@ -1,29 +1,20 @@
+using MAM.Data;
+using MAM.UserControls;
+using MAM.Utilities;
+using MAM.Windows;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Windows.Foundation;
-using Microsoft.UI.Input;
-using MAM.UserControls;
-using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml.Media.Animation;
-using MAM.Windows;
-using MAM.Data;
-using MAM.Utilities;
-using System.Threading.Tasks;
+using Microsoft.UI.Xaml.Navigation;
+using System.Collections.ObjectModel;
+using System.Data;
+using System.Diagnostics;
+using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
-using System.Diagnostics;
-using Microsoft.UI.Xaml.Data;
-using System.Xml.Linq;
-using Windows.Media.Core;
-using MAM.Views.AdminPanelViews.Metadata;
-using Org.BouncyCastle.Asn1.Cms;
-using System.Data;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
@@ -40,13 +31,14 @@ namespace MAM.Views.MediaBinViews
 
         private bool _isDraggingHorizontal;
         private double _originalSplitterPosition;
-        public ObservableCollection<MediaPlayerItem> MediaPlayerItems { get; set; }
+
         public ObservableCollection<FileSystemItem> FileSystemItems { get; set; }
 
-        private readonly List<string> ExcludedFolders = new List<string> {"Proxy"};
+        private readonly List<string> ExcludedFolders = new List<string> { "Proxy" };
 
         public MediaLibrary MediaLibrary = new MediaLibrary();
-        private MediaLibraryViewModel viewModel;
+        public MediaLibraryViewModel viewModel;
+
         public MediaLibraryPage()
         {
             this.InitializeComponent();
@@ -55,13 +47,15 @@ namespace MAM.Views.MediaBinViews
             // Add root item
             var root = CreateFileSystemItem(@"F:\MAM", true);
             FileSystemItems.Add(root);
-            MediaPlayerItems = new ObservableCollection<MediaPlayerItem>();
+            //MediaPlayerItems = new ObservableCollection<MediaPlayerItem>();
             PopulateComboBox();
             // Bind the collection to the GridView
             viewModel = new MediaLibraryViewModel();
 
             DataContext = this;
         }
+
+
         private FileSystemItem CreateFileSystemItem(string path, bool isDirectory)
         {
             var item = new FileSystemItem
@@ -99,9 +93,9 @@ namespace MAM.Views.MediaBinViews
 
             return item;
         }
-        
-      
-        
+
+
+
         private void CustomMediaPlayer_Loaded(object sender, RoutedEventArgs e)
         {
             //if (sender is CustomMedia customMediaPlayer && customMediaPlayer.DataContext is MediaPlayerItem item)
@@ -119,7 +113,6 @@ namespace MAM.Views.MediaBinViews
         }
         private void VerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-
             // Set the resize cursor
             var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
             this.ProtectedCursor = inputCursor;  // Assign it directly to the page
@@ -152,7 +145,7 @@ namespace MAM.Views.MediaBinViews
                     Canvas.SetLeft(LeftVerticalSplitter, newLeft);
                     Canvas.SetLeft(CenterPanel, newLeft + LeftVerticalSplitter.ActualWidth);
                     LeftPanel.Width = newLeft;
-                    CenterPanel.Width = MainCanvas.ActualWidth - newLeft-LeftVerticalSplitter.ActualWidth-RightPanel.ActualWidth;
+                    CenterPanel.Width = MainCanvas.ActualWidth - newLeft - LeftVerticalSplitter.ActualWidth - RightPanel.ActualWidth;
                     //MainCanvas.ActualWidth- (newLeft+LeftVerticalSplitter.ActualWidth+RightPanel.ActualWidth);
                     MediaBinGridView.Width = CenterPanel.ActualWidth;
                     _originalSplitterPosition = currentPosition;
@@ -190,7 +183,7 @@ namespace MAM.Views.MediaBinViews
                 double newRight = Canvas.GetLeft(RightVerticalSplitter) + delta;
 
                 // Ensure the splitter stays within bounds
-                if (newRight > 1250 && newRight<1500 )
+                if (newRight > 1250 && newRight < 1500)
                 {
                     Canvas.SetLeft(RightVerticalSplitter, newRight);
                     Canvas.SetLeft(RightPanel, newRight + RightVerticalSplitter.ActualWidth);
@@ -278,9 +271,9 @@ namespace MAM.Views.MediaBinViews
         }
 
 
-        
 
-      
+
+
 
         private void BtnAdd_Click(object sender, RoutedEventArgs e)
         {
@@ -352,55 +345,107 @@ namespace MAM.Views.MediaBinViews
                 }
             }
         }
-        public void GetAsset(string assetPath)
+        public async Task<List<string>> GetAllSubdirectoriesAsync(string rootPath)
+        {
+            List<string> directories = new List<string>();
+            try
+            {
+                // Get all subdirectories, excluding those named "Proxy"
+                var subDirs = Directory.GetDirectories(rootPath)
+                                       .Where(dir => new DirectoryInfo(dir).Name != "Proxy")
+                                       .ToList();
+                if (subDirs.Count > 0)
+                    directories.AddRange(subDirs);
+
+                // Recursively retrieve subdirectories from each found subdirectory
+                foreach (var subDir in Directory.GetDirectories(rootPath))
+                {
+                    directories.AddRange(await GetAllSubdirectoriesAsync(subDir));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error accessing {rootPath}: {ex.Message}");
+            }
+
+            return directories;
+        }
+
+        public async Task GetAssetAsync(string assetPath)
         {
             DataTable dt = new DataTable();
             Dictionary<string, object> parameters = new Dictionary<string, object>();
-            parameters.Add("@Asset_path",assetPath);
-
-            dt = dataAccess.GetData($"select asset_id,asset_name,asset_path,original_path,duration,description,version,type,size,created_user,created_at,updated_user,updated_at from asset where asset_path=@Asset_path", parameters);
-            MediaPlayerItems.Clear();
-            foreach (DataRow row in dt.Rows)
+            List<string> directories = new List<string>();
+            directories.Add(assetPath);
+            directories.AddRange(await GetAllSubdirectoriesAsync(assetPath));
+            viewModel.AllMediaPlayerItems.Clear();
+            foreach (var dir in directories)
             {
-                string file = row["asset_name"].ToString();
-                string thumbnailPath = System.IO.Path.Combine(MediaLibrary.ProxyFolder, "Thumbnail_" + System.IO.Path.GetFileNameWithoutExtension(file) + ".jpg");
-                string proxyPath = System.IO.Path.Combine(MediaLibrary.ProxyFolder, "Proxy_" + (file));
-                TimeSpan duration = (TimeSpan)(row["duration"]);
-                string description = string.Empty;
-                string updated_user = string.Empty;
-                DateTime updated_at = DateTime.MinValue;
-                string source = Path.Combine(row["asset_path"].ToString(), row["asset_name"].ToString());
-                if (!File.Exists(source))
-                    continue;
-                if (row["description"] != DBNull.Value)
-                    description = row["description"].ToString();
-                if (row["updated_user"] != DBNull.Value)
-                    updated_user = row["updated_user"].ToString();
-                if (row["updated_at"] != DBNull.Value)
-                    updated_at = Convert.ToDateTime(row["updated_at"]);
-                MediaPlayerItems.Add(new MediaPlayerItem
+                if (Directory.Exists(System.IO.Path.Combine(dir, "Proxy")))
                 {
-                    MediaId = Convert.ToInt32(row["asset_id"]),
-                    Title = row["asset_name"].ToString(),
-                    MediaSource = new Uri(source),
-                    MediaPath = row["asset_path"].ToString(),
-                    OriginalPath = row["original_path"].ToString(),
-                    Duration = duration,
-                    DurationString = duration.ToString(@"hh\:mm\:ss"),
-                    Description = description,
-                    Version = row["version"].ToString(),
-                    Type = row["type"].ToString(),
-                    Size = Convert.ToDouble(row["size"]),
-                    CreatedUser = row["created_user"].ToString(),
-                    CreationDate = DateOnly.FromDateTime(Convert.ToDateTime(row["created_at"]).Date),
-                    UpdatedUser = updated_user,
-                    LastUpdated = updated_at,
-                    ThumbnailPath = new Uri(thumbnailPath),
-                    ProxyPath = new Uri(proxyPath),
-                });
-            }
-            MediaLibrary.FileCount = MediaPlayerItems.Count;
+                    MediaLibrary.ProxyFolder = System.IO.Path.Combine(dir, "Proxy");
+                    parameters.Add("@Asset_path", dir);
+                    dt = dataAccess.GetData($"select asset_id,asset_name,asset_path,original_path,duration,description,version,type,size,created_user,created_at,updated_user,updated_at from asset where asset_path=@Asset_path", parameters);
 
+                    // MediaPlayerItems.Clear();
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        string file = row["asset_name"].ToString();
+                        string thumbnailPath = System.IO.Path.Combine(MediaLibrary.ProxyFolder, "Thumbnail_" + System.IO.Path.GetFileNameWithoutExtension(file) + ".jpg");
+                        string proxyPath = System.IO.Path.Combine(MediaLibrary.ProxyFolder, "Proxy_" + (file));
+                        TimeSpan duration = (TimeSpan)(row["duration"]);
+                        string description = string.Empty;
+                        string updated_user = string.Empty;
+                        DateTime updated_at = DateTime.MinValue;
+                        string source = Path.Combine(row["asset_path"].ToString(), row["asset_name"].ToString());
+                        if (!File.Exists(source))
+                            continue;
+                        if (row["description"] != DBNull.Value)
+                            description = row["description"].ToString();
+                        if (row["updated_user"] != DBNull.Value)
+                            updated_user = row["updated_user"].ToString();
+                        if (row["updated_at"] != DBNull.Value)
+                            updated_at = Convert.ToDateTime(row["updated_at"]);
+                        Dictionary<string, object> metadata = await GetMetadata(source);
+                        List<string> keywords = new List<string>();
+                        if (metadata.TryGetValue("Keywords", out object value) && value is IList<string> keywordList)
+                        {
+                            keywords = keywordList.ToList(); // Convert to List<string>
+                        }
+                        else
+                        {
+                            keywords = new List<string>(); // Assign an empty list to avoid null issues
+                        }
+
+                        viewModel.MediaPlayerItems.Add(new MediaPlayerItem
+                        {
+                            MediaId = Convert.ToInt32(row["asset_id"]),
+                            Title = row["asset_name"].ToString(),
+                            MediaSource = new Uri(source),
+                            MediaPath = row["asset_path"].ToString(),
+                            OriginalPath = row["original_path"].ToString(),
+                            Duration = duration,
+                            DurationString = duration.ToString(@"hh\:mm\:ss"),
+                            Description = description,
+                            Version = row["version"].ToString(),
+                            Type = row["type"].ToString(),
+                            Size = Convert.ToDouble(row["size"]),
+                            CreatedUser = row["created_user"].ToString(),
+                            CreationDate = DateOnly.FromDateTime(Convert.ToDateTime(row["created_at"]).Date),
+                            UpdatedUser = updated_user,
+                            LastUpdated = updated_at,
+                            ThumbnailPath = new Uri(thumbnailPath),
+                            ProxyPath = new Uri(proxyPath),
+                            Keywords =keywords
+                        });
+
+                        viewModel.AllMediaPlayerItems.Add(viewModel.MediaPlayerItems[viewModel.MediaPlayerItems.Count - 1]);
+                    }
+                    parameters.Clear();
+
+                }
+            }
+            MediaLibrary.FileCount = viewModel.MediaPlayerItems.Count;
         }
         private async void TreeView_SelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
         {
@@ -408,23 +453,23 @@ namespace MAM.Views.MediaBinViews
             if (selectedNode != null)
             {
                 string dirName = new DirectoryInfo(((FileSystemItem)FileTreeView.SelectedNode.Content).Path).Name;
-                   
-                if(dirName == ((FileSystemItem)FileTreeView.SelectedNode.Content).Name)
-                    MediaLibrary.BinName =((FileSystemItem)FileTreeView.SelectedNode.Content).Path; 
+
+                if (dirName == ((FileSystemItem)FileTreeView.SelectedNode.Content).Name)
+                    MediaLibrary.BinName = ((FileSystemItem)FileTreeView.SelectedNode.Content).Path;
                 else
-                    MediaLibrary.BinName =Path.Combine(((FileSystemItem)FileTreeView.SelectedNode.Content).Path, ((FileSystemItem)FileTreeView.SelectedNode.Content).Name);
+                    MediaLibrary.BinName = Path.Combine(((FileSystemItem)FileTreeView.SelectedNode.Content).Path, ((FileSystemItem)FileTreeView.SelectedNode.Content).Name);
 
                 //MediaLibrary.BinName = GetFullPath(FileTreeView.SelectedNode);
-                if (Directory.Exists(System.IO.Path.Combine(MediaLibrary.BinName, "Proxy")))
-                {
-                    MediaLibrary.ProxyFolder = System.IO.Path.Combine(MediaLibrary.BinName, "Proxy");
-                    GetAsset(MediaLibrary.BinName);
-                }
-                else
-                {
-                    MediaPlayerItems.Clear();
-                }
-                MediaLibrary.FileCount = MediaPlayerItems.Count;
+                //if (Directory.Exists(System.IO.Path.Combine(MediaLibrary.BinName, "Proxy")))
+                //{
+                //    MediaLibrary.ProxyFolder = System.IO.Path.Combine(MediaLibrary.BinName, "Proxy");
+                viewModel.MediaPlayerItems.Clear();
+                await GetAssetAsync(MediaLibrary.BinName);
+                //}
+                //else
+                //{
+                //}
+                MediaLibrary.FileCount = viewModel.MediaPlayerItems.Count;
                 viewModel.MediaLibraryObj = MediaLibrary;
 
             }
@@ -570,15 +615,15 @@ namespace MAM.Views.MediaBinViews
             if (result == ContentDialogResult.Primary)
             {
 
-                if (MediaPlayerItems.Contains(item))
+                if (viewModel.MediaPlayerItems.Contains(item))
                 {
-                    MediaPlayerItems.Remove(item);
+                    viewModel.MediaPlayerItems.Remove(item);
                     try
                     {
                         File.Delete(System.IO.Path.Combine(MediaLibrary.BinName, item.Title));
                         File.Delete(System.IO.Path.Combine(MediaLibrary.BinName, item.ThumbnailPath.LocalPath));
                         File.Delete(System.IO.Path.Combine(MediaLibrary.BinName, item.ProxyPath.LocalPath));
-                        DeleteAssetAsync(item.Title,MediaLibrary.BinName);
+                        DeleteAssetAsync(item.Title, MediaLibrary.BinName);
                     }
                     catch (IOException ex)
                     {
@@ -595,24 +640,22 @@ namespace MAM.Views.MediaBinViews
                 }
             }
         }
-        private async void DeleteAssetAsync(string assetName,string assetPath)
+        private async void DeleteAssetAsync(string assetName, string assetPath)
         {
-            Dictionary<string,object> parameters = new Dictionary<string,object>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             parameters.Add("@Asset_path", assetPath);
             parameters.Add("@Asset_name", assetName);
-            int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and asset_path = @Asset_path;",parameters);
+            int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and asset_path = @Asset_path;", parameters);
             parameters.Add("@Asset_id", id);
-
-            if (dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters, out id)<=0)
+            if (dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters, out id) <= 0)
             {
                 var dialog = new ContentDialog
                 {
                     Title = "Delete Failed",
-                    Content = string.IsNullOrWhiteSpace("An unknown error occurred while trying to delete metadata."),
+                    Content = string.IsNullOrWhiteSpace("An unknown error occurred while trying to delete asset."),
                     CloseButtonText = "OK",
                     XamlRoot = this.XamlRoot // Assuming this code is in a page or window with access to XamlRoot
                 };
-
                 await dialog.ShowAsync();
             }
         }
@@ -723,11 +766,11 @@ namespace MAM.Views.MediaBinViews
             }
         }
 
-        private  void ViewAsset_Click(object sender, RoutedEventArgs e)
+        private void ViewAsset_Click(object sender, RoutedEventArgs e)
         {
             //AssetWindow assetWindow;
             //assetWindow=await AssetWindow.CreateAsync((Views.MediaBinViews.MediaPlayerItem)MediaBinGridView.SelectedItem, MediaPlayerItems);
-            AssetWindow.ShowWindow((Views.MediaBinViews.MediaPlayerItem)MediaBinGridView.SelectedItem, MediaPlayerItems);
+            AssetWindow.ShowWindow((Views.MediaBinViews.MediaPlayerItem)MediaBinGridView.SelectedItem, viewModel.MediaPlayerItems);
         }
 
         private void Rename_Click(object sender, RoutedEventArgs e)
@@ -779,7 +822,7 @@ namespace MAM.Views.MediaBinViews
 
         private void MediaBinGridView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
-            AssetWindow.ShowWindow((Views.MediaBinViews.MediaPlayerItem)MediaBinGridView.SelectedItem, MediaPlayerItems);
+            AssetWindow.ShowWindow((Views.MediaBinViews.MediaPlayerItem)MediaBinGridView.SelectedItem, viewModel.MediaPlayerItems);
         }
         private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
         {
@@ -795,9 +838,46 @@ namespace MAM.Views.MediaBinViews
                 }
             }
         }
-
+        private async Task<Dictionary<string, object>> GetMetadata(string filePath)
+        {
+            StorageFile file = await StorageFile.GetFileFromPathAsync(filePath);
+            // Get video properties
+            var videoProperties = await file.Properties.GetVideoPropertiesAsync();
+            Dictionary<string, object> props = new();
+            props.Add("Keywords", videoProperties.Keywords);
+            props.Add("Title", videoProperties.Title);
+            props.Add("Duration", videoProperties.Duration);
+            props.Add("Width", videoProperties.Width);
+            props.Add("Height", videoProperties.Height);
+            props.Add("Bitrate", videoProperties.Bitrate);
+            props.Add("Latitude", videoProperties.Latitude);
+            props.Add("Longitude", videoProperties.Longitude);
+            props.Add("Year", videoProperties.Year);
+            props.Add("Orientation", videoProperties.Orientation);
+            props.Add("Writers", videoProperties.Writers);
+            props.Add("Directors", videoProperties.Directors);
+            props.Add("Producers", videoProperties.Producers);
+            props.Add("Publisher", videoProperties.Publisher);
+            props.Add("Rating", videoProperties.Rating);
+            props.Add("SubTitle", videoProperties.Subtitle);
+            return props;
+        }
+        private void TitleFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (viewModel != null)
+            {
+                viewModel.FilterFileName = FilenameFilterTextbox.Text;
+            }
+        }
+        private void KeywordsFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (viewModel != null)
+            {
+                viewModel.FilterKeyword = KeywordsFilterTextbox.Text;
+            }
+        }
     }
-    public class MediaPlayerItem : ObservableObject,IEquatable<MediaPlayerItem>
+    public class MediaPlayerItem : ObservableObject, IEquatable<MediaPlayerItem>
     {
         private Uri mediaSource;
         private Uri thumbnailPath;
@@ -816,6 +896,8 @@ namespace MAM.Views.MediaBinViews
         private double size;
         private string description;
         private string mediaPath;
+        private Dictionary<string, object> metadata;
+        private List<string> keywords;
 
         public int MediaId
         {
@@ -862,11 +944,6 @@ namespace MAM.Views.MediaBinViews
             get => originalPath;
             set => SetProperty(ref originalPath, value);
         }
-        
-      
-
-
-
         public string Version
         {
             get => version;
@@ -878,7 +955,7 @@ namespace MAM.Views.MediaBinViews
             get => type;
             set => SetProperty(ref type, value);
         }
-       
+
         public string CreatedUser
         {
             get => createdUser;
@@ -909,6 +986,11 @@ namespace MAM.Views.MediaBinViews
             get => description;
             set => SetProperty(ref description, value);
         }
+        public List<string> Keywords
+        {
+            get => keywords;
+            set => SetProperty(ref keywords, value);
+        }
         // Override Equals
         public override bool Equals(object obj)
         {
@@ -921,13 +1003,13 @@ namespace MAM.Views.MediaBinViews
             if (other == null)
                 return false;
 
-            return MediaSource == other.MediaSource && MediaPath==other.MediaPath && ThumbnailPath == other.ThumbnailPath && ProxyPath == other.ProxyPath && Title==other.Title && DurationString==other.DurationString;
+            return MediaSource == other.MediaSource && MediaPath == other.MediaPath && ThumbnailPath == other.ThumbnailPath && ProxyPath == other.ProxyPath && Title == other.Title && DurationString == other.DurationString;
         }
 
         // Override GetHashCode
         public override int GetHashCode()
         {
-            return HashCode.Combine(mediaSource,ThumbnailPath,ProxyPath,Title, DurationString);
+            return HashCode.Combine(mediaSource, ThumbnailPath, ProxyPath, Title, DurationString);
         }
 
 
@@ -936,7 +1018,7 @@ namespace MAM.Views.MediaBinViews
     {
         private string binName = string.Empty;
         private string proxyFolder = string.Empty;
-        private int fileCount=0;
+        private int fileCount = 0;
 
         public string BinName
         {
@@ -959,32 +1041,83 @@ namespace MAM.Views.MediaBinViews
         private MediaPlayerItem media;
         private MediaLibrary MediaLibrary;
         private string path;
+        private string _filterTitle;
+        private string _filterFileName;
+        private string _filterKeyword;
+        private string _filterDescription;
+        private string _filterRating;
 
+        public string FilterTitle
+        {
+            get => _filterTitle;
+            set { SetProperty(ref _filterTitle, value); ApplyFilter(); }
+        }
+
+        public string FilterFileName
+        {
+            get => _filterFileName;
+            set { SetProperty(ref _filterFileName, value); ApplyFilter(); }
+        }
+
+        public string FilterKeyword
+        {
+            get => _filterKeyword;
+            set { SetProperty(ref _filterKeyword, value); ApplyFilter(); }
+        }
+
+        public string FilterDescription
+        {
+            get => _filterDescription;
+            set { SetProperty(ref _filterDescription, value); ApplyFilter(); }
+        }
+
+        public string FilterRating
+        {
+            get => _filterRating;
+            set { SetProperty(ref _filterRating, value); ApplyFilter(); }
+        }
         public MediaLibraryViewModel()
         {
             media = new MediaPlayerItem();
             MediaLibrary = new MediaLibrary();
-        }
 
+            ApplyFilter();
+        }
+        public ObservableCollection<MediaPlayerItem> AllMediaPlayerItems { get; set; } = new();
+        public ObservableCollection<MediaPlayerItem> MediaPlayerItems { get; set; } = new();
         public MediaPlayerItem MediaObj { get => media; set => SetProperty(ref media, value); }
         public MediaLibrary MediaLibraryObj { get => MediaLibrary; set => SetProperty(ref MediaLibrary, value); }
+        public void ApplyFilter()
+        {
+            var filteredItems = AllMediaPlayerItems.Where(item =>
+             (string.IsNullOrEmpty(FilterTitle) || item.Title.Contains(FilterTitle, StringComparison.OrdinalIgnoreCase)) &&
+             (string.IsNullOrEmpty(FilterFileName) || item.Title.Contains(FilterFileName, StringComparison.OrdinalIgnoreCase)) &&
+             (string.IsNullOrEmpty(FilterKeyword) || item.Keywords.Any(k => k.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase)))&&
+             (string.IsNullOrEmpty(FilterDescription) || item.Description.Contains(FilterDescription, StringComparison.OrdinalIgnoreCase)) &&
+             (string.IsNullOrEmpty(FilterRating) || item.Type.Contains(FilterRating, StringComparison.OrdinalIgnoreCase))
+         ).ToList();
 
+            MediaPlayerItems.Clear();
+            foreach (var item in filteredItems)
+            {
+                MediaPlayerItems.Add(item);
+            }
+        }
     }
-   
-    public class FileSystemItem: ObservableObject
+
+    public class FileSystemItem : ObservableObject
     {
         private string name;
         private string path;
         private bool isDirectory;
         private bool isExpanded;
         private ObservableCollection<FileSystemItem> children = new ObservableCollection<FileSystemItem>();
-
-        public string Name 
+        public string Name
         {
             get => name;
             set => SetProperty(ref name, value);
         }
-        public string Path 
+        public string Path
         {
             get => path;
             set => SetProperty(ref path, value);
@@ -999,13 +1132,13 @@ namespace MAM.Views.MediaBinViews
             get => isExpanded;
             set => SetProperty(ref isExpanded, value);
         }
-        public ObservableCollection<FileSystemItem> Children 
+        public ObservableCollection<FileSystemItem> Children
         {
             get => children;
             set => SetProperty(ref children, value);
-        } 
+        }
     }
-    
+
     public class BoolToGlyphConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
@@ -1029,7 +1162,4 @@ namespace MAM.Views.MediaBinViews
             throw new NotImplementedException(); // One-way binding only
         }
     }
-   
-
-
 }

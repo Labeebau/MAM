@@ -1,30 +1,19 @@
-using Microsoft.UI;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Windowing;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using Windows.Graphics;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 using MAM.Data;
 using MAM.Utilities;
 using MAM.Views.MediaBinViews;
-using Windows.Storage;
-using Windows.UI.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
-using Windows.Storage.FileProperties;
-using Windows.Storage.Streams;
-using MAM.UserControls;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Reflection;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Mysqlx.Crud;
+using Windows.Graphics;
+using Windows.Storage;
+using Windows.Storage.FileProperties;
+using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
+using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -96,7 +85,7 @@ namespace MAM.Windows
         private void LoadDataGrid()
         {
             AssetList.Clear();
-            foreach (var media in MediaLibraryPage.MediaPlayerItems)
+            foreach (var media in MediaLibraryPage.viewModel.MediaPlayerItems)
             {
                 AssetList.Add(new Asset(media));// { FileName = media.Title, AssetPath = archivePage.archive.BinName, OriginalPath = media.MediaSource.ToString() });
             }
@@ -265,8 +254,9 @@ namespace MAM.Windows
                                 var originalFile = await StorageFile.GetFileFromPathAsync(asset.Media.OriginalPath);
                                 await GenerateThumbnailAsync(originalFile, thumbnailFile);
                                 var proxyPath = new Uri(Path.Combine(proxyFolder.Path, "Proxy_" + asset.Media.Title));
-                                MediaLibraryPage.MediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath),MediaPath= Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
-                                MediaLibraryPage.MediaLibrary.FileCount = MediaLibraryPage.MediaPlayerItems.Count;
+                                MediaLibraryPage.viewModel.MediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath),MediaPath= Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
+                                MediaLibraryPage.viewModel.AllMediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath),MediaPath= Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
+                                MediaLibraryPage.MediaLibrary.FileCount = MediaLibraryPage.viewModel.MediaPlayerItems.Count;
                                 //if (closeWindow)
                                 //    this.Close();
                                 if (UploadHistoryPage.uploadHistory != null)

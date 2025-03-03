@@ -222,7 +222,7 @@
                                 <TextBlock x:Name="TxtInTime" Text="{Binding TrimmedClip.InTime}" Visibility="Collapsed" HorizontalAlignment="Left"/>
                                 <TextBlock x:Name="TxtOutTime" Text="{Binding TrimmedClip.OutTime}" Visibility="Collapsed"  HorizontalAlignment="Right" />
                             </Grid>
-                            <Grid  x:Name="ThumbnailGrid" Width="{Binding ElementName=MediaPlayerPanel, Path=ActualWidth}">
+                            <local:NewGrid  x:Name="ThumbnailGrid" Width="{Binding ElementName=MediaPlayerPanel, Path=ActualWidth}">
                                 <StackPanel  x:Name="ThumbnailPanel" Orientation="Vertical" 
             Width="{Binding ElementName=MediaPlayerPanel, Path=ActualWidth}">
                                     <ScrollViewer x:Name="ThumbnailScrollViewer" Grid.Row="1" HorizontalScrollMode="Enabled" 
@@ -254,22 +254,25 @@
                                     <Rectangle x:Name="RightOverlay" Canvas.Left="{Binding ElementName=RectangleCanvas, Path=ActualWidth}" Canvas.Top="0"  Height="80" Width="0" 
                 Fill="Black" Opacity="0.6"  />
                                     <StackPanel x:Name="LeftThumb"  Orientation="Horizontal" VerticalAlignment="top" HorizontalAlignment="Center"
-                Canvas.Top="0"  Canvas.Left="0" CornerRadius="0" Padding="2"
-                Background="DeepSkyBlue" Height="{Binding ElementName=ThumbnailScrollViewer, Path=ActualHeight}">
+                                                Canvas.Top="0"  Canvas.Left="0" CornerRadius="0" Padding="2"
+                                                Background="DeepSkyBlue" Height="{Binding ElementName=ThumbnailScrollViewer, Path=ActualHeight}" 
+                                                PointerEntered="LeftThumb_PointerEntered"
+                                                PointerExited="LeftThumb_PointerExited">
                                         <Rectangle Width="1" Height="30" Fill="White" Margin="2"/>
                                         <Rectangle Width="1" Height="30" Fill="White" Margin="2"/>
                                     </StackPanel>
                                     <TextBox x:Name="TxtClipName" Text="{Binding TrimmedClip.ClipName, Mode=TwoWay}"   Canvas.Left="{Binding ElementName=LeftThumb, Path=ActualWidth}" 
              Height="25" Width="50" VerticalAlignment="Top" />
-
                                     <StackPanel x:Name="RightThumb"  Orientation="Horizontal" VerticalAlignment="top" HorizontalAlignment="Left" Padding="2"
-                Canvas.Top="0"   CornerRadius="0" Canvas.Left="{Binding ElementName=ThumbnailScrollViewer, Path=ActualWidth}"
-                Background="DeepSkyBlue" Height="{Binding ElementName=ThumbnailScrollViewer, Path=ActualHeight}">
+                                                Canvas.Top="0"   CornerRadius="0" Canvas.Left="{Binding ElementName=ThumbnailScrollViewer, Path=ActualWidth}"
+                                                Background="DeepSkyBlue" Height="{Binding ElementName=ThumbnailScrollViewer, Path=ActualHeight}"
+                                                PointerEntered="RightThumb_PointerEntered"
+                                                PointerExited="RightThumb_PointerExited">
                                         <Rectangle Width="1" Height="30" Fill="White" Margin="2"/>
                                         <Rectangle Width="1" Height="30" Fill="White" Margin="2"/>
                                     </StackPanel>
                                 </Canvas>
-                            </Grid>
+                            </local:NewGrid>
                             <StackPanel x:Name="ClipDuration"  Orientation="Horizontal" Spacing="2"  >
                                 <TextBlock x:Name="TBTrimmedClipDuration" Text="{Binding TrimmedClip.Duration}" Foreground="LightGray"  VerticalAlignment="Center" />
                             </StackPanel>

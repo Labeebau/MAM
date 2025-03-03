@@ -1,32 +1,10 @@
 using CommunityToolkit.WinUI.UI.Controls;
-using MAM.ViewModels;
+using MAM.Data;
+using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using MySql.Data.MySqlClient;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using MAM.Utilities;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.Security.Authentication.OnlineId;
 using System.Reflection;
-using MAM.Data;
-using Microsoft.WindowsAppSDK.Runtime.Packages;
-using Mysqlx.Crud;
-using Windows.Networking;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 

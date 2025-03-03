@@ -23,9 +23,34 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
     /// </summary>
     public sealed partial class TagsPage : Page
     {
+        private List<string> suggestions = new List<string>
+    {
+        "Apple", "Banana", "Cherry", "Date", "Fig", "Grapes", "Mango", "Orange", "Pineapple", "Strawberry"
+    };
         public TagsPage()
         {
             this.InitializeComponent();
+        }
+        private void MyAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                var filteredSuggestions = suggestions
+                    .Where(item => item.StartsWith(sender.Text, System.StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                sender.ItemsSource = filteredSuggestions;
+            }
+        }
+
+        private void MyAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            sender.Text = args.SelectedItem.ToString();
+        }
+
+        private void AddKeyword_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -1,13 +1,10 @@
 using MAM.Views;
-using Microsoft.UI.Windowing;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Windows.Graphics;
 
 // To learn more about WinUI, the WinUI project structure,

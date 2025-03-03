@@ -1,4 +1,6 @@
+using MAM.Data;
 using MAM.Utilities;
+using MAM.Views.MediaBinViews.AssetMetadata;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
@@ -7,28 +9,21 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using Windows.Graphics;
 using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.Playback;
 using Windows.Storage;
-using Path = System.IO.Path;
 using Color = Windows.UI.Color;
-using MediaPlayerItem = MAM.Views.MediaBinViews.MediaPlayerItem;
 using Composition = Microsoft.UI.Composition;
-using Microsoft.UI.Xaml.Media.Animation;
-using MAM.Views.MediaBinViews.AssetMetadata;
-using MAM.Data;
+using MediaPlayerItem = MAM.Views.MediaBinViews.MediaPlayerItem;
+using Path = System.IO.Path;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
@@ -60,9 +55,8 @@ namespace MAM.Windows
         private Composition.Compositor _compositor;
         private Composition.SpriteVisual _blurVisual;
         private Composition.CompositionEffectBrush _blurBrush;
-        private Dictionary<string, object> metadata;
 
-        
+
 
         public AssetWindow(ObservableCollection<MediaPlayerItem> mediaPlayerItemList)
         {
@@ -93,12 +87,15 @@ namespace MAM.Windows
             {
                 mediaPlayer.Source = MediaSource.CreateFromUri(ViewModel.Media.ProxyPath);
             }
-            ViewModel.PropertyChanged += (s, e) =>
+            ViewModel.PropertyChanged += async (s, e) =>
             {
                 if (e.PropertyName == nameof(ViewModel.Media) && ViewModel.Media.ProxyPath != null)
                 {
                     mediaPlayer.Source = MediaSource.CreateFromUri(ViewModel.Media.ProxyPath);
                     ViewModel.Media = mediaPlayerItemList.FirstOrDefault(m => m.ProxyPath == ViewModel.Media.ProxyPath);
+                    var file =await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
+                    await GetAllMetadataAsync(file);
+                    navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(), ViewModel.Metadata);
                 }
             };
 
@@ -133,8 +130,11 @@ namespace MAM.Windows
 
         private async void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
-            var file = await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
-            await GetAllMetadataAsync(file);
+            StorageFile file = null;
+            if (ViewModel.Media.MediaSource != null)
+                file = await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
+            if (file != null)
+                await GetAllMetadataAsync(file);
         }
 
         private void MediaPlayer_VolumeChanged(MediaPlayer sender, object args)
@@ -159,6 +159,7 @@ namespace MAM.Windows
                         ViewModel.CurrentPosition = sender.Position.ToString(@"mm\:ss");
 
                 });
+                
             }
         }
 
@@ -181,7 +182,7 @@ namespace MAM.Windows
                 //TxtClipName.Visibility = Visibility.Collapsed;
                 //TBTrimmedClipDuration.Visibility = Visibility.Collapsed;
                 Canvas.SetLeft(LeftThumb, 0);
-                Canvas.SetLeft(RightThumb, ThumbnailScrollViewer.ActualWidth+ThumbnailScrollViewer.Margin.Right);
+                Canvas.SetLeft(RightThumb, ThumbnailScrollViewer.ActualWidth + ThumbnailScrollViewer.Margin.Right);
                 Canvas.SetLeft(LeftOverlay, 0);
                 Canvas.SetLeft(RightOverlay, ThumbnailPanel.Width);
                 LeftOverlay.Width = 0;
@@ -192,11 +193,12 @@ namespace MAM.Windows
                 ViewModel.TrimmedClip.Duration = ViewModel.TotalDuration;
                 TransformHorizontally(TxtInTime, 0);
                 TransformHorizontally(TxtOutTime, 0);
-                TransformHorizontally(TBTrimmedClipDuration,Canvas.GetLeft(RightThumb)/2);
-               // await LoadTrimmedClipsAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
+                TransformHorizontally(TBTrimmedClipDuration, Canvas.GetLeft(RightThumb) / 2);
+                // await LoadTrimmedClipsAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
 
                 var file = await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
-                await GetAllMetadataAsync(file);
+                if (file != null)
+                    await GetAllMetadataAsync(file);
             });
         }
         private void MediaPlayer_PlaybackStateChanged(MediaPlaybackSession sender, object args)
@@ -218,7 +220,7 @@ namespace MAM.Windows
             }
             else
             {
-               // _instance = new AssetWindow(mediaPlayerItemList);
+                // _instance = new AssetWindow(mediaPlayerItemList);
                 _instance.Activate(); // Bring the existing window to the front
             }
         }
@@ -387,7 +389,7 @@ namespace MAM.Windows
             // Reset the background of the previously active button
             if (_activeTimeButton != null)
             {
-              //  _activeTimeButton.Background = new SolidColorBrush(Color.FromArgb(255, 30, 30, 30)); // Default background color
+                //  _activeTimeButton.Background = new SolidColorBrush(Color.FromArgb(255, 30, 30, 30)); // Default background color
             }
             // Highlight the clicked button
             if (sender is Button clickedButton)
@@ -450,7 +452,7 @@ namespace MAM.Windows
             Debug.WriteLine($"Processing video file: {videoFile.Path}");
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName =GlobalClass.Instance.ffmpegPath ,
+                FileName = GlobalClass.Instance.ffmpegPath,
                 Arguments = ffmpegArguments,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
@@ -630,7 +632,7 @@ namespace MAM.Windows
 
         private async void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            await  AddTrimMetadataAsync(ViewModel.Media.MediaSource.LocalPath.ToString(),ViewModel.TrimmedClip.InTime, ViewModel.TrimmedClip.OutTime, ViewModel.TrimmedClip.ClipName);
+            await AddTrimMetadataAsync(ViewModel.Media.MediaSource.LocalPath.ToString(), ViewModel.TrimmedClip.InTime, ViewModel.TrimmedClip.OutTime, ViewModel.TrimmedClip.ClipName);
             //TxtClipName.Visibility= Visibility.Collapsed;
             //TBTrimmedClipDuration.Visibility = Visibility.Collapsed;
             var file = await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
@@ -677,7 +679,7 @@ namespace MAM.Windows
 
         }
 
-      
+
 
         private void VolumeButton_Click(object sender, RoutedEventArgs e)
         {
@@ -726,7 +728,7 @@ namespace MAM.Windows
         //        _ => null,
         //    };
         //}
-       // Dictionary<string, object> parameter;
+        // Dictionary<string, object> parameter;
         private void navMetadata_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             //var navItemTag = args.InvokedItemContainer.Tag.ToString();
@@ -734,7 +736,7 @@ namespace MAM.Windows
 
 
             var navItemTag = args.InvokedItemContainer.Tag.ToString();
-            navMetadata_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo, metadata);
+            navMetadata_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo, ViewModel.Metadata);
         }
         private void navMetadata_Navigate(string navItemTag, NavigationTransitionInfo recommendedNavigationTransitionInfo, object parameter)
         {
@@ -742,7 +744,7 @@ namespace MAM.Windows
             var item = _pages.FirstOrDefault(p => p.Tag.Equals(navItemTag));
             _page = item.Page;
             var prevNavPageType = ContentFrame.CurrentSourcePageType;
-            if (!(_page is null) && !Type.Equals(prevNavPageType, _page))
+            if (!(_page is null))// && !Type.Equals(prevNavPageType, _page))
             {
                 // Pass the parameter here
                 ContentFrame.Navigate(_page, parameter, recommendedNavigationTransitionInfo);
@@ -769,7 +771,7 @@ namespace MAM.Windows
             ////	// If navigation occurs on SelectionChanged, this isn't needed.
             ////	// Because we use ItemInvoked to navigate, we need to call Navigate
             ////	// here to load the home page.
-            navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(),metadata);
+            navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(), ViewModel.Metadata);
         }
 
 
@@ -956,7 +958,7 @@ namespace MAM.Windows
             TxtOutTime.Visibility = Visibility.Visible;
 
         }
-        private void TransformHorizontally(TextBlock txt,double delta)
+        private void TransformHorizontally(TextBlock txt, double delta)
         {
             if (txt.RenderTransform is not TranslateTransform transform)
             {
@@ -992,10 +994,10 @@ namespace MAM.Windows
             TxtOutTime.Visibility = Visibility.Collapsed;
 
             // Constrain within ScrollViewer bounds
-            if (newLeft >= 0 && newLeft < (leftOfRightThumb- leftThumbWidth))
+            if (newLeft >= 0 && newLeft < (leftOfRightThumb - leftThumbWidth))
             {
                 Canvas.SetLeft(LeftThumb, newLeft);
-                Canvas.SetLeft(TxtClipName, newLeft+LeftThumb.ActualWidth);
+                Canvas.SetLeft(TxtClipName, newLeft + LeftThumb.ActualWidth);
 
                 _startX = currentX; // Update startX for smooth dragging
 
@@ -1004,13 +1006,13 @@ namespace MAM.Windows
                 // Apply the new position using a TranslateTransform
                 TransformHorizontally(TxtInTime, txtLeftThumbX);
                 //TransformHorizontally(TxtClipName, txtLeftThumbX);
-                TransformHorizontally(TBTrimmedClipDuration, (txtLeftThumbX-2*leftThumbWidth+leftOfRightThumb) / 2);
+                TransformHorizontally(TBTrimmedClipDuration, (txtLeftThumbX - 2 * leftThumbWidth + leftOfRightThumb) / 2);
                 UpdateLeftSelectionOverlay();
-                
+
                 //TxtClipName.Width = 50;
                 //TxtClipName.Height = 25;
             }
-            
+
             if (newLeft > leftOfRightThumb - (leftThumbWidth + TxtClipName.ActualWidth))
             {
                 TxtClipName.Width = 17;
@@ -1022,7 +1024,7 @@ namespace MAM.Windows
                 TxtClipName.Height = 25;
             }
             // Notify about the trim position
-            OnLeftTrimPositionChanged?.Invoke( GetLeftThumbTime());
+            OnLeftTrimPositionChanged?.Invoke(GetLeftThumbTime());
         }
         private double txtRightThumbX = 0; // X position of the TextBlock
         private void OnRightThumbPointerMoved(object sender, PointerRoutedEventArgs e)
@@ -1041,7 +1043,7 @@ namespace MAM.Windows
             // Constrain within ScrollViewer bounds
             TxtInTime.Visibility = Visibility.Collapsed;
 
-            if (newLeft > leftOfLeftThumb+ThumbWidth && newLeft <= ThumbnailScrollViewer.ActualWidth+ThumbWidth )
+            if (newLeft > leftOfLeftThumb + ThumbWidth && newLeft <= ThumbnailScrollViewer.ActualWidth + ThumbWidth)
             {
 
                 //if (TxtClipName.Visibility == Visibility.Collapsed)
@@ -1059,7 +1061,7 @@ namespace MAM.Windows
                 TransformHorizontally(TBTrimmedClipDuration, (txtLeftThumbX + currentLeft) / 2);
                 UpdateRightSelectionOverlay();
             }
-           
+
             // Notify about the trim position
             OnRightTrimPositionChanged?.Invoke(GetRightThumbTime());
         }
@@ -1077,9 +1079,9 @@ namespace MAM.Windows
         private string GetLeftThumbTime()
         {
             double leftPosition = Canvas.GetLeft(LeftThumb);
-           // TimeSpan videoDuration = TimeSpan.Parse(ViewModel.Media.DurationString);
+            // TimeSpan videoDuration = TimeSpan.Parse(ViewModel.Media.DurationString);
             double totalVideoDurationInSeconds = ViewModel.Media.Duration.TotalSeconds;
-           var pos= ((leftPosition / ThumbnailScrollViewer.ActualWidth) *totalVideoDurationInSeconds).ToString();
+            var pos = ((leftPosition / ThumbnailScrollViewer.ActualWidth) * totalVideoDurationInSeconds).ToString();
 
 
 
@@ -1089,7 +1091,7 @@ namespace MAM.Windows
 
         private string GetRightThumbTime()
         {
-            double rightPosition = Canvas.GetLeft(RightThumb)-14;
+            double rightPosition = Canvas.GetLeft(RightThumb) - 14;
             double totalVideoDurationInSeconds = ViewModel.Media.Duration.TotalSeconds;
             var pos = ((rightPosition / ThumbnailScrollViewer.ActualWidth) * totalVideoDurationInSeconds).ToString();
             TimeSpan right = TimeSpan.FromSeconds(Convert.ToDouble(pos));
@@ -1099,7 +1101,7 @@ namespace MAM.Windows
         {
             // Update the UI for 'In' and 'Out' times
             ViewModel.TrimmedClip.InTime = inTime;// TimeSpan.FromSeconds(inTime).ToString(@"mm\:ss");
-            if(ViewModel.TrimmedClip.OutTime!=null)
+            if (ViewModel.TrimmedClip.OutTime != null)
                 ViewModel.TrimmedClip.Duration = (TimeSpan.Parse(ViewModel.TrimmedClip.OutTime) - TimeSpan.Parse(ViewModel.TrimmedClip.InTime)).ToString(@"hh\:mm\:ss");
 
         }
@@ -1110,14 +1112,14 @@ namespace MAM.Windows
             if (ViewModel.TrimmedClip.InTime != null)
                 ViewModel.TrimmedClip.Duration = (TimeSpan.Parse(ViewModel.TrimmedClip.OutTime) - TimeSpan.Parse(ViewModel.TrimmedClip.InTime)).ToString(@"hh\:mm\:ss");
         }
-       
+
         private void UpdateRightSelectionOverlay()
         {
-            double right = Canvas.GetLeft(RightThumb)+RightThumb.ActualWidth;
+            double right = Canvas.GetLeft(RightThumb) + RightThumb.ActualWidth;
             Canvas.SetLeft(RightOverlay, right);
-            double rectWidth= RectangleCanvas.ActualWidth - right;
+            double rectWidth = RectangleCanvas.ActualWidth - right;
             if (rectWidth > 0)
-                RightOverlay.Width = rectWidth; 
+                RightOverlay.Width = rectWidth;
         }
         private void UpdateLeftSelectionOverlay()
         {
@@ -1159,51 +1161,38 @@ namespace MAM.Windows
         }
         public async Task GetAllMetadataAsync(StorageFile filePath)
         {
-            metadata = await GetVideoProperies(filePath);
-            await LoadTrimmedClipsWithThumbnailsAsync(filePath);
+            if (filePath != null)
+            {
+                ViewModel.Metadata = await GetVideoProperies(filePath);
+                ViewModel.Metadata.Add("Path", ViewModel.Media.MediaSource.LocalPath);
+                await LoadTrimmedClipsWithThumbnailsAsync(filePath);
+            }
         }
         private async Task<Dictionary<string, object>> GetVideoProperies(StorageFile filePath)
         {
-            //var file = await StorageFile.GetFileFromPathAsync(filePath);
-            // Get video properties
-            var videoProperties = await filePath.Properties.GetVideoPropertiesAsync();
-            // Access specific properties
-            //var title = videoProperties.Title;
-            //var duration = videoProperties.Duration;
-            //var width = videoProperties.Width;
-            //var height = videoProperties.Height;
-            //var bitrate = videoProperties.Bitrate;
-            //var latitude = videoProperties.Latitude;
-            //var longitude = videoProperties.Longitude;
-            //var year = videoProperties.Year;
-            //var orientation = videoProperties.Orientation;
-            //IList<string> keyWords = videoProperties.Keywords;
-            //var writers = videoProperties.Writers;
-            //var directors = videoProperties.Directors;
-            //var producers = videoProperties.Producers;
-            //var publisher = videoProperties.Publisher;
-            //var rating = videoProperties.Rating;
-            //var subTitle = videoProperties.Subtitle;
-            //return keyWords;
-
-            Dictionary<string, object> props = new();
-            props.Add("Keywords", videoProperties.Keywords);
-            props.Add("Title", videoProperties.Title);
-            props.Add("Duration", videoProperties.Duration);
-            props.Add("Width", videoProperties.Width);
-            props.Add("Height", videoProperties.Height);
-            props.Add("Bitrate", videoProperties.Bitrate);
-            props.Add("Latitude", videoProperties.Latitude);
-            props.Add("Longitude", videoProperties.Longitude);
-            props.Add("Year", videoProperties.Year);
-            props.Add("Orientation", videoProperties.Orientation);
-            props.Add("Writers", videoProperties.Writers);
-            props.Add("Directors", videoProperties.Directors);
-            props.Add("Producers", videoProperties.Producers);
-            props.Add("Publisher", videoProperties.Publisher);
-            props.Add("Rating", videoProperties.Rating);
-            props.Add("SubTitle", videoProperties.Subtitle);
-            return props;
+            if (filePath != null)
+            {
+                var videoProperties = await filePath.Properties.GetVideoPropertiesAsync();
+                Dictionary<string, object> props = new();
+                props.Add("Keywords", videoProperties.Keywords);
+                props.Add("Title", videoProperties.Title);
+                props.Add("Duration", videoProperties.Duration);
+                props.Add("Width", videoProperties.Width);
+                props.Add("Height", videoProperties.Height);
+                props.Add("Bitrate", videoProperties.Bitrate);
+                props.Add("Latitude", videoProperties.Latitude);
+                props.Add("Longitude", videoProperties.Longitude);
+                props.Add("Year", videoProperties.Year);
+                props.Add("Orientation", videoProperties.Orientation);
+                props.Add("Writers", videoProperties.Writers);
+                props.Add("Directors", videoProperties.Directors);
+                props.Add("Producers", videoProperties.Producers);
+                props.Add("Publisher", videoProperties.Publisher);
+                props.Add("Rating", videoProperties.Rating);
+                props.Add("SubTitle", videoProperties.Subtitle);
+                return props;
+            }
+            return null;
         }
         //private async Task LoadTrimmedClipsAsync(string file)
         //{
@@ -1225,9 +1214,9 @@ namespace MAM.Windows
         public async Task LoadTrimmedClipsWithThumbnailsAsync(StorageFile videoFile)
         {
             ViewModel.TrimmedClips.Clear();
-            List<TrimmedClip> trimmedClips=new() ;
+            List<TrimmedClip> trimmedClips = new();
             //metadata = GetVideoProperies(videoFile).Result;
-            IList<string> keyWord = (IList<string>)metadata["Keywords"];
+            IList<string> keyWord = (IList<string>)ViewModel.Metadata["Keywords"];
             foreach (var key in keyWord)
             {
                 if (key.Contains("InTime") && key.Contains("OutTime") && key.Contains("ClipName"))
@@ -1276,8 +1265,8 @@ namespace MAM.Windows
                         InTime = clip.InTime,
                         OutTime = clip.OutTime,
                         Duration = duration,
-                        Thumbnail=clip.Thumbnail
-                        
+                        Thumbnail = clip.Thumbnail
+
                     });
                 }
                 catch (Exception ex)
@@ -1286,7 +1275,7 @@ namespace MAM.Windows
                     Console.WriteLine($"Error generating thumbnail for {clip.ClipName}: {ex.Message}");
                 }
             }
-           // return trimmedClips;
+            // return trimmedClips;
         }
 
         private void GridView_ItemClick(object sender, ItemClickEventArgs e)
@@ -1296,21 +1285,21 @@ namespace MAM.Windows
             {
 
                 TimeSpan timeSpan = TimeSpan.Parse(clickedClip.InTime);
-                mediaPlayer.PlaybackSession.Position =timeSpan;
+                mediaPlayer.PlaybackSession.Position = timeSpan;
                 var inTime = ConvertTimeToDouble(clickedClip.InTime);
                 var outTime = ConvertTimeToDouble(clickedClip.OutTime);
                 var dur = ConvertTimeToDouble(ViewModel.Media.DurationString);
                 var leftPos = (inTime / dur) * ThumbnailScrollViewer.ActualWidth;
                 var rightPos = (outTime / dur) * ThumbnailScrollViewer.ActualWidth;
-                Canvas.SetLeft(LeftThumb,leftPos);
+                Canvas.SetLeft(LeftThumb, leftPos);
                 Canvas.SetLeft(TxtClipName, leftPos + LeftThumb.ActualWidth);
                 TxtOutTime.Visibility = Visibility.Visible;
-                Canvas.SetLeft(RightThumb,rightPos);
+                Canvas.SetLeft(RightThumb, rightPos);
                 ViewModel.TrimmedClip.Duration = CalculateDuration(clickedClip.OutTime, clickedClip.InTime);
-                TransformHorizontally(TxtInTime,leftPos);
+                TransformHorizontally(TxtInTime, leftPos);
                 txtLeftThumbX = leftPos;
-                txtRightThumbX = -(ThumbnailScrollViewer.ActualWidth - rightPos)-20;
-                TransformHorizontally(TxtOutTime,txtRightThumbX );
+                txtRightThumbX = -(ThumbnailScrollViewer.ActualWidth - rightPos) - 20;
+                TransformHorizontally(TxtOutTime, txtRightThumbX);
                 TransformHorizontally(TBTrimmedClipDuration, (leftPos - 2 * LeftThumb.ActualWidth + rightPos) / 2);
                 UpdateLeftTrimTime(clickedClip.InTime);
                 UpdateRighgtTrimTime(clickedClip.OutTime);
@@ -1326,6 +1315,27 @@ namespace MAM.Windows
             }
             return "Unknown";
         }
+
+        private void LeftThumb_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            ThumbnailGrid.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+        }
+
+        private void LeftThumb_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            ThumbnailGrid.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        }
+
+        private void RightThumb_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            ThumbnailGrid.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+        }
+
+        private void RightThumb_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            ThumbnailGrid.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        }
+
         static double ConvertTimeToDouble(string time)
         {
             // Parse the time string
@@ -1339,10 +1349,10 @@ namespace MAM.Windows
             int seconds = int.Parse(parts[2]);
 
             // Convert to fractional hours
-            double totalHours = (hours*3600) + (minutes * 60.0) + (seconds );
+            double totalHours = (hours * 3600) + (minutes * 60.0) + (seconds);
             return totalHours;
         }
-       
+
     }
 
     public class NewGrid : Grid
@@ -1380,6 +1390,7 @@ namespace MAM.Windows
         //private string outPosition="0";
         //private string clipDuration;
         private TrimmedClip trimmedClip;
+        private Dictionary<string, object> metadata;
 
         public string PlayPauseIcon
         {
@@ -1411,13 +1422,17 @@ namespace MAM.Windows
             get => trimmedClip;
             set => SetProperty(ref trimmedClip, value);
         }
-       
+
         public MediaPlayerItem Media
         {
             get => media;
             set => SetProperty(ref media, value);
         }
-
+        public Dictionary<string,object> Metadata
+        {
+            get => metadata;
+            set => SetProperty(ref metadata, value);
+        }
         public ICommand VideoThumbnailClickCommand { get; }
         public ICommand VideoListThumbnailClickCommand { get; }
 
@@ -1425,7 +1440,7 @@ namespace MAM.Windows
         public ObservableCollection<Thumbnail> Thumbnails { get; set; }
         public ObservableCollection<BinThumbnail> BinThumbnails { get; set; }
         public ObservableCollection<MediaPlayerItem> BinMedias { get; set; }
-        public ObservableCollection<TrimmedClip> TrimmedClips { get; } 
+        public ObservableCollection<TrimmedClip> TrimmedClips { get; }
 
         public MediaPlayerViewModel(MediaPlayerItem media)
         {
@@ -1434,7 +1449,7 @@ namespace MAM.Windows
             VideoListThumbnailClickCommand = new RelayCommand<Uri>(LoadVideo);
             Thumbnails = new ObservableCollection<Thumbnail>();
             BinThumbnails = new ObservableCollection<BinThumbnail>();
-            TrimmedClip = new TrimmedClip() ;
+            TrimmedClip = new TrimmedClip();
             TrimmedClips = new ObservableCollection<TrimmedClip>();
             Media = media;
         }
@@ -1442,6 +1457,7 @@ namespace MAM.Windows
         private void LoadVideo(Uri mediaUri)
         {
             Media = new MediaPlayerItem() { ProxyPath = mediaUri };
+
         }
 
         private void ChangePlaybackPosition(TimeSpan position)
@@ -1513,36 +1529,36 @@ namespace MAM.Windows
             set => SetProperty(ref mediaUri, value);
         }
     }
-    public class TrimmedClip:ObservableObject
+    public class TrimmedClip : ObservableObject
     {
         private string clipName = "Clip1";
-        private string inTime ;
-        private string outTime ;
+        private string inTime;
+        private string outTime;
         private string duration;
         private BitmapImage thumbnail;
 
-        public string ClipName 
+        public string ClipName
         {
             get => clipName;
             set => SetProperty(ref clipName, value);
         }
-        public string InTime 
+        public string InTime
         {
             get => inTime;
             set => SetProperty(ref inTime, value);
         }
-        public string OutTime 
+        public string OutTime
         {
             get => outTime;
             set => SetProperty(ref outTime, value);
         }
-        public string Duration 
+        public string Duration
         {
             get => duration;
             set => SetProperty(ref duration, value);
             //public TimeSpan Duration => OutTime - InTime;
         }
-        public BitmapImage Thumbnail 
+        public BitmapImage Thumbnail
         {
             get => thumbnail;
             set => SetProperty(ref thumbnail, value);

@@ -426,7 +426,7 @@
   <PropertyGroup Label="Globals">
     <WebView2EnableCsWinRTProjection>True</WebView2EnableCsWinRTProjection>
     <WebView2LoaderPreference>Dynamic</WebView2LoaderPreference>
-    <ImplicitUsings>disable</ImplicitUsings>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <!--

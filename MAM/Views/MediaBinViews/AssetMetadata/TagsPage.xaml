@@ -9,7 +9,20 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
-
+    <Grid Width="800" Height="300" HorizontalAlignment="Left" Padding="10">
+        <StackPanel Orientation="Horizontal">
+        <AutoSuggestBox 
+         x:Name="KeywordsAutoSuggestBox"
+            Width="200"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+         PlaceholderText="Type to search..."
+         TextChanged="MyAutoSuggestBox_TextChanged"
+         SuggestionChosen="MyAutoSuggestBox_SuggestionChosen"/>
+        <Button x:Name="AddButton" Style="{StaticResource SmallIconButton}" 
+          Click="AddKeyword_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadius="3">
+            <FontIcon  Glyph="&#x2b;" />
+        </Button>
+        </StackPanel>
     </Grid>
 </Page>

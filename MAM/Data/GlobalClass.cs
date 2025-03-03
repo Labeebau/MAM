@@ -54,6 +54,7 @@ namespace MAM.Data
         public bool IsLoggedIn { get; set; }
         public string MediaLibraryPath { get; set; } = @"F:\MAM";
         public string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
+        public string ffprobePath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffprobe.exe";
 
 
         //public List<string> SupportedFiles = new List<string> { ".avi", ".mpeg", ".mpg", ".mov", ".mkv", ".mp4", ".mp3", ".flac", ".wav", ".aac", ".ogg", ".jpeg", ".jpg", ".png", ".gif", ".tiff", ".bmp", ".svg" };

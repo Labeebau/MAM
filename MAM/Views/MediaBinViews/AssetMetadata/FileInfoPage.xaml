@@ -8,18 +8,39 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     d:DataContext="{d:DesignInstance Type=local:FileInfoPage}"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" >
     <!--<Page.DataContext>
         <local:FileInfos/>
     </Page.DataContext>-->
     <Grid Width="300" Height="300" HorizontalAlignment="Left" Padding="10">
         <StackPanel Orientation="Vertical">
+            <TreeView ItemsSource="{Binding CodecInfo}" SelectionMode="None">
+                <TreeView.ItemTemplate>
+                    <DataTemplate x:DataType="local:TreeNode">
+                        <TreeViewItem ItemsSource="{x:Bind Children}">
+                            <TreeViewItem.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                        <TextBlock Text=": " FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding Value}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </TreeViewItem.ContentTemplate>
+                        </TreeViewItem>
+                    </DataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+
+
+
+
             <!--<Expander Width="350" Height="300" HorizontalContentAlignment="Left" VerticalAlignment="Top" Padding="10">
                 <Expander.Header>
                     <TextBlock Text="General" HorizontalAlignment="Center"/>
                 </Expander.Header>-->
                 <!--<Expander.Content>-->
-            <ListBox ItemsSource="{Binding FileInfo}">
+            <!--<ListBox ItemsSource="{Binding FileInfo}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
@@ -28,7 +49,7 @@
                         </StackPanel>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
-            </ListBox>
+            </ListBox>-->
 
             <!--</Expander.Content>
             </Expander>-->

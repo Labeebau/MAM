@@ -121,12 +121,11 @@
                         <TextBlock Grid.Row="0" Text="Content" VerticalAlignment="Bottom"/>
                         <TextBox Grid.Row="1" x:Name="txtSearchBin" Width="500" Margin="20,0,0,10" Text="{x:Bind viewModel.MediaLibraryObj.BinName,Mode=OneWay}"/>
                         <GridView x:Name="MediaBinGridView" Grid.Row="2" 
-                                        ItemsSource="{x:Bind MediaPlayerItems,Mode=TwoWay}"
+                                        ItemsSource="{x:Bind viewModel.MediaPlayerItems,Mode=TwoWay}"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Top"
                                       Height="560"
                                       Width="1200"
-                                      
                                       ContextFlyout="{StaticResource AssetMenuFlyout}"
                                       SelectionChanged="MediaBinGridView_SelectionChanged"
                                       PointerPressed="MediaBinGridView_PointerPressed"
@@ -167,8 +166,8 @@
                             <RowDefinition Height="40"/>
                             <RowDefinition Height="9*"/>
                         </Grid.RowDefinitions>-->
-                        <StackPanel  Orientation="Vertical" Padding="20">
-                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" >
+                        <StackPanel  Orientation="Vertical" Padding="20" Spacing="1">
+                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" CornerRadius="10" >
                                 <Expander.Header>
                                     <TextBlock Text="Type" HorizontalAlignment="Left"/>
                                 </Expander.Header>
@@ -186,29 +185,33 @@
                                     </DropDownButton>
                                 </Expander.Content>
                             </Expander>
-                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" >
+                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" CornerRadius="10" >
                                 <Expander.Header>
                                     <TextBlock Text="File Name" HorizontalAlignment="Left"/>
                                 </Expander.Header>
                                 <Expander.Content>
                                     <StackPanel Orientation="Vertical" Spacing="5">
-                                    <TextBox Width="200"/>
+                                        <TextBox x:Name="FilenameFilterTextbox"  Text="{Binding FilterFilename, Mode=TwoWay}" 
+                                                  Width="200" PlaceholderText="Search by title"
+                                                  TextChanged="TitleFilterBox_TextChanged"/>
                                     <Button HorizontalAlignment="Right"  Content="Confirm"/>
                                     </StackPanel>
                                 </Expander.Content>
                             </Expander>
-                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" >
+                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" CornerRadius="10" >
                                 <Expander.Header>
-                                    <TextBlock Text="Keyword" HorizontalAlignment="Left"/>
+                                    <TextBlock Text="Keywords" HorizontalAlignment="Left"/>
                                 </Expander.Header>
                                 <Expander.Content>
                                     <StackPanel Orientation="Vertical" Spacing="5">
-                                        <TextBox Width="200"/>
+                                        <TextBox x:Name="KeywordsFilterTextbox"  Text="{Binding FilterText, Mode=TwoWay}" 
+                                                 Width="200" PlaceholderText="Search by Keywords"
+                                                 TextChanged="KeywordsFilterBox_TextChanged"/>
                                         <Button HorizontalAlignment="Right"  Content="Confirm"/>
                                     </StackPanel>
                                 </Expander.Content>
                             </Expander>
-                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" >
+                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" CornerRadius="10" >
                                 <Expander.Header>
                                     <TextBlock Text="Description" HorizontalAlignment="Left"/>
                                 </Expander.Header>
@@ -219,7 +222,7 @@
                                     </StackPanel>
                                 </Expander.Content>
                             </Expander>
-                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" >
+                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" CornerRadius="10" >
                                 <Expander.Header>
                                     <TextBlock Text="Rating" HorizontalAlignment="Left"/>
                                 </Expander.Header>
