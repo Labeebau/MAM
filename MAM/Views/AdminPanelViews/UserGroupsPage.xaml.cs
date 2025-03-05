@@ -238,8 +238,8 @@ namespace MAM.Views.AdminPanelViews
                 if (userGroup != null)
                 {
                     var userGrpDict = new Dictionary<string, object>() { { "@GroupId", userGroup.UserGroupId } };
-                    int id = 0;
-                    if (dataAccess.ExecuteNonQuery($"DELETE FROM user_group WHERE group_id=@GroupId", userGrpDict, out id) == 1)
+                    int id = 0, errorCode = 0 ;
+                    if (dataAccess.ExecuteNonQuery($"DELETE FROM user_group WHERE group_id=@GroupId", userGrpDict, out id,out errorCode) == 1)
                         UserGroupsList.Remove(userGroup);
                 }
             }
@@ -255,8 +255,8 @@ namespace MAM.Views.AdminPanelViews
 
             query = $"insert into user_group(group_name,ad_group,active)" +
                 $"values(@UserGroupName,@IsAdGroup,@IsActive)";
-            int newUserGroupId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId);
+            int newUserGroupId = 0,errorCode=0;
+            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
             return newUserGroupId;
         }
 
@@ -320,8 +320,8 @@ namespace MAM.Views.AdminPanelViews
             parameters.Add("@UserId", SelectedUser.UserId);
             parameters.Add("@GroupId", SelectedUserGroup.UserGroupId);
             query = $"insert into user_roles(user_id,group_id) values(@UserId,@GroupId)";
-            int newUserGroupId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId);
+            int newUserGroupId = 0, errorCode = 0;
+            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
             return newUserGroupId;
         }
 

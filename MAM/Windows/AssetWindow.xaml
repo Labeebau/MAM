@@ -416,7 +416,7 @@
                                PointerExited="HorizontalSplitter_PointerExited"/>
 
                         <Border x:Name="BottomPanel"   Width="{Binding ElementName=RightPanel, Path=ActualWidth}" 
-                            Height="200"
+                            Height="900"
                             Canvas.Left="0"    Canvas.Top="615"  >
                             <StackPanel  Orientation="Vertical">
                                 <NavigationView x:Name="navMetadata" 
@@ -437,7 +437,7 @@
                                         <NavigationViewItem  Content="Acc.Date" Tag="AccDate" />
                                     </NavigationView.MenuItems>
                                     <ScrollViewer>
-                                        <Frame x:Name="ContentFrame" IsTabStop="True" Height="auto" CornerRadius="5" >
+                                        <Frame x:Name="ContentFrame" IsTabStop="True" Height="800" CornerRadius="5" CanBeScrollAnchor="True" >
                                         </Frame>
                                     </ScrollViewer>
                                 </NavigationView>

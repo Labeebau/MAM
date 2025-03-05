@@ -57,8 +57,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
             string query = string.Empty;
             parameters.Add("@MetadataGroup", metadataGroup.MetadataGroupName);
             query = $"insert into metadata_groups(group_name) values(@MetadataGroup) ";
-            int newMetadataId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId);
+            int newMetadataId = 0, errorCode = 0;
+            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode);
             return newMetadataId;
         }
         private void Add_Click(object sender, RoutedEventArgs e)
@@ -114,7 +114,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
                 if (metadataGroup != null)
                 {
                     string errorMessage = string.Empty;
-                    if (dataAccess.Delete("metadata_groups", "group_id", metadataGroup.MetadataGroupId, out errorMessage))
+                    int errorCode = 0;
+                    if (dataAccess.Delete("metadata_groups", "group_id", metadataGroup.MetadataGroupId, out errorMessage, out errorCode))
                         MetadataGroupList.Remove(metadataGroup);
                     else
                     {

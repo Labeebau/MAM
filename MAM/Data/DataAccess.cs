@@ -1,12 +1,8 @@
 ﻿using MAM.Views.AdminPanelViews;
 using MySql.Data.MySqlClient;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace MAM.Data
 {
@@ -46,7 +42,7 @@ namespace MAM.Data
                 connection.Close();
             }
         }
-        public int GetId(string query,Dictionary<string,object> parameters=null)
+        public int GetId(string query, Dictionary<string, object> parameters = null)
         {
             int id = -1;
             using (MySqlConnection connection = OpenConnection())
@@ -61,7 +57,7 @@ namespace MAM.Data
                             command.Parameters.AddWithValue(param.Key, param.Value);
                         }
                         var res = command.ExecuteScalar();
-                        if(res!=null)
+                        if (res != null)
                             id = Convert.ToInt32(res);
                     }
                     catch (Exception ex)
@@ -92,7 +88,7 @@ namespace MAM.Data
                         }
                         using (MySqlDataReader reader = command.ExecuteReader())
                         {
-                            if(reader.HasRows)
+                            if (reader.HasRows)
                                 dataTable.Load(reader);
                         }
                     }
@@ -155,7 +151,7 @@ namespace MAM.Data
             return UserList;
         }
 
-        public  List<string> GetUserGroups()
+        public List<string> GetUserGroups()
         {
             List<string> UserGroupList = new List<string>();
             string query = "select group_name from user_group";
@@ -189,10 +185,10 @@ namespace MAM.Data
 
         // Method to execute non-query operations (INSERT/UPDATE/DELETE)
 
-        public int ExecuteNonQuery(string query, Dictionary<string, object> parameters, out int lastInsertedId)
+        public int ExecuteNonQuery(string query, Dictionary<string, object> parameters, out int lastInsertedId,out int errorCode)
         {
-            int affectedRows=0;
-            lastInsertedId=-1;
+            int affectedRows = 0;
+            lastInsertedId = -1;
             using (MySqlConnection connection = OpenConnection())
             {
                 using (MySqlCommand command = new MySqlCommand(query, connection))
@@ -207,6 +203,7 @@ namespace MAM.Data
                         affectedRows = command.ExecuteNonQuery();
                         lastInsertedId = Convert.ToInt32(command.LastInsertedId);
                         CloseConnection(connection);
+                        errorCode = 0;
                         return affectedRows;
                     }
                     catch (MySqlException ex)
@@ -214,18 +211,27 @@ namespace MAM.Data
                         if (ex.Number == 1062)  // Error codes for primary key and unique constraint violations
                         {
                             Console.WriteLine("Duplicate primary key error: Primary key or unique constraint violation.");
+                            errorCode = 1062;
                             return -1;
 
+                        }
+                        else if (ex.Number == 1451) // Foreign key constraint error
+                        {
+                            Console.WriteLine("Foreign key error: it is referenced in another table.");
+                            errorCode = 1451;
+                            return -1;
                         }
                         else
                         {
                             Console.WriteLine($"A MySQL error occurred: {ex.Message}");
+                            errorCode = -1;
                             return 0;
                         }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"An error occurred: {ex.Message}");
+                        errorCode = -1;
                         return 0;
                     }
                 }
@@ -281,8 +287,8 @@ namespace MAM.Data
                 queryBuilder.Length -= 2; // Remove last comma and space
                 queryBuilder.Append($" WHERE {idColumn} = @Id");
                 columnValues.Add("@Id", idValue);
-                int id = 0;
-                ExecuteNonQuery(queryBuilder.ToString(), columnValues, out id);
+                int id = 0,errorCode=0;
+                ExecuteNonQuery(queryBuilder.ToString(), columnValues, out id,out errorCode);
 
             }
             catch (Exception ex)
@@ -292,9 +298,9 @@ namespace MAM.Data
 
             return Task.CompletedTask;
         }
-        public bool Delete(string table, string param, object value,out string errorMessage)
+        public bool Delete(string table, string param, object value, out string errorMessage,out int errorCode)
         {
-            errorMessage=string.Empty;
+            errorMessage = string.Empty;
             string query = $"delete from {table} where {param}={value};";
             using (MySqlConnection connection = OpenConnection())
             {
@@ -306,14 +312,22 @@ namespace MAM.Data
 
                         int rowsAffected = command.ExecuteNonQuery();
                         CloseConnection(connection);
-
-                        return rowsAffected> 0;
+                        errorCode = 0;
+                        return rowsAffected > 0;
+                    }
+                    catch (MySqlException ex) when (ex.Number == 1451) // Foreign key constraint error
+                    {
+                        errorMessage = ex.Message;
+                        Debug.WriteLine($"Error executing query: {ex.Message}");
+                        errorCode = 1451;
+                        return false;
                     }
                     catch (Exception ex)
                     {
                         errorMessage = ex.Message;
                         Debug.WriteLine($"Error executing query: {ex.Message}");
-                        throw;
+                        errorCode = -1;
+                        return false;
                     }
 
                 }

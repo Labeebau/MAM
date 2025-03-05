@@ -68,8 +68,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
             parameters.Add("@Metadata", metadata.Metadata);
             parameters.Add("@MetadataType", metadata.MetadataType);
             query = $"insert into metadata(metadata_name,metadata_type) values(@Metadata,@MetadataType) ";
-            int newMetadataId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId);
+            int newMetadataId = 0, errorCode = 0;
+            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode);
             return newMetadataId;
         }
         private void Add_Click(object sender, RoutedEventArgs e)
@@ -126,7 +126,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
                 if (metadata != null)
                 {
                     string errorMessage = string.Empty;
-                    if (dataAccess.Delete("metadata", "metadata_id", metadata.MetadataId,out errorMessage))
+                    int errorCode = 0;
+                    if (dataAccess.Delete("metadata", "metadata_id", metadata.MetadataId,out errorMessage, out errorCode))
                         MetadataList.Remove(metadata);
                     else
                     {

@@ -95,6 +95,7 @@ namespace MAM.Windows
                     ViewModel.Media = mediaPlayerItemList.FirstOrDefault(m => m.ProxyPath == ViewModel.Media.ProxyPath);
                     var file =await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
                     await GetAllMetadataAsync(file);
+                    navMetadata.SelectedItem = navMetadata.MenuItems[0];
                     navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(), ViewModel.Metadata);
                 }
             };
@@ -700,7 +701,7 @@ namespace MAM.Windows
         private readonly List<(string Tag, Type Page)> _pages = new List<(string Tag, Type Page)>
         {
             ("FileInfo",typeof(FileInfoPage)),
-            ("Categories",typeof(CategoriesPage)),
+            ("Categories",typeof(AssetCategoriesPage)),
             ("Collection",typeof(CollectionPage)),
             ("Tags",typeof(TagsPage))
         };
@@ -736,7 +737,7 @@ namespace MAM.Windows
 
 
             var navItemTag = args.InvokedItemContainer.Tag.ToString();
-            navMetadata_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo, ViewModel.Metadata);
+            navMetadata_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo, ViewModel);
         }
         private void navMetadata_Navigate(string navItemTag, NavigationTransitionInfo recommendedNavigationTransitionInfo, object parameter)
         {
@@ -771,7 +772,7 @@ namespace MAM.Windows
             ////	// If navigation occurs on SelectionChanged, this isn't needed.
             ////	// Because we use ItemInvoked to navigate, we need to call Navigate
             ////	// here to load the home page.
-            navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(), ViewModel.Metadata);
+            navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(), ViewModel);
         }
 
 
@@ -1164,7 +1165,7 @@ namespace MAM.Windows
             if (filePath != null)
             {
                 ViewModel.Metadata = await GetVideoProperies(filePath);
-                ViewModel.Metadata.Add("Path", ViewModel.Media.MediaSource.LocalPath);
+                //ViewModel.Metadata.Add("Path", ViewModel.Media.MediaSource.LocalPath);
                 await LoadTrimmedClipsWithThumbnailsAsync(filePath);
             }
         }

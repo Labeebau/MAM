@@ -838,10 +838,10 @@ namespace MAM.Windows
                         "AND duration = @Duration"+
                         ") LIMIT 1";
 
-            int newAssetId = 0;
+            int newAssetId = 0, errorCode = 0;
             try
             {
-                if (dataAccess.ExecuteNonQuery(query, parameters, out newAssetId) == 0)
+                if (dataAccess.ExecuteNonQuery(query, parameters, out newAssetId, out errorCode) == 0)
                 {
                     await ShowContentDialogAsync("Asset already exists.");
                     return false;

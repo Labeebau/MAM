@@ -148,8 +148,8 @@ namespace MAM.Views.AdminPanelViews
                 if (user != null)
                 {
                     var userDict = new Dictionary<string, object>() { { "@UserId", user.UserId } };
-                    int id = 0;
-                    if(dataAccess.ExecuteNonQuery($"DELETE FROM user WHERE user_id=@UserId", userDict, out id)==1) 
+                    int id = 0, errorCode = 0 ;
+                    if(dataAccess.ExecuteNonQuery($"DELETE FROM user WHERE user_id=@UserId", userDict, out id, out errorCode)==1) 
                         FilteredUserList.Remove(user);
                 }
                 
@@ -220,8 +220,8 @@ namespace MAM.Views.AdminPanelViews
 
             query = $"insert into user(first_name,last_name,email,user_name,password,ad_user,active)" +
                 $"values(@FirstName,@LastName,@Email,@UserName,@Password,@ADUser,@Active)";
-            int newUserId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters,out newUserId);
+            int newUserId = 0,errorCode=0;
+            dataAccess.ExecuteNonQuery(query, parameters,out newUserId, out errorCode);
             return newUserId;
         }
 

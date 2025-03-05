@@ -262,8 +262,8 @@ namespace MAM.Views.AdminPanelViews
                     "SELECT 1 " +
                     "FROM group_permissions " +
                     $"WHERE group_id = {groupId} AND permission_id = {permissionId})";
-            int newUserGroupId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId);
+            int newUserGroupId = 0,errorCode = 0;
+            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
             return newUserGroupId;
         }
         private int DeletePermission(int groupId, int permissionId)
@@ -273,8 +273,8 @@ namespace MAM.Views.AdminPanelViews
             parameters.Add("@GroupId", groupId);
             parameters.Add("@PermissionId", permissionId);
             query = $"DELETE FROM group_permissions where group_id={groupId} AND permission_id={permissionId} ";
-            int newUserGroupId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId);
+            int newUserGroupId = 0, errorCode = 0;
+            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
             return newUserGroupId;
         }
         private void SaveUserGroupRights_Click(object sender, RoutedEventArgs e)

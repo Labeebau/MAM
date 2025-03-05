@@ -57,7 +57,6 @@
     <None Remove="UserControls\CustomMediaCopy.xaml" />
     <None Remove="UserControls\CustomThumb.xaml" />
     <None Remove="UserControls\SplitContainer.xaml" />
-    <None Remove="Views\AdminPanelViews\Metadata\Categories.xaml" />
     <None Remove="Views\AdminPanelViews\Metadata\MetadataGroups.xaml" />
     <None Remove="Views\AdminPanelViews\Metadata\SupportedFormats.xaml" />
     <None Remove="Views\HistoryPage.xaml" />
@@ -194,7 +193,7 @@
     <Page Update="Views\MediaBinViews\AssetMetadata\TagsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Views\MediaBinViews\AssetMetadata\CategoriesPage.xaml">
+    <Page Update="Views\MediaBinViews\AssetMetadata\AssetCategoriesPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="Views\MediaBinViews\AssetMetadata\CollectionPage.xaml">

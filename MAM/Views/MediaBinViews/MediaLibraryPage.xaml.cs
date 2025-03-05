@@ -647,7 +647,8 @@ namespace MAM.Views.MediaBinViews
             parameters.Add("@Asset_name", assetName);
             int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and asset_path = @Asset_path;", parameters);
             parameters.Add("@Asset_id", id);
-            if (dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters, out id) <= 0)
+            int errorCode = 0;
+            if (dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters, out id, out errorCode) <= 0)
             {
                 var dialog = new ContentDialog
                 {

@@ -75,8 +75,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
             parameters.Add("@description", Format.Description);
             query = $"INSERT INTO format (file_id,extension,description) "+
                 $"SELECT file_id,'{Format.Extension}','{Format.Description}' FROM file_type WHERE file_type='{Format.Type}'; ";
-            int newMetadataId = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId);
+            int newMetadataId = 0, errorCode = 0;
+            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode);
             return newMetadataId;
         }
         private void Add_Click(object sender, RoutedEventArgs e)
@@ -134,7 +134,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
                 if (format != null)
                 {
                     string errorMessage = string.Empty;
-                    if (dataAccess.Delete("format", "format_id", format.FormatId, out errorMessage))
+                    int errorCode = 0;
+                    if (dataAccess.Delete("format", "format_id", format.FormatId, out errorMessage, out errorCode))
                         FormatList.Remove(format);
                     else
                     {

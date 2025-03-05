@@ -4,25 +4,62 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:MAM.Views.MediaBinViews.AssetMetadata"
+    xmlns:local1="using:MAM.Utilities"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <local1:BooleanToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+    </Page.Resources>
 
-    <Grid Width="800" Height="300" HorizontalAlignment="Left" Padding="10">
-        <StackPanel Orientation="Horizontal">
-        <AutoSuggestBox 
-         x:Name="KeywordsAutoSuggestBox"
-            Width="200"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-         PlaceholderText="Type to search..."
-         TextChanged="MyAutoSuggestBox_TextChanged"
-         SuggestionChosen="MyAutoSuggestBox_SuggestionChosen"/>
-        <Button x:Name="AddButton" Style="{StaticResource SmallIconButton}" 
-          Click="AddKeyword_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadius="3">
-            <FontIcon  Glyph="&#x2b;" />
-        </Button>
+    <StackPanel Width="600" Height="300" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10">
+
+
+
+        <StackPanel x:Name="TagsPanel" Orientation="Horizontal" Margin="0,10,0,20">
+            <ListView ItemsSource="{Binding AssetTags,Mode=OneWay}" 
+                      BorderBrush="Gray" BorderThickness="1" CornerRadius="5" 
+                      SelectionChanged="ListView_SelectionChanged"
+                      Margin="0,0,5,0">
+                <ListView.ItemsPanel >
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:Tag">
+                        <TextBlock Text="{Binding TagName}" Margin="10"  />
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <Button x:Name="AddTagToAssetButton" Style="{StaticResource SmallIconButton}" 
+        Click="AddTagToAsset_Click" VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Add tag to asset"
+                Visibility="{x:Bind HasTags, Converter={StaticResource CountToVisibilityConverter}}">
+                <FontIcon  Glyph="&#x2b;" />
+            </Button>
+            <Button Style="{StaticResource SmallIconButton}"  Click="RemoveTagFromAsset_Click" 
+         VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Remove category"
+                Visibility="{x:Bind HasTags, Converter={StaticResource CountToVisibilityConverter}}">
+                <FontIcon  Glyph="&#xf2ed;" FontSize="12"/>
+            </Button>
         </StackPanel>
-    </Grid>
+        <StackPanel Orientation="Horizontal">
+            <AutoSuggestBox x:Name="KeywordsAutoSuggestBox"
+                Width="200"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                PlaceholderText="Type to search..."
+                Text="{Binding NewTag.TagName, Mode=TwoWay}"
+                ItemsSource="{Binding Suggestions}"
+                TextChanged="MyAutoSuggestBox_TextChanged"
+                SuggestionChosen="MyAutoSuggestBox_SuggestionChosen"/>
+
+            <Button x:Name="AddTagButton" Style="{StaticResource SmallIconButton}" 
+                    Click="AddTag_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadius="3" ToolTipService.ToolTip="Add Tag">
+                <FontIcon  Glyph="&#x2b;" />
+            </Button>
+        </StackPanel>
+    </StackPanel>
 </Page>

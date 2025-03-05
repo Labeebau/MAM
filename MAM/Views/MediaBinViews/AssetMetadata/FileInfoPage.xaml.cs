@@ -1,5 +1,7 @@
 using MAM.Data;
 using MAM.Utilities;
+using MAM.Views.AdminPanelViews.Metadata;
+using MAM.Windows;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using System.Collections.ObjectModel;
@@ -128,10 +130,11 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is Dictionary<string, object> fileInfo)
+            if (e.Parameter is MediaPlayerViewModel viewModel)
             {
-                mediaPath = fileInfo["Path"].ToString();
-                FileInfo = new ObservableCollection<KeyValuePair<string, object>>(fileInfo);
+                mediaPath =viewModel.Media.MediaSource.LocalPath.ToString();
+                if(viewModel.Metadata!=null)
+                FileInfo = new ObservableCollection<KeyValuePair<string, object>>(viewModel.Metadata);
             }
             else
             {
