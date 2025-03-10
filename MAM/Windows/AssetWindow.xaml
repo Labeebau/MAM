@@ -45,7 +45,7 @@
             </ScrollViewer>
 
 
-            <StackPanel x:Name="MainCanvas" Grid.Row="1" Orientation="Horizontal"   Height="820" Width="1300"  
+            <StackPanel x:Name="MainCanvas" Grid.Row="1" Orientation="Horizontal"   Height="820" Width="1900"  
                         Background="{StaticResource ThemePrimaryBackgroundColor }" 
                         HorizontalAlignment="Left"    SizeChanged="MainCanvas_SizeChanged" 
                        >
@@ -304,7 +304,7 @@
                     </Grid>
                 </Border>
                 <!-- VerticalSplitter (Grid as the draggable divider) -->
-                <local:NewGrid x:Name="VerticalSplitter" 
+                <local:NewGrid x:Name="CenterVerticalSplitter" 
                                Canvas.Left="602"
                                Width="10" 
                                Height="{Binding ElementName=MainCanvas, Path=ActualHeight}"
@@ -314,13 +314,13 @@
                                PointerMoved="VerticalSplitter_PointerMoved" 
                                PointerExited="VerticalSplitter_PointerExited" 
                                PointerEntered="VerticalSplitter_PointerEntered"/>
-                <StackPanel x:Name="RightPanel" Orientation="Vertical" Canvas.Left="614" 
+                <StackPanel x:Name="CenterPanel" Orientation="Vertical" Canvas.Left="614" 
                             Height="{Binding ElementName=MainCanvas, Path=ActualHeight}"
                             Width="670"
                             HorizontalAlignment="Left" 
                              BorderBrush="Gray" BorderThickness="1" CornerRadius="5">
                     <!--BorderBrush="Gray" BorderThickness="1" CornerRadius="5"  >-->
-                    <Canvas x:Name="RightCanvas" Background="{StaticResource ThemePrimaryBackgroundColor }" Canvas.Left="620" 
+                    <Canvas x:Name="CenterCanvas" Background="{StaticResource ThemePrimaryBackgroundColor }" Canvas.Left="620" 
                             Width="666"
                             Height="800">
                         <Border x:Name="TopPanel"
@@ -406,7 +406,7 @@
                         <local:NewGrid x:Name="HorizontalSplitter" 
                                Canvas.Left="0"
                                    Canvas.Top="602"
-                               Width="{Binding ElementName=RightPanel, Path=ActualWidth}" 
+                               Width="{Binding ElementName=CenterPanel, Path=ActualWidth}" 
                                Height="10"
                                Background="{StaticResource ThemeSecondaryBackgroundColor}"
                                IsHitTestVisible="True" 
@@ -415,7 +415,7 @@
                                PointerEntered="HorizontalSplitter_PointerEntered"
                                PointerExited="HorizontalSplitter_PointerExited"/>
 
-                        <Border x:Name="BottomPanel"   Width="{Binding ElementName=RightPanel, Path=ActualWidth}" 
+                        <Border x:Name="BottomPanel"   Width="{Binding ElementName=CenterPanel, Path=ActualWidth}" 
                             Height="900"
                             Canvas.Left="0"    Canvas.Top="615"  >
                             <StackPanel  Orientation="Vertical">
@@ -447,7 +447,32 @@
                     </Canvas>
                 </StackPanel>
 
-            </StackPanel>
+                <!--<local:NewGrid x:Name="VerticalSplitter" 
+                               Canvas.Left="1286"
+                               Width="10" 
+                               Height="{Binding ElementName=MainCanvas, Path=ActualHeight}"
+                               Background="{StaticResource ThemeSecondaryBackgroundColor}"
+                               IsHitTestVisible="True" 
+                               PointerPressed="VerticalSplitter_PointerPressed" 
+                               PointerMoved="VerticalSplitter_PointerMoved" 
+                               PointerExited="VerticalSplitter_PointerExited" 
+                               PointerEntered="VerticalSplitter_PointerEntered"/>
+                    <StackPanel x:Name="RightPanel" Orientation="Vertical" Canvas.Left="1290" 
+                                Height="{Binding ElementName=MainCanvas, Path=ActualHeight}"
+                                Width="300"
+                                HorizontalAlignment="Right" 
+                                BorderBrush="Gray" BorderThickness="1" CornerRadius="5">
+                        <Canvas x:Name="RightCanvas" Background="{StaticResource ThemePrimaryBackgroundColor }" Canvas.Left="1290" 
+                                Width="300"
+                                Height="800">
+                            <Border 
+                                    Width="666" Canvas.Left="0" Canvas.Top="0" Height="600">
+                                <Grid/>
+                                </Border>
+                                </Canvas>
+                    </StackPanel>-->
+                </StackPanel>
+
 
         </Grid>
     </Grid>

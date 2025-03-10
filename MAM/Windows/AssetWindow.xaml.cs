@@ -805,8 +805,8 @@ namespace MAM.Windows
             isDraggingVerticalSplitter = true;
             initialPointerX = e.GetCurrentPoint(MainCanvas).Position.X;
             // Capture the pointer so we continue receiving events even when the pointer leaves the splitter
-            VerticalSplitter.CapturePointer(e.Pointer);
-            VerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+            CenterVerticalSplitter.CapturePointer(e.Pointer);
+            CenterVerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
 
         private void VerticalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
@@ -824,16 +824,16 @@ namespace MAM.Windows
                     LeftPanel.Width += offsetX;
 
                     // Move Vertical Splitter
-                    Canvas.SetLeft(VerticalSplitter, Canvas.GetLeft(VerticalSplitter) + offsetX);
+                    Canvas.SetLeft(CenterVerticalSplitter, Canvas.GetLeft(CenterVerticalSplitter) + offsetX);
 
                     // Move Right Panel
                     //if (RightPanel.Width > 10)
                     //{
-                    Canvas.SetLeft(RightPanel, Canvas.GetLeft(RightPanel) + offsetX);
-                    double left = Canvas.GetLeft(RightPanel);
-                    if (MainCanvas.ActualWidth - Canvas.GetLeft(RightPanel) > 10)
+                    Canvas.SetLeft(CenterPanel, Canvas.GetLeft(CenterPanel) + offsetX);
+                    double left = Canvas.GetLeft(CenterPanel);
+                    if (MainCanvas.ActualWidth - Canvas.GetLeft(CenterPanel) > 10)
                     {
-                        RightPanel.Width = MainCanvas.ActualWidth - Canvas.GetLeft(RightPanel);
+                        CenterPanel.Width = MainCanvas.ActualWidth - Canvas.GetLeft(CenterPanel);
                         //}
                         initialPointerX = newX;
                     }
@@ -866,11 +866,11 @@ namespace MAM.Windows
 
                     // Move Horizontal Splitter
                     Canvas.SetTop(HorizontalSplitter, Canvas.GetTop(HorizontalSplitter) + offsetY);
-                    if (Canvas.GetTop(BottomPanel) < RightPanel.ActualHeight)
+                    if (Canvas.GetTop(BottomPanel) < CenterPanel.ActualHeight)
                     {
                         // Move Bottom Panel
                         Canvas.SetTop(BottomPanel, Canvas.GetTop(BottomPanel) + offsetY);
-                        BottomPanel.Height = RightPanel.ActualHeight - Canvas.GetTop(BottomPanel);
+                        BottomPanel.Height = CenterPanel.ActualHeight - Canvas.GetTop(BottomPanel);
                     }
                     initialPointerY = newY;
                 }
@@ -883,16 +883,16 @@ namespace MAM.Windows
             isDraggingHorizontalSplitter = false;
 
             // Release the pointer capture
-            VerticalSplitter.ReleasePointerCapture(e.Pointer);
+            CenterVerticalSplitter.ReleasePointerCapture(e.Pointer);
             HorizontalSplitter.ReleasePointerCapture(e.Pointer);
-            VerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+            CenterVerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
             HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
         }
 
 
         private void VerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            VerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+            CenterVerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
 
         private void HorizontalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
@@ -901,7 +901,7 @@ namespace MAM.Windows
         }
         private void VerticalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            VerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+            CenterVerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
         }
         private void HorizontalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
         {
@@ -934,13 +934,13 @@ namespace MAM.Windows
         {
             // Adjust the height of Left Panel, Vertical Splitter, Right Panel when window resizes
             LeftPanel.Height = MainCanvas.ActualHeight;
-            VerticalSplitter.Height = MainCanvas.ActualHeight;
-            RightPanel.Height = MainCanvas.ActualHeight;
+            CenterVerticalSplitter.Height = MainCanvas.ActualHeight;
+            CenterPanel.Height = MainCanvas.ActualHeight;
 
             // Adjust width of Top Panel, Horizontal Splitter, and Bottom Panel
-            TopPanel.Width = RightPanel.ActualWidth;
-            HorizontalSplitter.Width = RightPanel.ActualWidth;
-            BottomPanel.Width = RightPanel.ActualWidth;
+            TopPanel.Width = CenterPanel.ActualWidth;
+            HorizontalSplitter.Width = CenterPanel.ActualWidth;
+            BottomPanel.Width = CenterPanel.ActualWidth;
         }
         private void OnLeftThumbPointerPressed(object sender, PointerRoutedEventArgs e)
         {

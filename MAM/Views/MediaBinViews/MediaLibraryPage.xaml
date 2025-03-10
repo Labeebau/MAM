@@ -77,7 +77,7 @@
                                 <FontIcon  Glyph="&#xf002;" />
                             </Button>
                         </StackPanel>
-                       
+
                         <StackPanel Grid.Row="2" >
                             <TreeView x:Name="FileTreeView"
                                       ItemsSource="{x:Bind FileSystemItems, Mode=OneWay}"
@@ -149,7 +149,7 @@
                         <!--</Grid>-->
                     </Grid>
                 </Border>
-                
+
                 <Rectangle x:Name="RightVerticalSplitter" Width="10" Height="700" 
        Fill="{StaticResource ThemeSecondaryBackgroundColor}"  
        Canvas.Left="1550"   IsHitTestVisible="True" Canvas.ZIndex="4" 
@@ -172,20 +172,20 @@
                                     <TextBlock Text="Type" HorizontalAlignment="Left"/>
                                 </Expander.Header>
                                 <Expander.Content>
-                                    <DropDownButton x:Name="TypeDropDown" Content="Type" >
+                                    <DropDownButton x:Name="TypeDropDown" Content="Select Type"  >
                                         <DropDownButton.Flyout>
                                             <MenuFlyout Placement="Bottom"  >
-                                                <MenuFlyoutItem Text="Audio" Click="MenuFlyoutItem_Click"/>
-                                                <MenuFlyoutItem Text="Documents" Click="MenuFlyoutItem_Click"/>
-                                                <MenuFlyoutItem Text="Image" Click="MenuFlyoutItem_Click"/>
-                                                <MenuFlyoutItem Text="Video" Click="MenuFlyoutItem_Click"/>
+                                                <MenuFlyoutItem Text="Audio" Click="TypeMenuFlyoutItem_Click"/>
+                                                <MenuFlyoutItem Text="Documents" Click="TypeMenuFlyoutItem_Click"/>
+                                                <MenuFlyoutItem Text="Image" Click="TypeMenuFlyoutItem_Click"/>
+                                                <MenuFlyoutItem Text="Video" Click="TypeMenuFlyoutItem_Click"/>
 
                                             </MenuFlyout>
                                         </DropDownButton.Flyout>
                                     </DropDownButton>
                                 </Expander.Content>
                             </Expander>
-                            
+
                             <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" CornerRadius="10" >
                                 <Expander.Header>
                                     <TextBlock Text="File Name" HorizontalAlignment="Left"/>
@@ -193,9 +193,27 @@
                                 <Expander.Content>
                                     <StackPanel Orientation="Vertical" Spacing="5">
                                         <TextBox x:Name="FilenameFilterTextbox"  Text="{Binding FilterFilename, Mode=TwoWay}" 
-                                                  Width="200" PlaceholderText="Search by title"
-                                                  TextChanged="TitleFilterBox_TextChanged"/>
-                                    <Button HorizontalAlignment="Right"  Content="Confirm"/>
+                                                  Width="200" PlaceholderText="Search by title"/>
+                                        <Button HorizontalAlignment="Right"  Content="Confirm" Click="TitleButton_Click"/>
+                                    </StackPanel>
+                                </Expander.Content>
+                            </Expander>
+                            <Expander Width="250" HorizontalAlignment="Left" HorizontalContentAlignment="Left" CornerRadius="10" Expanding="Expander_Expanding" >
+                                <Expander.Header>
+                                    <TextBlock Text="Tag" HorizontalAlignment="Left"/>
+                                </Expander.Header>
+                                <Expander.Content>
+                                    <StackPanel Orientation="Vertical" Spacing="5">
+
+                                        <AutoSuggestBox x:Name="TagAutoSuggestBox"
+                                                        Width="200"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Top"
+                                                        PlaceholderText="Type to search..."
+                                                        ItemsSource="{Binding TagsList}"
+                                                        TextChanged="MyAutoSuggestBox_TextChanged"
+                                                        SuggestionChosen="MyAutoSuggestBox_SuggestionChosen"/>
+                                        <Button HorizontalAlignment="Right"  Content="Confirm" Click="TagButton_Click"/>
                                     </StackPanel>
                                 </Expander.Content>
                             </Expander>
@@ -229,18 +247,19 @@
                                 </Expander.Header>
                                 <Expander.Content>
                                     <StackPanel Orientation="Vertical" Spacing="5">
-                                        <TextBox Width="200"/>
-                                        <Button HorizontalAlignment="Right"  Content="Confirm"/>
+                                        <RatingControl  AutomationProperties.Name="Simple RatingControl" IsClearEnabled="True"
+                                                       Caption="Up" ValueChanged="RatingControl_ValueChanged" />
+                                        <Button HorizontalAlignment="Right"  Content="Confirm" Click="RatingButton_Click"/>
                                     </StackPanel>
                                 </Expander.Content>
                             </Expander>
                         </StackPanel>
 
-                       
+
 
                     </Grid>
                 </Border>
-                
+
                 <Rectangle x:Name="HorizontalSplitter"  Width="1850" Height="10" Fill="{StaticResource ThemeSecondaryBackgroundColor}"   
                        Canvas.Top="700" IsHitTestVisible="True" Canvas.ZIndex="2" 
                          PointerPressed="HorizontalSplitter_PointerPressed" 

@@ -1,23 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using MAM.Data;
+using MAM.Utilities;
+using MAM.Windows;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using MAM.Data;
-using MAM.ViewModels;
-using MAM.Windows;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
-using MAM.Utilities;
+using System.Runtime.CompilerServices;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -27,7 +17,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class TagsPage : Page
+    public sealed partial class TagsPage : Page,INotifyPropertyChanged
     {
         //private List<string> suggestions = new List<string>
         //{
@@ -36,11 +26,26 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         private DataAccess dataAccess = new();
         private DataTable tagTable;
 
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public MediaPlayerViewModel Asset { get; private set; }
         public ObservableCollection<Tag> AllTags { get; private set; } = new();
         public TagViewModel ViewModel { get; set; }
-
-        public bool HasTags { get; set; }
+        public Tag SelectedAssetTag { get; set; }
+        private bool hasTags = false;
+        public bool HasTags 
+        {
+            get { return hasTags; }
+            set 
+            { 
+                hasTags = value;
+                OnPropertyChanged(nameof(HasTags)); 
+            }
+        }
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
         public TagsPage()
         {
             this.InitializeComponent();
@@ -58,12 +63,13 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         private void MyAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
         {
-            if (args.SelectedItem is string selectedTag)
+            if (args.SelectedItem is Tag selectedTag)
             {
-                ViewModel.NewTag.TagName = selectedTag; // Set selected tag
+                ViewModel.NewTag.TagName = selectedTag.TagName; // Set selected tag
+                ViewModel.NewTag.TagId =selectedTag.TagId;
             }
         }
-       
+
         private void AddKeyword_Click(object sender, RoutedEventArgs e)
         {
 
@@ -77,9 +83,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             {
                 Asset = (MediaPlayerViewModel)viewmodel;
                 GetAllTags();
-                ViewModel._allTags=AllTags.Select(tag=>tag.TagName).ToList();
                 GetAssetTags();
-                HasTags =ViewModel.AssetTags.Any();
+               
             }
         }
 
@@ -96,6 +101,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                     TagName = row[1].ToString(),
                 });
             }
+            ViewModel._allTags = AllTags.ToList();
         }
         private void GetAssetTags()
         {
@@ -104,11 +110,13 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             ViewModel.AssetTags.Clear();
             foreach (DataRow row in dt.Rows)
             {
-                ViewModel.AssetTags.Add( new Tag {
+                ViewModel.AssetTags.Add(new Tag
+                {
                     TagId = Convert.ToInt32(row[0]),
                     TagName = row[1].ToString(),
                 });
             }
+            HasTags = ViewModel.AssetTags.Any();
         }
 
 
@@ -220,24 +228,158 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         private void AddTag_Click(object sender, RoutedEventArgs e)
         {
-            if(ViewModel.NewTag.TagName!=null)
-            InsertTag(ViewModel.NewTag.TagName);
+            if (ViewModel.NewTag.TagName != null)
+            {
+                InsertTag(ViewModel.NewTag.TagName);
+                ViewModel.UpdateSuggestions(ViewModel.NewTag.TagName);
+                ViewModel.NewTag = new Tag();
+                GetAllTags();
+            }
         }
 
-        private void RemoveTagFromAsset_Click(object sender, RoutedEventArgs e)
+        private async void RemoveTagFromAsset_Click(object sender, RoutedEventArgs e)
         {
+            await DeleteTagFromAssetAsync();
 
         }
+        private async Task DeleteTagFromAssetAsync()
+        {
+            if (SelectedAssetTag != null)
+            {
+                ContentDialog deleteDialog = new ContentDialog
+                {
+                    Title = "Delete Confirmation",
+                    Content = $"Are you sure you want to delete {SelectedAssetTag.TagName}?",
+                    PrimaryButtonText = "Delete",
+                    CloseButtonText = "Cancel",
+                    DefaultButton = ContentDialogButton.Close,
+                    XamlRoot = this.XamlRoot // Required in WinUI 3 for displaying dialogs
+                };
 
+                // Show the dialog
+                ContentDialogResult result = await deleteDialog.ShowAsync();
+
+                if (result == ContentDialogResult.Primary)
+                {
+                    Dictionary<string, object> parameters = new Dictionary<string, object>();
+                    string query = string.Empty;
+                    parameters.Add("@AssetId", Asset.Media.MediaId);
+                    parameters.Add("@TagName", SelectedAssetTag.TagName);
+                    int newId, errorCode;
+                    string errorMessage = string.Empty;
+                    query = "delete from asset_tag where asset_id = @AssetId and tag_id = (SELECT tag_id FROM tag WHERE tag_name = @TagName LIMIT 1)";
+
+                    if (dataAccess.ExecuteNonQuery(query, parameters, out newId, out errorCode) > 0)
+                    {
+                        ViewModel.AssetTags.Remove(SelectedAssetTag);
+                    }
+                    else
+                    {
+                        var dialog = new ContentDialog
+                        {
+                            Title = "Delete Failed",
+                            Content = string.IsNullOrWhiteSpace(errorMessage)
+                        ? "An unknown error occurred while trying to delete category."
+                        : errorMessage,
+                            CloseButtonText = "OK",
+                            XamlRoot = this.XamlRoot
+                        };
+
+                        await dialog.ShowAsync();
+                    }
+                }
+            }
+            else
+            {
+                var dialog = new ContentDialog
+                {
+
+                    Content = "Select any Tag",
+                    CloseButtonText = "OK",
+                    Height = 10,
+                    XamlRoot = this.XamlRoot
+                };
+                _ = dialog.ShowAsync();
+            }
+        }
+        private async Task DeleteTagAsync()
+        {
+            if (ViewModel.NewTag != null)
+            {
+                ContentDialog deleteDialog = new ContentDialog
+                {
+                    Title = "Delete Confirmation",
+                    Content = $"Are you sure you want to delete {ViewModel.NewTag.TagName}?",
+                    PrimaryButtonText = "Delete",
+                    CloseButtonText = "Cancel",
+                    DefaultButton = ContentDialogButton.Close,
+                    XamlRoot = this.XamlRoot // Required in WinUI 3 for displaying dialogs
+                };
+
+                ContentDialogResult result = await deleteDialog.ShowAsync();
+
+                if (result == ContentDialogResult.Primary)
+                {
+
+                    string errorMessage = string.Empty;
+                    int errorCode = 0;
+                    if (dataAccess.Delete("tag", "tag_id", ViewModel.NewTag.TagId, out errorMessage, out errorCode))
+                    {
+                        AllTags.Remove(ViewModel.NewTag);
+                        GetAllTags();
+                    }
+                    else
+                    {
+                        if (errorCode == 1451)
+                            errorMessage = $"Cannot delete {ViewModel.NewTag.TagName}.  {ViewModel.NewTag.TagName} is assigned to assets ";
+                        var dialog = new ContentDialog
+                        {
+                            Title = "Delete Failed",
+                            Content = string.IsNullOrWhiteSpace(errorMessage)
+                        ? "An unknown error occurred while trying to delete metadata."
+                        : errorMessage,
+                            CloseButtonText = "OK",
+                            XamlRoot = this.XamlRoot // Assuming this code is in a page or window with access to XamlRoot
+                        };
+
+                        await dialog.ShowAsync();
+                    }
+                }
+                else
+                {
+                    var dialog = new ContentDialog
+                    {
+
+                        Content = "Select any Tag",
+                        CloseButtonText = "OK",
+                        Height = 10,
+                        XamlRoot = this.XamlRoot
+                    };
+                    _ = dialog.ShowAsync();
+                }
+            }
+        }
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            SelectedAssetTag = (Tag)((ListView)sender).SelectedItem;
         }
 
         private void AddTagToAsset_Click(object sender, RoutedEventArgs e)
-        { 
-            if(ViewModel.NewTag.TagName!=null)
-            InsertTagToAsset(Asset.Media.MediaId,ViewModel.NewTag.TagName);
+        {
+            if (Asset.Media.MediaId != 0 && ViewModel.NewTag.TagName != null)
+            {
+                InsertTagToAsset(Asset.Media.MediaId, ViewModel.NewTag.TagName);
+                GetAssetTags();
+
+            }
+        }
+
+        private async void RemoveTag_Click(object sender, RoutedEventArgs e)
+        {
+            await DeleteTagAsync();
+            //ViewModel.UpdateSuggestions(ViewModel.NewTag.TagName);
+            ViewModel.NewTag = new Tag();
+            GetAllTags();
         }
     }
     public class Tag : ObservableObject
@@ -284,8 +426,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
     public class TagViewModel : ObservableObject
     {
         private Tag newTag;
-        private ObservableCollection<string> _suggestions;
-        public List<string> _allTags;  // Store all available tags for searching
+        private ObservableCollection<Tag> _suggestions;
+        public List<Tag> _allTags;  // Store all available tags for searching
 
         public Tag NewTag
         {
@@ -293,7 +435,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             set => SetProperty(ref newTag, value);
         }
 
-        public ObservableCollection<string> Suggestions
+        public ObservableCollection<Tag> Suggestions
         {
             get => _suggestions;
             set => SetProperty(ref _suggestions, value);
@@ -303,25 +445,38 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         public TagViewModel()
         {
             NewTag = new Tag();
-            _suggestions = new ObservableCollection<string>();
+            _suggestions = new ObservableCollection<Tag>();
             AssetTags = new ObservableCollection<Tag>();
             // Example list of tags (You can load this from the database)
             //_allTags = new List<string> { "C#", "WinUI", "XAML", "FFmpeg", "Video", "Audio", "Editing" };
         }
-
         public void UpdateSuggestions(string query)
         {
             Suggestions.Clear();
+
             if (!string.IsNullOrWhiteSpace(query))
             {
                 var filteredTags = _allTags
-                    .Where(t => t.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+                    .Where(t => t.TagName.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                foreach (var tag in filteredTags)
+                    Suggestions.Add(tag);
+            }
+        }
+        public void UpdateSuggestions(Tag query)
+        {
+            Suggestions.Clear();
+            if (!string.IsNullOrWhiteSpace(query.TagName))
+            {
+                var filteredTags = _allTags
+                    .Where(tag => tag.TagName.StartsWith(query.TagName, StringComparison.OrdinalIgnoreCase))
                     .ToList();
                 foreach (var tag in filteredTags)
                     Suggestions.Add(tag);
             }
         }
     }
-
+  
 
 }

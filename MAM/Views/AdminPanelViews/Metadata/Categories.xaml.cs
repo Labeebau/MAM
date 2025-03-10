@@ -323,10 +323,7 @@ namespace MAM.Views.AdminPanelViews.Metadata
 
         }
 
-        private void DeleteCategory_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
+      
 
         private void TreeViewItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {

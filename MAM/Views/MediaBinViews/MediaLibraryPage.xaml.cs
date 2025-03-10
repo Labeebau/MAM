@@ -1,6 +1,8 @@
-using MAM.Data;
+﻿using MAM.Data;
 using MAM.UserControls;
 using MAM.Utilities;
+using MAM.ViewModels;
+using MAM.Views.MediaBinViews.AssetMetadata;
 using MAM.Windows;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -12,6 +14,7 @@ using Microsoft.UI.Xaml.Navigation;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
@@ -33,6 +36,8 @@ namespace MAM.Views.MediaBinViews
         private double _originalSplitterPosition;
 
         public ObservableCollection<FileSystemItem> FileSystemItems { get; set; }
+        public ObservableCollection<string> TagsList { get; set; } = new();
+        public ObservableCollection<string> FilteredTags { get; set; } = new();
 
         private readonly List<string> ExcludedFolders = new List<string> { "Proxy" };
 
@@ -385,8 +390,11 @@ namespace MAM.Views.MediaBinViews
                 {
                     MediaLibrary.ProxyFolder = System.IO.Path.Combine(dir, "Proxy");
                     parameters.Add("@Asset_path", dir);
-                    dt = dataAccess.GetData($"select asset_id,asset_name,asset_path,original_path,duration,description,version,type,size,created_user,created_at,updated_user,updated_at from asset where asset_path=@Asset_path", parameters);
-
+                    dt = dataAccess.GetData($"select a.asset_id,a.asset_name,a.asset_path,a.original_path,a.duration,a.description,a.version,a.type,a.size,a.created_user,a.created_at,a.updated_user,a.updated_at, group_concat( distinct t.tag_name order by tag_name) as tag_name  from asset a" +
+                        $" left join asset_tag ta on a.asset_id=ta.asset_id" +
+                        $" left join tag t on t.tag_id=ta.tag_id" +
+                        $" WHERE a.asset_path = @Asset_path" +
+                        $" GROUP BY a.asset_id", parameters);
                     // MediaPlayerItems.Clear();
                     foreach (DataRow row in dt.Rows)
                     {
@@ -408,6 +416,8 @@ namespace MAM.Views.MediaBinViews
                             updated_at = Convert.ToDateTime(row["updated_at"]);
                         Dictionary<string, object> metadata = await GetMetadata(source);
                         List<string> keywords = new List<string>();
+                        string rating=string.Empty;
+
                         if (metadata.TryGetValue("Keywords", out object value) && value is IList<string> keywordList)
                         {
                             keywords = keywordList.ToList(); // Convert to List<string>
@@ -416,7 +426,11 @@ namespace MAM.Views.MediaBinViews
                         {
                             keywords = new List<string>(); // Assign an empty list to avoid null issues
                         }
-
+                        if (metadata.TryGetValue("Rating", out object val) && val is string mediaRating)
+                        {
+                            rating = mediaRating.ToString();
+                        }
+                        List<string> tags = row["tag_name"].ToString().Split(',').ToList();
                         viewModel.MediaPlayerItems.Add(new MediaPlayerItem
                         {
                             MediaId = Convert.ToInt32(row["asset_id"]),
@@ -436,13 +450,14 @@ namespace MAM.Views.MediaBinViews
                             LastUpdated = updated_at,
                             ThumbnailPath = new Uri(thumbnailPath),
                             ProxyPath = new Uri(proxyPath),
-                            Keywords =keywords
+                            Tags = tags,
+                            Keywords = keywords,
+                            Rating= string.IsNullOrEmpty(rating)?0:Convert.ToDouble(rating)
                         });
 
                         viewModel.AllMediaPlayerItems.Add(viewModel.MediaPlayerItems[viewModel.MediaPlayerItems.Count - 1]);
                     }
                     parameters.Clear();
-
                 }
             }
             MediaLibrary.FileCount = viewModel.MediaPlayerItems.Count;
@@ -825,17 +840,15 @@ namespace MAM.Views.MediaBinViews
         {
             AssetWindow.ShowWindow((Views.MediaBinViews.MediaPlayerItem)MediaBinGridView.SelectedItem, viewModel.MediaPlayerItems);
         }
-        private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
+        private void TypeMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuFlyoutItem menuItem)
             {
                 string selectedOption = menuItem.Text; // Get the text of the selected item
-                Debug.WriteLine($"Selected: {selectedOption}");
-
-                // You can also update the DropDownButton's text to show the selected option
                 if (this.FindName("TypeDropDown") is DropDownButton dropDownButton)
                 {
                     dropDownButton.Content = selectedOption;
+                    viewModel.FilterType = selectedOption;
                 }
             }
         }
@@ -863,18 +876,90 @@ namespace MAM.Views.MediaBinViews
             props.Add("SubTitle", videoProperties.Subtitle);
             return props;
         }
-        private void TitleFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+
+        private void KeywordsFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (viewModel != null)
+            {
+                viewModel.FilterKeyword = KeywordsFilterTextbox.Text;
+            }
+        }
+
+        private void TagButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewModel != null)
+            {
+                viewModel.FilterTag = TagAutoSuggestBox.Text;
+            }
+        }
+        private void GetAllTags()
+        {
+            DataTable dt = new DataTable();
+            dt = dataAccess.GetData("select tag_id,tag_name from tag");
+            TagsList.Clear();
+            foreach (DataRow row in dt.Rows)
+            {
+                TagsList.Add(row[1].ToString());
+            }
+        }
+
+        private void Expander_Expanding(Expander sender, ExpanderExpandingEventArgs args)
+        {
+            GetAllTags();
+        }
+        private void MyAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                UpdateSuggestions(sender.Text);
+                sender.ItemsSource = FilteredTags; // ✅ Bind updated list
+            }
+        }
+
+        private void MyAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            if (args.SelectedItem is string selectedTag)
+            {
+                sender.Text = selectedTag; // ✅ Update text with chosen tag
+            }
+        }
+        public void UpdateSuggestions(string query)
+        {
+            FilteredTags.Clear();
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var filtered = TagsList.Where(tag => tag.StartsWith(query, StringComparison.OrdinalIgnoreCase));
+                foreach (var tag in filtered)
+                    FilteredTags.Add(tag);
+            }
+        }
+
+        private void TitleButton_Click(object sender, RoutedEventArgs e)
         {
             if (viewModel != null)
             {
                 viewModel.FilterFileName = FilenameFilterTextbox.Text;
             }
         }
-        private void KeywordsFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+
+        private void RatingControl_ValueChanged(RatingControl sender, object args)
+        {
+            //if (viewModel != null)
+            //{
+            //    viewModel.FilterRating = sender.Value;
+            //}
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void RatingButton_Click(object sender, RoutedEventArgs e)
         {
             if (viewModel != null)
             {
-                viewModel.FilterKeyword = KeywordsFilterTextbox.Text;
+                //viewModel.FilterRating = RatingControl.Value;
             }
         }
     }
@@ -898,7 +983,9 @@ namespace MAM.Views.MediaBinViews
         private string description;
         private string mediaPath;
         private Dictionary<string, object> metadata;
+        private List<string> tags;
         private List<string> keywords;
+        private double rating = 0;
 
         public int MediaId
         {
@@ -987,6 +1074,16 @@ namespace MAM.Views.MediaBinViews
             get => description;
             set => SetProperty(ref description, value);
         }
+        public double Rating
+        {
+            get => rating;
+            set => SetProperty(ref rating, value);
+        }
+        public List<string> Tags
+        {
+            get => tags;
+            set => SetProperty(ref tags, value);
+        }
         public List<string> Keywords
         {
             get => keywords;
@@ -1012,8 +1109,6 @@ namespace MAM.Views.MediaBinViews
         {
             return HashCode.Combine(mediaSource, ThumbnailPath, ProxyPath, Title, DurationString);
         }
-
-
     }
     public class MediaLibrary : ObservableObject
     {
@@ -1042,24 +1137,33 @@ namespace MAM.Views.MediaBinViews
         private MediaPlayerItem media;
         private MediaLibrary MediaLibrary;
         private string path;
-        private string _filterTitle;
-        private string _filterFileName;
-        private string _filterKeyword;
-        private string _filterDescription;
-        private string _filterRating;
-
+        private string _filterTitle = string.Empty;
+        private string _filterType = string.Empty;
+        private string _filterFileName = string.Empty;
+        private string _filterTag = string.Empty;
+        private string _filterKeyword = string.Empty;
+        private string _filterDescription = string.Empty;
+        private double _filterRating;
+        public string FilterType
+        {
+            get => _filterType;
+            set { SetProperty(ref _filterType, value); ApplyFilter(); }
+        }
         public string FilterTitle
         {
             get => _filterTitle;
             set { SetProperty(ref _filterTitle, value); ApplyFilter(); }
         }
-
         public string FilterFileName
         {
             get => _filterFileName;
             set { SetProperty(ref _filterFileName, value); ApplyFilter(); }
         }
-
+        public string FilterTag
+        {
+            get => _filterTag;
+            set { SetProperty(ref _filterTag, value); ApplyFilter(); }
+        }
         public string FilterKeyword
         {
             get => _filterKeyword;
@@ -1072,7 +1176,7 @@ namespace MAM.Views.MediaBinViews
             set { SetProperty(ref _filterDescription, value); ApplyFilter(); }
         }
 
-        public string FilterRating
+        public double FilterRating
         {
             get => _filterRating;
             set { SetProperty(ref _filterRating, value); ApplyFilter(); }
@@ -1091,11 +1195,13 @@ namespace MAM.Views.MediaBinViews
         public void ApplyFilter()
         {
             var filteredItems = AllMediaPlayerItems.Where(item =>
+             (string.IsNullOrEmpty(FilterType) || item.Type.Equals(FilterType, StringComparison.OrdinalIgnoreCase)) &&
              (string.IsNullOrEmpty(FilterTitle) || item.Title.Contains(FilterTitle, StringComparison.OrdinalIgnoreCase)) &&
              (string.IsNullOrEmpty(FilterFileName) || item.Title.Contains(FilterFileName, StringComparison.OrdinalIgnoreCase)) &&
-             (string.IsNullOrEmpty(FilterKeyword) || item.Keywords.Any(k => k.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase)))&&
+             (string.IsNullOrEmpty(FilterTag) || item.Tags.Any(t => t.Contains(FilterTag, StringComparison.OrdinalIgnoreCase))) &&
+             (string.IsNullOrEmpty(FilterKeyword) || item.Keywords.Any(k => k.Contains(FilterKeyword, StringComparison.OrdinalIgnoreCase))) &&
              (string.IsNullOrEmpty(FilterDescription) || item.Description.Contains(FilterDescription, StringComparison.OrdinalIgnoreCase)) &&
-             (string.IsNullOrEmpty(FilterRating) || item.Type.Contains(FilterRating, StringComparison.OrdinalIgnoreCase))
+             (!(FilterRating<0) || item.Rating < FilterRating) 
          ).ToList();
 
             MediaPlayerItems.Clear();
@@ -1164,3 +1270,4 @@ namespace MAM.Views.MediaBinViews
         }
     }
 }
+
