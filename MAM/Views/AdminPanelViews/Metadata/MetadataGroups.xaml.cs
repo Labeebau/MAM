@@ -2,6 +2,7 @@ using MAM.Data;
 using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
@@ -51,15 +52,13 @@ namespace MAM.Views.AdminPanelViews.Metadata
                     metadataList.Add(NewMetadataGroup);
             }
         }
-        private int InsertMetadataGroup(MetadataGroup metadataGroup)
+        private async Task<int> InsertMetadataGroup(MetadataGroup metadataGroup)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
-            string query = string.Empty;
-            parameters.Add("@MetadataGroup", metadataGroup.MetadataGroupName);
-            query = $"insert into metadata_groups(group_name) values(@MetadataGroup) ";
-            int newMetadataId = 0, errorCode = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode);
-            return newMetadataId;
+            List<MySqlParameter> parameters = new ();
+            parameters.Add(new MySqlParameter( "@MetadataGroup", metadataGroup.MetadataGroupName));
+            string query = $"insert into metadata_groups(group_name) values(@MetadataGroup) ";
+            var(affectedRows,newMetadataId ,errorCode )=await dataAccess.ExecuteNonQuery(query, parameters);
+            return affectedRows>0? newMetadataId:-1;
         }
         private void Add_Click(object sender, RoutedEventArgs e)
         {
@@ -72,7 +71,7 @@ namespace MAM.Views.AdminPanelViews.Metadata
         {
             GetMetadataGroups();
         }
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel.MetadataGroup.EditMode)
             {
@@ -81,7 +80,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
             }
             else
             {
-                if (InsertMetadataGroup(ViewModel.MetadataGroup) > 0)
+                int result = await InsertMetadataGroup(ViewModel.MetadataGroup);
+                if (result > 0)
                     ViewModel.MetadataGroup = new MetadataGroup();
             }
             GetMetadataGroups();

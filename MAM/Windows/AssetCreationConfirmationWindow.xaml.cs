@@ -1,3 +1,4 @@
+using MAM.Data;
 using MAM.Utilities;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -19,7 +20,15 @@ namespace MAM.Windows
         public AssetCreationConfirmationWindow(string fileName, List<string> pathList)
         {
             this.InitializeComponent();
-            SetWindowSizeAndPosition(400, 400);
+            var titleBar = AppWindow.TitleBar;
+            // Set the background colors for active and inactive states
+            titleBar.BackgroundColor = Colors.Black;
+            titleBar.InactiveBackgroundColor = Colors.DarkGray;
+            // Set the foreground colors (text/icons) for active and inactive states
+            titleBar.ForegroundColor = Colors.White;
+            titleBar.InactiveForegroundColor = Colors.Gray;
+            GlobalClass.Instance.DisableMaximizeButton(this);
+            GlobalClass.Instance.SetWindowSizeAndPosition(400, 400, this);
             viewModel = new AssetCreationConfirmationViewModel();
             viewModel.Asset.FileName = fileName;
             viewModel.Asset.PathList = pathList;

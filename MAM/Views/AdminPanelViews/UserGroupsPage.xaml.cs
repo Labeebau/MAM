@@ -3,6 +3,7 @@ using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Reflection;
@@ -168,7 +169,7 @@ namespace MAM.Views.AdminPanelViews
         {
             SaveUserGroup();
         }
-        private void SaveUserGroup()
+        private async void SaveUserGroup()
         { 
             ObservableCollection<UserGroup> dbUserGroupList = new ObservableCollection<UserGroup>();
             GetUserGroup(dbUserGroupList);
@@ -177,7 +178,7 @@ namespace MAM.Views.AdminPanelViews
             {
                 if (userGroup.UserGroupId == -1)
                 {
-                    userGroup.UserGroupId = InsertUserGroup(userGroup);
+                    userGroup.UserGroupId =await InsertUserGroup(userGroup);
                     userGroup.IsReadOnly = true;
                 }
                 else
@@ -237,27 +238,26 @@ namespace MAM.Views.AdminPanelViews
                 var userGroup = button?.Tag as UserGroup;
                 if (userGroup != null)
                 {
-                    var userGrpDict = new Dictionary<string, object>() { { "@GroupId", userGroup.UserGroupId } };
-                    int id = 0, errorCode = 0 ;
-                    if (dataAccess.ExecuteNonQuery($"DELETE FROM user_group WHERE group_id=@GroupId", userGrpDict, out id,out errorCode) == 1)
+                    var userGrpDict = new List<MySql.Data.MySqlClient.MySqlParameter>() { new MySql.Data.MySqlClient.MySqlParameter("@GroupId", userGroup.UserGroupId) };
+                    var (affectedRows, _, erroeCode) = await dataAccess.ExecuteNonQuery($"DELETE FROM user_group WHERE group_id=@GroupId", userGrpDict);
+                    if(affectedRows==1)
                         UserGroupsList.Remove(userGroup);
                 }
             }
         }
-        private int InsertUserGroup(UserGroup userGroup)
+        private async Task<int> InsertUserGroup(UserGroup userGroup)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
 
-            parameters.Add("@UserGroupName", userGroup.GroupName);
-            parameters.Add("@IsAdGroup", userGroup.IsAdGroup);
-            parameters.Add("@IsActive", userGroup.IsActive);
+            parameters.Add(new MySqlParameter( "@UserGroupName", userGroup.GroupName));
+            parameters.Add(new MySqlParameter("@IsAdGroup", userGroup.IsAdGroup));
+            parameters.Add(new MySqlParameter("@IsActive", userGroup.IsActive));
 
             query = $"insert into user_group(group_name,ad_group,active)" +
                 $"values(@UserGroupName,@IsAdGroup,@IsActive)";
-            int newUserGroupId = 0,errorCode=0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
-            return newUserGroupId;
+            var(affectedRows, newUserGroupId ,errorCode)=await dataAccess.ExecuteNonQuery(query, parameters);
+            return affectedRows>0? newUserGroupId:-1;
         }
 
         private void AddUSer_Click(object sender, RoutedEventArgs e)
@@ -297,8 +297,10 @@ namespace MAM.Views.AdminPanelViews
         }
 
         private async void AddUSerToGroup_Click(object sender, RoutedEventArgs e)
-        {
-            if (InsertUserToGroup() == -1)
+        { 
+
+        int result =await InsertUserToGroup();
+            if (result == -1)
             {
                 ContentDialog duplicateDialog = new ContentDialog
                 {
@@ -312,17 +314,16 @@ namespace MAM.Views.AdminPanelViews
             }
 
         }
-        private int InsertUserToGroup()
+        private async Task<int> InsertUserToGroup()
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
 
-            parameters.Add("@UserId", SelectedUser.UserId);
-            parameters.Add("@GroupId", SelectedUserGroup.UserGroupId);
+            parameters.Add(new MySqlParameter("@UserId", SelectedUser.UserId));
+            parameters.Add(new MySqlParameter("@GroupId", SelectedUserGroup.UserGroupId));
             query = $"insert into user_roles(user_id,group_id) values(@UserId,@GroupId)";
-            int newUserGroupId = 0, errorCode = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
-            return newUserGroupId;
+            var(affectedRows,newUserGroupId,errorCode)=await dataAccess.ExecuteNonQuery(query, parameters);
+            return affectedRows>0? newUserGroupId:-1;
         }
 
         private void RefreshGroups_Click(object sender, RoutedEventArgs e)

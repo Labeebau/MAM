@@ -9,13 +9,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-    <Page.Resources>
-        <local1:BooleanToVisibilityConverter x:Key="CountToVisibilityConverter"/>
-        <local1:InverseBooleanToVisibilityConverter x:Key="InvCountToVisibilityConverter"/>
-    </Page.Resources>
+   
 
-    <StackPanel Width="600" Height="300" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10">
-        <TextBlock Text="No tags found" Foreground="Red" Visibility="{x:Bind HasTags, Converter={StaticResource InvCountToVisibilityConverter}}"/>
+    <StackPanel Width="670" Background="{StaticResource ThemeSecondaryBackgroundColor}" Height="300" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10">
+        <TextBlock Text="No tags found" Foreground="Red" Visibility="{x:Bind HasTags, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
         <StackPanel x:Name="TagsPanel" Orientation="Horizontal" Margin="0,5,0,20">
             <ListView ItemsSource="{Binding AssetTags,Mode=OneWay}" 
                       BorderBrush="Gray" BorderThickness="1" CornerRadius="5" 
@@ -36,7 +33,7 @@
 
             <Button Style="{StaticResource SmallIconButton}"  Click="RemoveTagFromAsset_Click" 
          VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Remove Tag From Asset"
-                Visibility="{x:Bind HasTags, Converter={StaticResource CountToVisibilityConverter}}">
+                Visibility="{x:Bind HasTags, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <FontIcon  Glyph="&#xf2ed;" FontSize="12"/>
             </Button>
         </StackPanel>
@@ -66,7 +63,7 @@
             </Button>
             <Button Style="{StaticResource SmallIconButton}"  Click="RemoveTag_Click" 
                     VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Delete Tag"
-                    Visibility="{x:Bind HasTags, Converter={StaticResource CountToVisibilityConverter}}">
+                    Visibility="{x:Bind HasTags, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <FontIcon  Glyph="&#xf2ed;" FontSize="12"/>
             </Button>
         </StackPanel>

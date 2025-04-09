@@ -11,7 +11,6 @@ namespace MAM.Views.MediaBinViews
     /// </summary>
     public sealed partial class ExportHistoryPage : Page
     {
-        private static MediaLibraryPage mediaLibraryPage;
 
         public ExportHistoryPage()
         {
@@ -22,7 +21,6 @@ namespace MAM.Views.MediaBinViews
     {
         private MediaPlayerItem media;
         private MediaLibrary mediaLibrary;
-        private string path;
 
         public ExportHistoryViewModel()
         {

@@ -4,6 +4,7 @@ using MAM.Windows;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
@@ -24,7 +25,6 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         //    "Apple", "Banana", "Cherry", "Date", "Fig", "Grapes", "Mango", "Orange", "Pineapple", "Strawberry"
         //};
         private DataAccess dataAccess = new();
-        private DataTable tagTable;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -76,7 +76,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         }
 
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override  void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             if (e.Parameter is MediaPlayerViewModel viewmodel)
@@ -143,97 +143,61 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         }
 
 
-        private int InsertTagToAsset(int assetId, string tagName)
+        private async Task<int> InsertTagToAsset(int assetId, string tagName)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
-            string query = string.Empty;
-            parameters.Add("@AssetId", assetId);
-            parameters.Add("@TagName", tagName);
-            query = "INSERT INTO asset_tag(asset_id, tag_id) " +
-                    "VALUES(@AssetId, (SELECT tag_id FROM tag WHERE tag_name = @TagName))";
-
-
-            int newMetadataId = 0, errorCode = 0;
+            List<MySqlParameter> parameters = new ();
             string errorMessage = string.Empty;
-            if (dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode) > 0)
+            parameters.Add(new MySqlParameter("@AssetId", assetId));
+            parameters.Add(new MySqlParameter("@TagName", tagName));
+            string query = "INSERT INTO asset_tag(asset_id, tag_id) " +
+                    "VALUES(@AssetId, (SELECT tag_id FROM tag WHERE tag_name = @TagName))";
+            var (affectedRows, newMetadataId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+            if (affectedRows > 0)
             {
-                //var dialog = new ContentDialog
-                //{
-                //    Title = "Saved",
-                //    Content = "Category added successfully",
-                //    CloseButtonText = "OK",
-                //    Height = 10,
-                //    XamlRoot = this.XamlRoot
-                //};
-                //_ = dialog.ShowAsync();
+                return newMetadataId;
             }
             else
             {
                 if (errorCode == 1062)
                     errorMessage = "Tag already added.";
-                var dialog = new ContentDialog
-                {
-                    Title = "Error",
-                    Content = !string.IsNullOrEmpty(errorMessage) ? errorMessage : "Cannot add tag",
-                    CloseButtonText = "OK",
-                    Height = 10,
-                    XamlRoot = this.XamlRoot
-                };
-                _ = dialog.ShowAsync();
+                await GlobalClass.Instance.ShowErrorDialogAsync(errorMessage, this.XamlRoot);
+                return -1;
             }
-
-            // MetadataCategoryList = LoadCategories();
-            return newMetadataId;
         }
-        private int InsertTag(string tagName)
+        private async Task<int> InsertTag(string tagName)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@TagName", tagName);
+            parameters.Add(new MySqlParameter("@TagName", tagName));
             query = "INSERT INTO tag(tag_name) VALUES(@TagName)";
 
-
-            int newTagId = 0, errorCode = 0;
             string errorMessage = string.Empty;
-            if (dataAccess.ExecuteNonQuery(query, parameters, out newTagId, out errorCode) > 0)
+
+            var (affectedRows, newTagId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+           if(affectedRows>0)
             {
-                //var dialog = new ContentDialog
-                //{
-                //    Title = "Saved",
-                //    Content = "Category added successfully",
-                //    CloseButtonText = "OK",
-                //    Height = 10,
-                //    XamlRoot = this.XamlRoot
-                //};
-                //_ = dialog.ShowAsync();
+                return newTagId;
             }
             else
             {
                 if (errorCode == 1062)
                     errorMessage = "Tag already exists.";
-                var dialog = new ContentDialog
-                {
-                    Title = "Error",
-                    Content = !string.IsNullOrEmpty(errorMessage) ? errorMessage : "Cannot add tag",
-                    CloseButtonText = "OK",
-                    Height = 10,
-                    XamlRoot = this.XamlRoot
-                };
-                _ = dialog.ShowAsync();
+               await GlobalClass.Instance.ShowErrorDialogAsync (errorMessage, this.XamlRoot);
+                return -1;
             }
-
-            // MetadataCategoryList = LoadCategories();
-            return newTagId;
         }
 
-        private void AddTag_Click(object sender, RoutedEventArgs e)
+        private async void AddTag_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel.NewTag.TagName != null)
             {
-                InsertTag(ViewModel.NewTag.TagName);
-                ViewModel.UpdateSuggestions(ViewModel.NewTag.TagName);
-                ViewModel.NewTag = new Tag();
-                GetAllTags();
+                int result= await InsertTag(ViewModel.NewTag.TagName);
+                if (result > 0)
+                {
+                    ViewModel.UpdateSuggestions(ViewModel.NewTag.TagName);
+                    ViewModel.NewTag = new Tag();
+                    GetAllTags();
+                }
             }
         }
 
@@ -242,7 +206,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             await DeleteTagFromAssetAsync();
 
         }
-        private async Task DeleteTagFromAssetAsync()
+        private async Task<int> DeleteTagFromAssetAsync()
         {
             if (SelectedAssetTag != null)
             {
@@ -261,17 +225,17 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
                 if (result == ContentDialogResult.Primary)
                 {
-                    Dictionary<string, object> parameters = new Dictionary<string, object>();
+                    List<MySqlParameter> parameters = new ();
                     string query = string.Empty;
-                    parameters.Add("@AssetId", Asset.Media.MediaId);
-                    parameters.Add("@TagName", SelectedAssetTag.TagName);
-                    int newId, errorCode;
+                    parameters.Add(new MySqlParameter("@AssetId", Asset.Media.MediaId));
+                    parameters.Add(new MySqlParameter("@TagName", SelectedAssetTag.TagName));
                     string errorMessage = string.Empty;
                     query = "delete from asset_tag where asset_id = @AssetId and tag_id = (SELECT tag_id FROM tag WHERE tag_name = @TagName LIMIT 1)";
-
-                    if (dataAccess.ExecuteNonQuery(query, parameters, out newId, out errorCode) > 0)
+                    var (affectedRows, newId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+                    if(affectedRows>0)
                     {
                         ViewModel.AssetTags.Remove(SelectedAssetTag);
+                        return affectedRows;
                     }
                     else
                     {
@@ -286,8 +250,11 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                         };
 
                         await dialog.ShowAsync();
+                        return -1;
                     }
                 }
+                else
+                    return -1;
             }
             else
             {
@@ -300,6 +267,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                     XamlRoot = this.XamlRoot
                 };
                 _ = dialog.ShowAsync();
+                return -1;
             }
         }
         private async Task DeleteTagAsync()
@@ -463,19 +431,13 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 foreach (var tag in filteredTags)
                     Suggestions.Add(tag);
             }
-        }
-        public void UpdateSuggestions(Tag query)
-        {
-            Suggestions.Clear();
-            if (!string.IsNullOrWhiteSpace(query.TagName))
+            else
             {
-                var filteredTags = _allTags
-                    .Where(tag => tag.TagName.StartsWith(query.TagName, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                foreach (var tag in filteredTags)
+                foreach (var tag in _allTags)
                     Suggestions.Add(tag);
             }
         }
+       
     }
   
 

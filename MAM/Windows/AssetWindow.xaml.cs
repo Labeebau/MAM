@@ -1,5 +1,6 @@
-using MAM.Data;
+﻿using MAM.Data;
 using MAM.Utilities;
+using MAM.Views.AdminPanelViews.Metadata;
 using MAM.Views.MediaBinViews.AssetMetadata;
 using Microsoft.UI;
 using Microsoft.UI.Input;
@@ -13,7 +14,9 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Windows.Graphics;
 using Windows.Media.Core;
@@ -21,7 +24,6 @@ using Windows.Media.Editing;
 using Windows.Media.Playback;
 using Windows.Storage;
 using Color = Windows.UI.Color;
-using Composition = Microsoft.UI.Composition;
 using MediaPlayerItem = MAM.Views.MediaBinViews.MediaPlayerItem;
 using Path = System.IO.Path;
 // To learn more about WinUI, the WinUI project structure,
@@ -45,23 +47,19 @@ namespace MAM.Windows
 
         public MediaPlayerViewModel ViewModel { get; }
         // public static Uri MediaPath { get; private set; }
-        public static MediaPlayerItem MediaItem { get; private set; }
+        //  public static MediaPlayerItem MediaItem { get; private set; }
         private bool _isDraggingLeft = false;
         private bool _isDraggingRight = false;
         private double _startX;
         // Event to handle the seek position
         public event Action<string> OnLeftTrimPositionChanged;
         public event Action<string> OnRightTrimPositionChanged;
-        private Composition.Compositor _compositor;
-        private Composition.SpriteVisual _blurVisual;
-        private Composition.CompositionEffectBrush _blurBrush;
+        private DataAccess dataAccess = new();
 
 
-
-        public AssetWindow(ObservableCollection<MediaPlayerItem> mediaPlayerItemList)
+        public AssetWindow(MediaPlayerItem mediaItem, ObservableCollection<MediaPlayerItem> mediaPlayerItemList)
         {
             this.InitializeComponent();
-
             // Customize the title bar
             var titleBar = AppWindow.TitleBar;
             // Set the background colors for active and inactive states
@@ -70,11 +68,11 @@ namespace MAM.Windows
             // Set the foreground colors (text/icons) for active and inactive states
             titleBar.ForegroundColor = Colors.White;
             titleBar.InactiveForegroundColor = Colors.Gray;
-            SetWindowSizeAndPosition(1300, 1000);
-
+            GlobalClass.Instance.DisableMaximizeButton(this);
+            GlobalClass.Instance.SetWindowSizeAndPosition(1340, 1040, this);
             mediaPlayer = new MediaPlayer();
             mpAsset.SetMediaPlayer(mediaPlayer);
-            ViewModel = new MediaPlayerViewModel(MediaItem);
+            ViewModel = new MediaPlayerViewModel(mediaItem);
 
             ViewModel.MediaPlayer = mediaPlayer;
             foreach (MediaPlayerItem item in mediaPlayerItemList)
@@ -83,7 +81,7 @@ namespace MAM.Windows
             }
 
             // Set the initial media source
-            if (ViewModel.Media.MediaSource != null)
+            if (ViewModel.Media != null && ViewModel.Media.MediaSource != null)
             {
                 mediaPlayer.Source = MediaSource.CreateFromUri(ViewModel.Media.ProxyPath);
             }
@@ -93,10 +91,12 @@ namespace MAM.Windows
                 {
                     mediaPlayer.Source = MediaSource.CreateFromUri(ViewModel.Media.ProxyPath);
                     ViewModel.Media = mediaPlayerItemList.FirstOrDefault(m => m.ProxyPath == ViewModel.Media.ProxyPath);
-                    var file =await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
+                    StorageFile file=null;
+                    if(File.Exists(ViewModel.Media.MediaSource.LocalPath.ToString()))
+                        file = await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
                     await GetAllMetadataAsync(file);
                     navMetadata.SelectedItem = navMetadata.MenuItems[0];
-                    navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(), ViewModel.Metadata);
+                    navMetadata_Navigate("General", new EntranceNavigationTransitionInfo(), ViewModel.Metadata);
                 }
             };
 
@@ -126,13 +126,13 @@ namespace MAM.Windows
             //Canvas.SetZIndex(TxtClipName, -1);
             TxtClipName.TextWrapping = TextWrapping.Wrap;
             this.Activated += MainWindow_Activated;
-
+            // GetAllMetadata();
         }
 
         private async void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
             StorageFile file = null;
-            if (ViewModel.Media.MediaSource != null)
+            if (ViewModel.Media != null && ViewModel.Media.MediaSource != null && File.Exists(ViewModel.Media.MediaSource.LocalPath.ToString()))
                 file = await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
             if (file != null)
                 await GetAllMetadataAsync(file);
@@ -153,14 +153,23 @@ namespace MAM.Windows
             {
                 App.UIDispatcherQueue.TryEnqueue(() =>
                 {
-                    SeekBar.Value = sender.Position.TotalSeconds;
-                    if (sender.Position.Hours > 0)
-                        ViewModel.CurrentPosition = sender.Position.ToString(@"hh\:mm\:ss");
-                    else
-                        ViewModel.CurrentPosition = sender.Position.ToString(@"mm\:ss");
+
+                    try
+                    {
+                        SeekBar.Value = sender.Position.TotalSeconds;
+                        if (sender.Position.Hours > 0)
+                            ViewModel.CurrentPosition = sender.Position.ToString(@"hh\:mm\:ss");
+                        else
+                            ViewModel.CurrentPosition = sender.Position.ToString(@"mm\:ss");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error updating UI: {ex.Message}");
+                    }
 
                 });
-                
+
+
             }
         }
 
@@ -196,10 +205,13 @@ namespace MAM.Windows
                 TransformHorizontally(TxtOutTime, 0);
                 TransformHorizontally(TBTrimmedClipDuration, Canvas.GetLeft(RightThumb) / 2);
                 // await LoadTrimmedClipsAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
-
-                var file = await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
-                if (file != null)
-                    await GetAllMetadataAsync(file);
+                StorageFile storageFile;
+                //if(ViewModel.Media.IsArchived)
+                //    storageFile= await StorageFile.GetFileFromPathAsync(ViewModel.Media.ArchivePath);
+                //else
+                    storageFile= await StorageFile.GetFileFromPathAsync(ViewModel.Media.MediaSource.LocalPath.ToString());
+                if (storageFile != null)
+                    await GetAllMetadataAsync(storageFile);
             });
         }
         private void MediaPlayer_PlaybackStateChanged(MediaPlaybackSession sender, object args)
@@ -211,20 +223,55 @@ namespace MAM.Windows
                      : "\uf04b"; // Unicode for play
             });
         }
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        private const int SW_SHOWNORMAL = 1;
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
         public static void ShowWindow(MediaPlayerItem mediaPlayerItem, ObservableCollection<MediaPlayerItem> mediaPlayerItemList)
         {
-            MediaItem = mediaPlayerItem;
             if (_instance == null)
             {
-                _instance = new AssetWindow(mediaPlayerItemList);
-                _instance.Activate(); // Show the window
+                _instance = new AssetWindow(mediaPlayerItem, mediaPlayerItemList);
+                _instance.Activate();
+
+                IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_instance);
+
+                // Show window and bring it to the foreground
+                ShowWindow(hwnd, SW_SHOWNORMAL);
+                SetForegroundWindow(hwnd);
+
+                // Set window as TOPMOST for a moment, then return it to normal
+                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                //SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             }
             else
             {
-                // _instance = new AssetWindow(mediaPlayerItemList);
-                _instance.Activate(); // Bring the existing window to the front
+                _instance.Activate();
+
+                IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_instance);
+
+                // Show window and bring it to the foreground
+                ShowWindow(hwnd, SW_SHOWNORMAL);
+                SetForegroundWindow(hwnd);
+
+                // Set window as TOPMOST for a moment, then return it to normal
+                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                //SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             }
         }
+
         public static void SetMediaSource(Uri mediaUri)
         {
             if (mediaPlayer != null && mediaUri != null)
@@ -232,34 +279,7 @@ namespace MAM.Windows
                 mediaPlayer.Source = MediaSource.CreateFromUri(mediaUri);
             }
         }
-        private void SetWindowSizeAndPosition(int width, int height)
-        {
-            // Get the native window handle of the current window
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-
-            // Get the window ID from the handle
-            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
-
-            // Retrieve the AppWindow using the static method GetFromWindowId
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-
-            if (appWindow != null)
-            {
-                // Resize the window to the specified size
-                appWindow.Resize(new SizeInt32(width, height));
-
-                // Get the screen size
-                var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-                var workArea = displayArea.WorkArea;
-
-                // Calculate the center position
-                int centerX = (workArea.Width - width) / 2;
-                int centerY = (workArea.Height - height) / 2;
-
-                // Move the window to the center of the screen
-                appWindow.Move(new PointInt32(centerX, centerY));
-            }
-        }
+       
         private void Window_Closed(object sender, WindowEventArgs args)
         {
             //DisposeResources();
@@ -322,7 +342,7 @@ namespace MAM.Windows
         {
             foreach (var item in speed)
             {
-                Button button = new Button
+                Button button = new()
                 {
                     Content = item.ToString() + "x",
                     Width = 45,
@@ -369,7 +389,7 @@ namespace MAM.Windows
         {
             foreach (var item in time)
             {
-                Button button = new Button
+                Button button = new()
                 {
                     Content = item.ToString(),
                     Width = 45,
@@ -451,7 +471,7 @@ namespace MAM.Windows
 
             Debug.WriteLine($"FFmpeg Command: {ffmpegArguments}");
             Debug.WriteLine($"Processing video file: {videoFile.Path}");
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            ProcessStartInfo startInfo = new()
             {
                 FileName = GlobalClass.Instance.ffmpegPath,
                 Arguments = ffmpegArguments,
@@ -461,43 +481,41 @@ namespace MAM.Windows
                 CreateNoWindow = true,
             };
 
-            using (var process = new Process { StartInfo = startInfo })
+            using System.Diagnostics.Process process = new System.Diagnostics.Process { StartInfo = startInfo };
+            try
             {
-                try
+                process.Start();
+
+                var exitTask = process.WaitForExitAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+
+                if (await Task.WhenAny(exitTask, Task.Delay(timeoutMs)) == exitTask)
                 {
-                    process.Start();
+                    await Task.WhenAll(errorTask, outputTask);
 
-                    var exitTask = process.WaitForExitAsync();
-                    var errorTask = process.StandardError.ReadToEndAsync();
-                    var outputTask = process.StandardOutput.ReadToEndAsync();
+                    Debug.WriteLine($"FFmpeg Output: {await outputTask}");
+                    Debug.WriteLine($"FFmpeg Error: {await errorTask}");
 
-                    if (await Task.WhenAny(exitTask, Task.Delay(timeoutMs)) == exitTask)
+                    if (File.Exists(thumbnailPath))
                     {
-                        await Task.WhenAll(errorTask, outputTask);
-
-                        Debug.WriteLine($"FFmpeg Output: {await outputTask}");
-                        Debug.WriteLine($"FFmpeg Error: {await errorTask}");
-
-                        if (File.Exists(thumbnailPath))
-                        {
-                            return new BitmapImage(new Uri(thumbnailPath));
-                        }
-                        else
-                        {
-                            Debug.WriteLine("Thumbnail not created.");
-                        }
+                        return new BitmapImage(new Uri(thumbnailPath));
                     }
                     else
                     {
-                        Debug.WriteLine("FFmpeg process timed out.");
-                        process.Kill();
-                        await exitTask; // Ensure cleanup
+                        Debug.WriteLine("Thumbnail not created.");
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Debug.WriteLine($"Exception: {ex.Message}");
+                    Debug.WriteLine("FFmpeg process timed out.");
+                    process.Kill();
+                    await exitTask; // Ensure cleanup
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Exception: {ex.Message}");
             }
 
             return null;
@@ -536,7 +554,7 @@ namespace MAM.Windows
                 var mediaClip = await MediaClip.CreateFromFileAsync(mediaFile);
                 // Calculate the total duration of the video
                 TimeSpan totalDuration = mediaClip.OriginalDuration;
-                List<int> times = new List<int>();
+                List<int> times = new();
                 int interval = 10; // Interval in seconds
                 int maxThumbnails = 50; // Maximum number of thumbnails to generate
 
@@ -557,23 +575,9 @@ namespace MAM.Windows
             }
             catch (Exception ex)
             {
-                await ShowErrorDialog($"Error generating thumbnails: {ex.Message}");
+                await GlobalClass.Instance.ShowErrorDialogAsync($"Error generating thumbnails: {ex.Message}", this.Content.XamlRoot);
             }
         }
-        private async Task ShowErrorDialog(string message)
-        {
-            ContentDialog errorDialog = new ContentDialog
-            {
-                Title = "Error",
-                Content = message,
-                CloseButtonText = "OK",
-                XamlRoot = this.Content.XamlRoot // Set the XamlRoot to ensure proper display
-            };
-
-            await errorDialog.ShowAsync();
-        }
-
-
 
         private void Slider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
         {
@@ -698,12 +702,15 @@ namespace MAM.Windows
 
         }
 
-        private readonly List<(string Tag, Type Page)> _pages = new List<(string Tag, Type Page)>
+        private readonly List<(string Tag, Type Page)> _pages = new()
         {
+            ("General",typeof(General)),
             ("FileInfo",typeof(FileInfoPage)),
             ("Categories",typeof(AssetCategoriesPage)),
             ("Collection",typeof(CollectionPage)),
-            ("Tags",typeof(TagsPage))
+            ("Tags",typeof(TagsPage)),
+            ("Metadata",typeof(AssetMetadata)),
+
         };
 
         private object GetParameterBasedOnTag(string tag, Dictionary<string, object> parameters)
@@ -762,7 +769,7 @@ namespace MAM.Windows
 
             //	// Add handler for ContentFrame navigation.
             //ContentFrame.Navigated += On_Navigated;
-            string navItemTag = "FileInfo";
+            string navItemTag = "General";
 
             //parameter = (Dictionary<string, object>)GetParameterBasedOnTag(navItemTag, metadata);
             //parameter = (string)GetParameterBasedOnTag("FileInfo"); // Example: determine the parameter to pass
@@ -772,7 +779,7 @@ namespace MAM.Windows
             ////	// If navigation occurs on SelectionChanged, this isn't needed.
             ////	// Because we use ItemInvoked to navigate, we need to call Navigate
             ////	// here to load the home page.
-            navMetadata_Navigate("FileInfo", new EntranceNavigationTransitionInfo(), ViewModel);
+            navMetadata_Navigate("General", new EntranceNavigationTransitionInfo(), ViewModel);
         }
 
 
@@ -843,39 +850,39 @@ namespace MAM.Windows
         }
 
         // Horizontal Splitter events
-        private void HorizontalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
-        {
-            isDraggingHorizontalSplitter = true;
-            initialPointerY = e.GetCurrentPoint(MainCanvas).Position.Y;
-            // Capture the pointer for horizontal splitter. This ensures that the control continues to receive pointer events even if the pointer moves quickly or leaves the splitter area.
-            HorizontalSplitter.CapturePointer(e.Pointer);
-            HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
-        }
+        //private void HorizontalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
+        //{
+        //    isDraggingHorizontalSplitter = true;
+        //    initialPointerY = e.GetCurrentPoint(MainCanvas).Position.Y;
+        //    // Capture the pointer for horizontal splitter. This ensures that the control continues to receive pointer events even if the pointer moves quickly or leaves the splitter area.
+        //    HorizontalSplitter.CapturePointer(e.Pointer);
+        //    HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
+        //}
 
-        private void HorizontalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
-        {
-            if (isDraggingHorizontalSplitter)
-            {
-                double newY = e.GetCurrentPoint(MainCanvas).Position.Y;
-                double offsetY = newY - initialPointerY;
+        //private void HorizontalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
+        //{
+        //    if (isDraggingHorizontalSplitter)
+        //    {
+        //        double newY = e.GetCurrentPoint(MainCanvas).Position.Y;
+        //        double offsetY = newY - initialPointerY;
 
-                // Adjust the height of Top Panel
-                if (TopPanel.Height + offsetY > 0)
-                {
-                    TopPanel.Height += offsetY;
+        //        // Adjust the height of Top Panel
+        //        if (TopPanel.Height + offsetY > 0)
+        //        {
+        //            TopPanel.Height += offsetY;
 
-                    // Move Horizontal Splitter
-                    Canvas.SetTop(HorizontalSplitter, Canvas.GetTop(HorizontalSplitter) + offsetY);
-                    if (Canvas.GetTop(BottomPanel) < CenterPanel.ActualHeight)
-                    {
-                        // Move Bottom Panel
-                        Canvas.SetTop(BottomPanel, Canvas.GetTop(BottomPanel) + offsetY);
-                        BottomPanel.Height = CenterPanel.ActualHeight - Canvas.GetTop(BottomPanel);
-                    }
-                    initialPointerY = newY;
-                }
-            }
-        }
+        //            // Move Horizontal Splitter
+        //            Canvas.SetTop(HorizontalSplitter, Canvas.GetTop(HorizontalSplitter) + offsetY);
+        //            if (Canvas.GetTop(BottomPanel) < CenterPanel.ActualHeight)
+        //            {
+        //                // Move Bottom Panel
+        //                Canvas.SetTop(BottomPanel, Canvas.GetTop(BottomPanel) + offsetY);
+        //                BottomPanel.Height = CenterPanel.ActualHeight - Canvas.GetTop(BottomPanel);
+        //            }
+        //            initialPointerY = newY;
+        //        }
+        //    }
+        //}
 
         private void Splitter_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
@@ -884,9 +891,9 @@ namespace MAM.Windows
 
             // Release the pointer capture
             CenterVerticalSplitter.ReleasePointerCapture(e.Pointer);
-            HorizontalSplitter.ReleasePointerCapture(e.Pointer);
+            //HorizontalSplitter.ReleasePointerCapture(e.Pointer);
             CenterVerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-            HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+            //HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
         }
 
 
@@ -895,18 +902,18 @@ namespace MAM.Windows
             CenterVerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
 
-        private void HorizontalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-            HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
-        }
+        //private void HorizontalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        //{
+        //    HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
+        //}
         private void VerticalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
         {
             CenterVerticalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
         }
-        private void HorizontalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-        }
+        //private void HorizontalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+        //{
+        //    HorizontalSplitter.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        //}
 
         private void SeekBar_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
         {
@@ -938,8 +945,8 @@ namespace MAM.Windows
             CenterPanel.Height = MainCanvas.ActualHeight;
 
             // Adjust width of Top Panel, Horizontal Splitter, and Bottom Panel
-            TopPanel.Width = CenterPanel.ActualWidth;
-            HorizontalSplitter.Width = CenterPanel.ActualWidth;
+            //TopPanel.Width = CenterPanel.ActualWidth;
+            //HorizontalSplitter.Width = CenterPanel.ActualWidth;
             BottomPanel.Width = CenterPanel.ActualWidth;
         }
         private void OnLeftThumbPointerPressed(object sender, PointerRoutedEventArgs e)
@@ -1241,7 +1248,7 @@ namespace MAM.Windows
                     MediaClip mediaClip = await MediaClip.CreateFromFileAsync(videoFile);
 
                     // Create a MediaComposition
-                    MediaComposition composition = new MediaComposition();
+                    MediaComposition composition = new();
                     composition.Clips.Add(mediaClip);
                     TimeSpan inTime = TimeSpan.FromSeconds(ConvertTimeToDouble(clip.InTime));
                     // Get the thumbnail at the InTime of the clip
@@ -1255,7 +1262,7 @@ namespace MAM.Windows
                     // Convert the stream to BitmapImage
                     if (thumbnailStream != null)
                     {
-                        BitmapImage bitmapImage = new BitmapImage();
+                        BitmapImage bitmapImage = new();
                         await bitmapImage.SetSourceAsync(thumbnailStream);
                         clip.Thumbnail = bitmapImage;
                     }
@@ -1337,6 +1344,10 @@ namespace MAM.Windows
             ThumbnailGrid.InputCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
         }
 
+
+
+
+
         static double ConvertTimeToDouble(string time)
         {
             // Parse the time string
@@ -1354,6 +1365,12 @@ namespace MAM.Windows
             return totalHours;
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+
     }
 
     public class NewGrid : Grid
@@ -1364,6 +1381,7 @@ namespace MAM.Windows
             set { base.ProtectedCursor = value; }
         }
     }
+
     public class MediaPlayerViewModel : ObservableObject, IDisposable
     {
         private Uri mediaUri;
@@ -1392,6 +1410,8 @@ namespace MAM.Windows
         //private string clipDuration;
         private TrimmedClip trimmedClip;
         private Dictionary<string, object> metadata;
+        private ObservableCollection<MetadataClass> allMetadata;
+        private MetadataClass selectedMetadata;
 
         public string PlayPauseIcon
         {
@@ -1429,11 +1449,24 @@ namespace MAM.Windows
             get => media;
             set => SetProperty(ref media, value);
         }
-        public Dictionary<string,object> Metadata
+        public Dictionary<string, object> Metadata
         {
             get => metadata;
             set => SetProperty(ref metadata, value);
         }
+
+
+        public MetadataClass SelectedMetadata
+        {
+            get => selectedMetadata;
+            set => SetProperty(ref selectedMetadata, value);
+        }
+        public ObservableCollection<MetadataClass> AllMetadata
+        {
+            get => allMetadata;
+            set => SetProperty(ref allMetadata, value);
+        }
+
         public ICommand VideoThumbnailClickCommand { get; }
         public ICommand VideoListThumbnailClickCommand { get; }
 
@@ -1442,6 +1475,7 @@ namespace MAM.Windows
         public ObservableCollection<BinThumbnail> BinThumbnails { get; set; }
         public ObservableCollection<MediaPlayerItem> BinMedias { get; set; }
         public ObservableCollection<TrimmedClip> TrimmedClips { get; }
+
 
         public MediaPlayerViewModel(MediaPlayerItem media)
         {
@@ -1453,10 +1487,13 @@ namespace MAM.Windows
             TrimmedClip = new TrimmedClip();
             TrimmedClips = new ObservableCollection<TrimmedClip>();
             Media = media;
+            AllMetadata = new ObservableCollection<MetadataClass>();
+            SelectedMetadata = new MetadataClass();
         }
 
         private void LoadVideo(Uri mediaUri)
         {
+
             Media = new MediaPlayerItem() { ProxyPath = mediaUri };
 
         }

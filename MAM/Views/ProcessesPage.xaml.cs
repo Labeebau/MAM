@@ -1,8 +1,11 @@
+using MAM.Data;
 using MAM.Views.ProcessesViews;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
+using System.Collections.ObjectModel;
+using System.Data;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
@@ -13,35 +16,46 @@ namespace MAM.Views
     /// </summary>
     public sealed partial class ProcessesPage : Page
     {
+        private static DataAccess dataAccess = new DataAccess();
+        private string openedTab = string.Empty;
+        public ObservableCollection<Process> ProcessList { get; set; } = new();
         public ProcessesPage()
         {
             this.InitializeComponent();
+
+
+            DataContext = this;
         }
         private readonly List<(string Tag, Type Page)> _pages = new List<(string Tag, Type Page)>
         {
             ("WaitingProcesses",typeof(ProcessStatusPage)),
-            ("FinishedProcesses",typeof(ProcessStatusPage)),
+            ("FinishedProcesses",typeof(ProcessStatusPage))
         };
         private void navProcesses_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
-            var navItemTag = args.InvokedItemContainer.Tag.ToString();
-            navProcesses_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo);
+          if(args.InvokedItemContainer!=null)
+                openedTab = args.InvokedItemContainer.Tag.ToString();
+            //if (openedTab == "WaitingProcesses")
+            //    ProcessList = GetProcesses("Waiting");
+            //else if (openedTab == "FinishedProcesses")
+            //    ProcessList = GetProcesses("Finished");
+            navProcesses_Navigate(openedTab, args.RecommendedNavigationTransitionInfo);
         }
         private void navProcesses_Navigate(string navItemTag, NavigationTransitionInfo recommendedNavigationTransitionInfo)
         {
             Type _page = null;
 
             var item = _pages.FirstOrDefault(p => p.Tag.Equals(navItemTag));
+            if (string.IsNullOrEmpty(item.Tag))
+                return;
             _page = item.Page;
             var prevNavPAgeType = ContentFrame.CurrentSourcePageType;
-            if (!(_page is null) && !Type.Equals(prevNavPAgeType, _page))
+            if (!(_page is null))
             {
-                ContentFrame.Navigate(_page, null, recommendedNavigationTransitionInfo);
+                ContentFrame.Navigate(_page, openedTab, recommendedNavigationTransitionInfo);
             }
-
         }
-
-
+       
 
         private void navProcesses_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
@@ -59,7 +73,8 @@ namespace MAM.Views
             ////	// If navigation occurs on SelectionChanged, this isn't needed.
             ////	// Because we use ItemInvoked to navigate, we need to call Navigate
             ////	// here to load the home page.
-            //navProcesses_Navigate("HomePage", new EntranceNavigationTransitionInfo());
+            navProcesses_Navigate("WaitingProcesses", new EntranceNavigationTransitionInfo());
+            navProcesses.SelectedItem = _pages[0];
         }
 
         private void navProcesses_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)

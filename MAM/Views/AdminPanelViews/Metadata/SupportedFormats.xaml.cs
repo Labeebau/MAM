@@ -2,6 +2,7 @@ using MAM.Data;
 using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
@@ -66,18 +67,17 @@ namespace MAM.Views.AdminPanelViews.Metadata
                 FileTypeList.Add(row["file_type"].ToString());
             }
         }
-        private int InsertFormat(Format Format)
+        private async Task<int> InsertFormat(Format Format)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@file_type", Format.Type);
-            parameters.Add("@extension", Format.Extension);
-            parameters.Add("@description", Format.Description);
+            parameters.Add(new MySqlParameter("@file_type", Format.Type));
+            parameters.Add(new MySqlParameter("@extension", Format.Extension));
+            parameters.Add(new MySqlParameter("@description", Format.Description));
             query = $"INSERT INTO format (file_id,extension,description) "+
-                $"SELECT file_id,'{Format.Extension}','{Format.Description}' FROM file_type WHERE file_type='{Format.Type}'; ";
-            int newMetadataId = 0, errorCode = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode);
-            return newMetadataId;
+                $"SELECT file_id,@extension,@description FROM file_type WHERE file_type=@file_type; ";
+            var(affectedRows,newMetadataId,errorCode)=await dataAccess.ExecuteNonQuery(query, parameters);
+            return affectedRows>0? newMetadataId:-1;
         }
         private void Add_Click(object sender, RoutedEventArgs e)
         {
@@ -91,20 +91,14 @@ namespace MAM.Views.AdminPanelViews.Metadata
         {
             GetFormats();
         }
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            //if (ViewModel.Format.EditMode)
-            //{
-            //    UpdateFormat();
-            //    ViewModel.Format.EditMode = false;
-            //}
-            //else
-            //{
-
-                if (InsertFormat(ViewModel.Format) > 0)
-                    ViewModel.Format = new Format();
-            //}
-            GetFormats();
+            int result = await InsertFormat(ViewModel.Format);
+            if (result > 0)
+            {
+                ViewModel.Format = new Format();
+                GetFormats();
+            }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

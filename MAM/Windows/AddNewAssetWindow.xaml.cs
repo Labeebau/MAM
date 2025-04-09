@@ -1,10 +1,13 @@
 using MAM.Data;
 using MAM.Utilities;
 using MAM.Views.MediaBinViews;
+using MAM.Views.ProcessesViews;
+using MAM.Views.TransferJobs;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -25,21 +28,32 @@ namespace MAM.Windows
     /// </summary>
     public sealed partial class AddNewAssetWindow : Window
     {
-        DataAccess dataAccess = new DataAccess();
+        DataAccess dataAccess = new();
         // Static instance to track the window
         public static AddNewAssetWindow _instance;
         private static MediaLibraryPage MediaLibraryPage;
         //public static UploadHistoryPage uploadHistory { get; set; }
         public ObservableCollection<Asset> AssetList { get; set; } = new ObservableCollection<Asset>();
+        //public Process ThumbnailGeneration { get; set; }
+        //public Process ProxyGeneration { get; set; }
+        //public Process Transcoding { get; set; }
+        //public Process QualityCheck { get; set; }
 
         public AddNewAssetWindow(MediaLibraryPage mediaLibrary)
         {
             this.InitializeComponent();
-            SetWindowSizeAndPosition(1000, 800);
+            var titleBar = AppWindow.TitleBar;
+            // Set the background colors for active and inactive states
+            titleBar.BackgroundColor = Colors.Black;
+            titleBar.InactiveBackgroundColor = Colors.DarkGray;
+            // Set the foreground colors (text/icons) for active and inactive states
+            titleBar.ForegroundColor = Colors.White;
+            titleBar.InactiveForegroundColor = Colors.Gray;
+            GlobalClass.Instance.DisableMaximizeButton(this);
+            GlobalClass.Instance.SetWindowSizeAndPosition(1000, 800, this);
             DgvFiles.DataContext = this;
             MediaLibraryPage = mediaLibrary;
-            //uploadHistory = new UploadHistoryPage();
-            // LoadDataGrid();
+
         }
         private void SetWindowSizeAndPosition(int width, int height)
         {
@@ -87,7 +101,7 @@ namespace MAM.Windows
             AssetList.Clear();
             foreach (var media in MediaLibraryPage.viewModel.MediaPlayerItems)
             {
-                AssetList.Add(new Asset(media));// { FileName = media.Title, AssetPath = archivePage.archive.BinName, OriginalPath = media.MediaSource.ToString() });
+                AssetList.Add(new Asset(media));
             }
         }
         private async void OpenFileExplorer()
@@ -116,9 +130,9 @@ namespace MAM.Windows
                 {
                     if (file != null)
                     {
-                        
+
                         var videoProperties = await file.Properties.GetVideoPropertiesAsync();
-                        
+
                         TimeSpan duration = videoProperties.Duration;
                         //var path = file.Path.Replace("\\", "/");
                         string extension = Path.GetExtension(file.Name);
@@ -132,27 +146,26 @@ namespace MAM.Windows
                             type = "Image";
                         else if (GlobalClass.Instance.SupportedDocuments.Contains(extension))
                             type = "Document";
-                        FileInfo fileInfo = new FileInfo(file.Path);
-                        long fileSize = fileInfo.Length/(1024*1024);//Converts bytes to MB
-                        MediaPlayerItem media = new MediaPlayerItem
+                        FileInfo fileInfo = new(file.Path);
+                        long fileSize = fileInfo.Length / (1024 * 1024);//Converts bytes to MB
+                        MediaPlayerItem media = new()
                         {
                             CreatedUser = GlobalClass.Instance.CurrentUserName,
-                            CreationDate=DateOnly.FromDateTime(DateTime.Today.Date),
+                            CreationDate = DateOnly.FromDateTime(DateTime.Today.Date),
                             Duration = duration,
                             DurationString = duration.ToString(@"hh\:mm\:ss"),
-                            MediaSource=new Uri(Path.Combine(MediaLibraryPage.MediaLibrary.BinName,file.Name)),
-                            MediaPath= MediaLibraryPage.MediaLibrary.BinName,
+                            MediaSource = new Uri(Path.Combine(MediaLibraryPage.MediaLibrary.BinName, file.Name)),
+                            MediaPath = MediaLibraryPage.MediaLibrary.BinName,
                             OriginalPath = file.Path,
                             Size = fileSize,
                             Title = file.Name,
                             Type = type,
-                            Version="V1"
+                            Version = "V1"
                         };
                         AssetList.Add(new Asset(media));
                     }
                 }
             }
-            // DgvFiles.ItemsSource = AssetList;
         }
         private void AddFiles_Click(object sender, RoutedEventArgs e)
         {
@@ -231,8 +244,10 @@ namespace MAM.Windows
                     {
                         oldFileList = new List<string>();
                         oldFileList.Add(file.Path);
-                        closeWindow = await ShowMessageBox(asset, oldFileList);// shows AssetCreationConfirmation message box
-                        isExist = true;
+                        var result = await ShowMessageBox(asset, oldFileList);// shows AssetCreationConfirmation message
+                        closeWindow = result.Item1;
+                        newFile = result.Item2;
+                        isExist = false;
                         continue;
                         // AssetCreationConfirmationWindow.ShowWindow(asset.FileName, new List<string>());
                     }
@@ -250,28 +265,28 @@ namespace MAM.Windows
                             if (await InsertAsset(asset))
                             {
                                 // Generate Thumbnail
-                                var thumbnailFile = await proxyFolder.CreateFileAsync($"Thumbnail_{Path.GetFileNameWithoutExtension(asset.Media.OriginalPath)}.jpg", CreationCollisionOption.ReplaceExisting);
+                                var thumbnailFile = await proxyFolder.CreateFileAsync($"Thumbnail_{Path.GetFileNameWithoutExtension(newFile)}.jpg", CreationCollisionOption.ReplaceExisting);
+
                                 var originalFile = await StorageFile.GetFileFromPathAsync(asset.Media.OriginalPath);
                                 await GenerateThumbnailAsync(originalFile, thumbnailFile);
                                 var proxyPath = new Uri(Path.Combine(proxyFolder.Path, "Proxy_" + asset.Media.Title));
-                                MediaLibraryPage.viewModel.MediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath),MediaPath= Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
-                                MediaLibraryPage.viewModel.AllMediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath),MediaPath= Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
+                                MediaLibraryPage.viewModel.MediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath), MediaPath = Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
+                                MediaLibraryPage.viewModel.AllMediaPlayerItems.Add(new MediaPlayerItem { MediaSource = new Uri(asset.Media.MediaSource.LocalPath), MediaPath = Path.GetDirectoryName(asset.Media.MediaSource.LocalPath), ThumbnailPath = new Uri(thumbnailFile.Path), ProxyPath = proxyPath, Title = asset.Media.Title, DurationString = asset.Media.DurationString });
                                 MediaLibraryPage.MediaLibrary.FileCount = MediaLibraryPage.viewModel.MediaPlayerItems.Count;
                                 //if (closeWindow)
                                 //    this.Close();
-                                if (UploadHistoryPage.uploadHistory != null)
+                                if (UploadHistoryPage.UploadHistory != null)
                                 {
-                                    UploadHistoryPage.uploadHistory.UploadHistories.Clear();
+                                    //UploadHistoryPage.UploadHistory.UploadHistories.Clear();
                                     foreach (var ast in AssetList)
                                     {
-                                        UploadHistoryPage.uploadHistory.UploadHistories.Add(new UploadHistory { AssetObj = ast });
+                                        UploadHistoryPage.UploadHistory.UploadHistories.Add(new UploadHistory { AssetObj = ast });
                                     }
                                 }
                             }
                             if (closeWindow)
                                 this.Close();
-                            //string[] fileList = AssetList.Select(asset => asset.OriginalPath).ToArray();
-                            //string outputDirectory = archivePage.archive.BinName;
+
                         }
                     }
                 }
@@ -289,6 +304,7 @@ namespace MAM.Windows
 
             }
             await ProcessAssetsAsync(AssetList);
+            this.Close();
             foreach (Asset item in assetstoRemove)
             {
                 AssetList.Remove(item);
@@ -301,64 +317,6 @@ namespace MAM.Windows
         //    UploadHistoryPage.uploadHistory.AssetList = null;
         //    UploadHistoryPage.uploadHistory.AssetList = tempList;
         //    OnPropertyChanged(nameof(UploadHistoryPage.uploadHistory.AssetList)); // Notify binding
-        //}
-        public async Task RunFFmpegWithProgressAsync(Asset asset, string[] inputFiles, string outputFolder, IProgress<string> progress)
-        {
-
-            var folder = await StorageFolder.GetFolderFromPathAsync(MediaLibraryPage.MediaLibrary.BinName);
-            var files = await folder.GetFilesAsync();
-            // Create a Proxy Folder
-            var proxyFolder = await folder.CreateFolderAsync("Proxy", CreationCollisionOption.OpenIfExists);
-
-
-            var tasks = inputFiles.Select(async inputFile =>
-            {
-                // Create a compressed proxy file (using FFmpeg or similar)
-                //var proxyFile = await proxyFolder.CreateFileAsync($"Proxy_{Path.GetFileNameWithoutExtension(inputFile)}", CreationCollisionOption.ReplaceExisting);
-                string outputFile = Path.Combine(proxyFolder.Path, "Proxy_" + Path.GetFileNameWithoutExtension(inputFile) + ".mp4");
-                string arguments = $"-i \"{inputFile}\" -vf scale=640:-1 -c:v libx264 -b:v 200k  -c:a aac -b:a 128k \"{outputFile}\"";
-                //await ProcessAssetAsync(asset,arguments);
-                await ProcessAssetsAsync(AssetList);
-                //await Task.Run(() =>
-                //{
-                //    try
-                //    {
-
-                //        var progress = new Progress<string>(data =>
-                //        {
-                //            if (data == null)
-                //                return; // Skip if data is null.
-
-                //            App.UIDispatcherQueue.TryEnqueue(() =>
-                //            {
-                //                if (asset == null)
-                //                {
-                //                    Debug.WriteLine("Asset is null at progress update.");
-                //                    return; // Prevent crash if asset is null.
-                //                }
-                //                asset.Progress = ParseFFmpegOutput(data); // Update Progress property.
-                //            });
-                //        });
-
-
-
-
-                //            RunFFmpegProcessWithProgress(arguments, progress);
-                //        }
-                //        catch (Exception ex)
-                //        {
-                //            Debug.WriteLine($"Error running FFmpeg: {ex.Message}");
-                //        }
-                //        //RunFFmpegProcessWithProgress(arguments, progress);
-                //    });
-            });
-
-            await Task.WhenAll(tasks);
-        }
-
-        //private ReadOnlySpan<byte> ParseFFmpegOutput(string data)
-        //{
-        //    throw new NotImplementedException();
         //}
 
         private TimeSpan? totalDuration;
@@ -395,74 +353,133 @@ namespace MAM.Windows
             }
             return (int)progressPercentage;
         }
+        public static void RemoveProcessFromAllAndFiltered(Process process)
+        {
+            var matchAll = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == process.ProcessId);
+            if (matchAll != null)
+                ProcessStore.AllProcesses.Remove(matchAll);
+
+            var matchFiltered = ProcessStatusPage.Instance?.FilteredProcesses?.FirstOrDefault(p => p.ProcessId == process.ProcessId);
+            if (matchFiltered != null)
+                ProcessStatusPage.Instance.FilteredProcesses.Remove(matchFiltered);
+        }
+
 
         private async Task ProcessAssetAsync(Asset asset)
         {
-           // var dispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
             TimeSpan? totalDuration = null;
+            int newProcessId = 0;
             // Record the start time
-            App.UIDispatcherQueue.TryEnqueue(() =>
+            Process ProxyGeneration = ProcessStore.AllProcesses.FirstOrDefault(p => p.FilePath == asset.Media.MediaSource.LocalPath);
+
+            App.UIDispatcherQueue.TryEnqueue(async () =>
             {
                 asset.Status = "Waiting...";
-            });
-            var progress = new Progress<string>(data =>
-            {
-                if (data.Contains(" Duration:"))
-                {
-                    var durationString = data.Split(new[] { " Duration: ", "," }, StringSplitOptions.RemoveEmptyEntries)[1];
-                    if (TimeSpan.TryParse(durationString, out var duration))
-                    {
-                        totalDuration = duration;
-                    }
-                }
 
-                if (data.Contains("time=") && totalDuration.HasValue)
+                if (ProxyGeneration == null)
                 {
-                    var match = Regex.Match(data, @"time=(\d{2}:\d{2}:\d{2}\.\d{2})");
-                    if (match.Success && TimeSpan.TryParse(match.Groups[1].Value, out var currentTime))
-                    {
-                        var progressPercentage = (currentTime.TotalSeconds / totalDuration.Value.TotalSeconds) * 100;
-                        App.UIDispatcherQueue.TryEnqueue(() =>
-                        {
-                            asset.Progress = (int)progressPercentage;
-                            if (asset.Status != "Transfering...")
-                            {
-                                asset.Status = "Transfering..."; // Update status to 'transferring'
-                            }
-                        });
-                    }
+                    ProxyGeneration = new Process(asset.Media.MediaSource.LocalPath);
                 }
+                ProxyGeneration.ProcessType = "Proxy Generation";
+                ProxyGeneration.StartTime = DateTime.Now;
+                ProxyGeneration.Status = "Waiting...";
+                ProxyGeneration.Result = "Waiting";
+                Debug.WriteLine(ProxyGeneration.Status);
+                newProcessId = await InsertProcessInDatabaseAsync(ProxyGeneration);
+                ProxyGeneration.ProcessId = newProcessId;
+                ProcessStore.AllProcesses.Add(ProxyGeneration);
             });
-            string outputFile = Path.Combine(MediaLibraryPage.MediaLibrary.ProxyFolder, "Proxy_" + Path.GetFileNameWithoutExtension(asset.Media.OriginalPath) + ".mp4");
-            string arguments = $"-i \"{asset.Media.OriginalPath}\" -vf scale=640:-1 -c:v libx264 -b:v 200k  -c:a aac -b:a 128k \"{outputFile}\"";
-            // Update status to 'transferring' just before starting
-            App.UIDispatcherQueue.TryEnqueue(() =>
+            try
             {
-                asset.Status = "Transferring...";
-                asset.StartTime = DateTime.Now;
-            });
-            await Task.Run(() => RunFFmpegProcessWithProgress(arguments, progress));
-            // Record the completion time
-            App.UIDispatcherQueue.TryEnqueue(() =>
-            {
+                var progress = new Progress<string>(data =>
+                {
+                    if (data.Contains(" Duration:"))
+                    {
+                        var durationString = data.Split(new[] { " Duration: ", "," }, StringSplitOptions.RemoveEmptyEntries)[1];
+                        if (TimeSpan.TryParse(durationString, out var duration))
+                        {
+                            totalDuration = duration;
+                        }
+                    }
+                    if (data.Contains("time=") && totalDuration.HasValue)
+                    {
+                        var match = Regex.Match(data, @"time=(\d{2}:\d{2}:\d{2}\.\d{2})");
+                        if (match.Success && TimeSpan.TryParse(match.Groups[1].Value, out var currentTime))
+                        {
+                            var progressPercentage = (currentTime.TotalSeconds / totalDuration.Value.TotalSeconds) * 100;
+                            App.UIDispatcherQueue.TryEnqueue(() =>
+                            {
+                                asset.Progress = (int)progressPercentage;
+
+                                var process = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == ProxyGeneration.ProcessId);
+                                Debug.WriteLine($"Updating Process. Found: {process != null}, ProxyGen: {ProxyGeneration.GetHashCode()}, Found: {process?.GetHashCode()}");
+                                if (process != null)
+                                {
+                                    process.Progress = (int)progressPercentage;
+                                }
+                                if (asset.Status != "Transferring...")
+                                {
+                                    asset.Status = "Transferring..."; // Update status to 'transferring'
+                                    process.Status = "Generating Proxy...";
+                                }
+                            });
+                        }
+                    }
+                });
+                string outputFile = Path.Combine(MediaLibraryPage.MediaLibrary.ProxyFolder, "Proxy_" + Path.GetFileNameWithoutExtension(asset.Media.Title) + ".mp4");
+                string arguments = $"-i \"{asset.Media.OriginalPath}\" -vf scale=640:-1 -c:v libx264 -b:v 200k  -c:a aac -b:a 128k \"{outputFile}\"";
+                // Update status to 'transferring' just before starting
+                App.UIDispatcherQueue.TryEnqueue(() =>
+                {
+                    asset.Status = "Generating Proxy";
+                    ProxyGeneration.Status = "Generating Proxy";
+                    asset.StartTime = DateTime.Now;
+                    ProxyGeneration.StartTime = DateTime.Now;
+
+                });
+
+                await RunFFmpegProcessWithProgress(arguments, progress);
+                // Record the completion time
+                App.UIDispatcherQueue.TryEnqueue(async () =>
+                {
                 asset.Status = "Finished";
                 asset.CompletionTime = DateTime.Now;
-                
+                var process = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == ProxyGeneration.ProcessId);
+                    ////Debug.WriteLine($"Updating Process. Found: {process != null}, ProxyGen: {ProxyGeneration.GetHashCode()}, Found: {process?.GetHashCode()}");
+                    if (process != null)
+                    {
+                        process.Status = "Finished";
+                        process.CompletionTime = DateTime.Now;
+                        process.Result = "Finished";
+                        Debug.WriteLine(process.Result);
+                        ProcessStatusPage.Instance?.FilterData();
+                        await UpdateProcessStatusInDatabaseAsync(process);
+                    }
             });
+                //}
+                //else
+                //{
+                //    ProxyGeneration.Result = "Proxy Generation Failed";
+                //    Debug.WriteLine(ProxyGeneration.Result);
+                //}
+            }
+            catch (Exception ex)
+            {
+                ProxyGeneration.Result = $"Error: {ex.Message}";
+                Debug.WriteLine($"Error: {ex.Message}");
+            }
         }
+
         public async Task ProcessAssetsAsync(IEnumerable<Asset> assets)
         {
-            //string ffmpegPath = @"C:\Path\To\ffmpeg.exe";
             var tasks = assets.Select(asset => ProcessAssetAsync(asset));
             await Task.WhenAll(tasks); // Process all assets concurrently
-            UploadHistoryPage.uploadHistory.UploadHistories.Clear();
+            UploadHistoryPage.UploadHistory.UploadHistories.Clear();
         }
 
-        private void RunFFmpegProcessWithProgress(string arguments, IProgress<string> progress)
+        private async Task RunFFmpegProcessWithProgress(string arguments, IProgress<string> progress)
         {
-            //string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
-
-            using var process = new Process();
+            using var process = new System.Diagnostics.Process();
             process.StartInfo.FileName = GlobalClass.Instance.ffmpegPath;
             process.StartInfo.Arguments = arguments;
             process.StartInfo.UseShellExecute = false;
@@ -470,11 +487,19 @@ namespace MAM.Windows
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.CreateNoWindow = true;
 
+            var outputCompletion = new TaskCompletionSource<bool>();
+            var errorCompletion = new TaskCompletionSource<bool>();
+            var processExitCompletion = new TaskCompletionSource<bool>();
+
             process.OutputDataReceived += (sender, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
                 {
                     progress.Report(e.Data);
+                }
+                else
+                {
+                    outputCompletion.TrySetResult(true); // Ensure completion
                 }
             };
 
@@ -484,7 +509,12 @@ namespace MAM.Windows
                 {
                     progress.Report(e.Data);
                 }
+                else
+                {
+                    errorCompletion.TrySetResult(true); // Ensure completion
+                }
             };
+
             try
             {
                 process.Start();
@@ -493,10 +523,28 @@ namespace MAM.Windows
             {
                 throw new InvalidOperationException("Failed to start the FFmpeg process.", ex);
             }
-            // process.Start();
+
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            process.WaitForExit();
+
+            _ = Task.Run(async () =>
+            {
+                await process.WaitForExitAsync();
+                processExitCompletion.TrySetResult(true);
+                outputCompletion.TrySetResult(true); // Forcefully complete in case it's stuck
+                errorCompletion.TrySetResult(true);
+            });
+
+            var timeoutTask = Task.Delay(TimeSpan.FromMinutes(2)); // Avoid infinite waiting
+
+            var completedTask = await Task.WhenAny(Task.WhenAll(outputCompletion.Task, errorCompletion.Task, processExitCompletion.Task), timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                //throw new TimeoutException("FFmpeg process took too long and was forcefully stopped.");
+            }
+
+            Console.WriteLine("FFmpeg process completed successfully.");
         }
 
 
@@ -514,36 +562,8 @@ namespace MAM.Windows
 
 
 
-        private async Task CreateProxyFileAsync(StorageFile originalFile, StorageFolder folder)
-        {
-            // Create a Proxy Folder
-            var proxyFolder = await folder.CreateFolderAsync("Proxy", CreationCollisionOption.OpenIfExists);
-
-            // Create a compressed proxy file (using FFmpeg or similar)
-            var proxyFile = await proxyFolder.CreateFileAsync($"Proxy_{originalFile.Name}", CreationCollisionOption.ReplaceExisting);
-
-            // Example: Use FFmpeg to compress the video
-            //string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
-
-            // string arguments = $"-i \"D:\\sample.mp4\" - c:v libx264 -crf 23 - preset medium - c:a aac -b:a 128k -f mp4 \"D:\\output.mp4\"";
-
-            //string arguments = $"-i \"{originalFile.Path}\" -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k -f mp4 \"{proxyFile.Path}\"";
-            //await RunProcessAsync(ffmpegPath, arguments);
-
-            //string inputFile = @"D:\VIDEO 1080p\dd.mp4";
-            //string outputFile = @"F:\MAM\Data\Songs\Proxy\Proxy_dd.mp4";
-            // string arguments = $"-y -i \"{originalFile.Path}\" -c:v libx264 -crf 23 - preset fast \"{proxyFile.Path}\"";
-            // string arguments = $"-i \"{inputFile}\" -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k \"{outputFile}\"";
-
-            // await RunProcessAsync(ffmpegPath, arguments);
-
-            await RunFFmpegAsync(originalFile.Path, proxyFile.Path, GlobalClass.Instance.ffmpegPath);
 
 
-            // Generate Thumbnail
-            var thumbnailFile = await proxyFolder.CreateFileAsync($"Thumbnail_{Path.GetFileNameWithoutExtension(originalFile.Name)}.jpg", CreationCollisionOption.ReplaceExisting);
-            await GenerateThumbnailAsync(originalFile, thumbnailFile);
-        }
         private async Task RunFFmpegAsync(string inputFile, string outputFile, string ffmpegPath)
         {
             string arguments = $"-y -i \"{inputFile}\" -c:v libx264 -b:v 200k -vf scale=640:-1  -preset fast  -c:a aac -b:a 128k \"{outputFile}\"";
@@ -552,7 +572,7 @@ namespace MAM.Windows
 
         private void RunProcess(string executable, string arguments)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            ProcessStartInfo startInfo = new()
             {
                 FileName = executable,
                 Arguments = arguments,
@@ -562,90 +582,82 @@ namespace MAM.Windows
                 RedirectStandardError = true
             };
 
-            using (Process process = Process.Start(startInfo))
-            {
-                process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                process.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                process.WaitForExit();
-            }
+            using System.Diagnostics.Process process = System.Diagnostics.Process.Start(startInfo);
+            process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
+            process.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            process.WaitForExit();
         }
 
         private async Task GenerateThumbnailAsync(StorageFile videoFile, StorageFile thumbnailFile)
         {
-            // Obtain a thumbnail of the video
-            using (var thumbnail = await videoFile.GetThumbnailAsync(ThumbnailMode.VideosView))
+            Process  ThumbnailGeneration = new Process(videoFile.Path);
+            ThumbnailGeneration.FilePath = videoFile.Path;
+            ThumbnailGeneration.ProcessType = "Thumbnail Generation";
+            ThumbnailGeneration.StartTime = DateTime.Now;
+            ThumbnailGeneration.Status = "Generating Thumbnail";
+            ThumbnailGeneration.Progress = 0;
+            ThumbnailGeneration.Result = "Waiting";
+            Debug.WriteLine(ThumbnailGeneration.Status);
+            int newProcessId = await InsertProcessInDatabaseAsync(ThumbnailGeneration);
+            try
             {
+                // Obtain a thumbnail of the video
+                using var thumbnail = await videoFile.GetThumbnailAsync(ThumbnailMode.VideosView);
                 if (thumbnail != null)
                 {
                     // Open the destination thumbnail file for writing
-                    using (var outputStream = await thumbnailFile.OpenAsync(FileAccessMode.ReadWrite))
-                    {
-                        // Copy the thumbnail's stream to the output file
-                        await RandomAccessStream.CopyAsync(thumbnail, outputStream);
-                    }
+                    using var outputStream = await thumbnailFile.OpenAsync(FileAccessMode.ReadWrite);
+                    // Copy the thumbnail's stream to the output file
+                    await RandomAccessStream.CopyAsync(thumbnail, outputStream);
+                    ThumbnailGeneration.ProcessId = newProcessId;
+                    ThumbnailGeneration.CompletionTime = DateTime.Now;
+                    ThumbnailGeneration.Status = "Finished";
+                    ThumbnailGeneration.Progress = 100;
+                    ThumbnailGeneration.Result = "Finished";
+                    Debug.WriteLine(ThumbnailGeneration.Result);
+                    await UpdateProcessStatusInDatabaseAsync(ThumbnailGeneration);
+                }
+                else
+                {
+                    ThumbnailGeneration.Result = "Thumbnail Generation Failed";
+                    Debug.WriteLine(ThumbnailGeneration.Result);
                 }
             }
+            catch (Exception ex)
+            {
+                ThumbnailGeneration.Result = $"Error: {ex.Message}";
+                Debug.WriteLine($"Error: {ex.Message}");
+            }
         }
-        //private async Task RunProcessAsync(string fileName, string arguments)
-        //{
-        //    var process = new Process
-        //    {
-        //        StartInfo = new ProcessStartInfo
-        //        {
-        //            FileName = fileName,
-        //            Arguments = arguments,
-        //            RedirectStandardOutput = true,
-        //            RedirectStandardError = true,
-        //            UseShellExecute = false,
-        //            CreateNoWindow = true
-        //        }
-        //    };
+        private async Task UpdateProcessStatusInDatabaseAsync(Process process)
+        {
+            Dictionary<string, object> propsList = new Dictionary<string, object>();
+            propsList.Add("start_time", process.StartTime);
+            propsList.Add("end_time", process.StartTime);
+            propsList.Add("status", process.Status);
+            propsList.Add("result", process.Result);
+            int result = await dataAccess.UpdateRecord("process", "process_id", process.ProcessId, propsList);
+        }
+        private async Task<int> InsertProcessInDatabaseAsync(Process process)
+        {
+            List<MySqlParameter> propsList = new();
+            propsList.Add(new MySqlParameter("@Server", process.Server));
+            propsList.Add(new MySqlParameter("@FilePath", process.FilePath));
+            propsList.Add(new MySqlParameter("@Type", process.ProcessType));
 
-        //    var standardError = new List<string>();
-        //    var standardOutput = new List<string>();
-
-        //    // Event handlers to capture output and error streams.
-        //    process.OutputDataReceived += (sender, e) =>
-        //    {
-        //        if (!string.IsNullOrWhiteSpace(e.Data))
-        //        {
-        //            Debug.WriteLine($"FFmpeg Output: {e.Data}");
-        //            standardOutput.Add(e.Data);
-        //        }
-        //    };
-
-        //    process.ErrorDataReceived += (sender, e) =>
-        //    {
-        //        if (!string.IsNullOrWhiteSpace(e.Data))
-        //        {
-        //            Debug.WriteLine($"FFmpeg Error: {e.Data}");
-        //            standardError.Add(e.Data);
-        //        }
-        //    };
-
-        //    // Start the process and begin reading streams.
-        //    process.Start();
-        //    process.BeginOutputReadLine();
-        //    process.BeginErrorReadLine();
-
-        //    // Await process exit.
-        //    await Task.Run(() => process.WaitForExit());
-
-        //    // Check for non-zero exit codes indicating errors.
-        //    if (process.ExitCode != 0)
-        //    {
-        //        var errorMessages = string.Join(Environment.NewLine, standardError);
-        //        throw new Exception($"FFmpeg process failed with exit code {process.ExitCode}. Error details: {errorMessages}");
-        //    }
-
-        //    // Log output if needed.
-        //    Debug.WriteLine(string.Join(Environment.NewLine, standardOutput));
-        //}
+            propsList.Add(new MySqlParameter("@StartTime", process.StartTime));
+            propsList.Add(new MySqlParameter("@Status", process.Status));
+            propsList.Add(new MySqlParameter("@Result", process.Result));
+            string query = "insert into process (server,file_name,type,start_time,status,result)values(@Server,@FilePath,@Type,@StartTime,@Status,@Result)";
+            var (affectedRows, newId, errorCode) = await dataAccess.ExecuteNonQuery(query, propsList);
+            return affectedRows > 0 ? newId : -1;
+        }
 
 
-        private async Task<bool> ShowMessageBox(Asset asset, List<string> oldFileList)
+
+        private async Task<(bool, string)> ShowMessageBox(Asset asset, List<string> oldFileList)
         {
             var listBox = new ListBox
             {
@@ -696,7 +708,7 @@ namespace MAM.Windows
             if (result == ContentDialogResult.Primary)
             {
                 //Create New Asset
-                ContentDialog resultDialog = new ContentDialog
+                ContentDialog resultDialog = new()
                 {
                     //Title = "Keep or delete existing file",
                     Content = "Keep or delete existing file ?",
@@ -731,10 +743,12 @@ namespace MAM.Windows
                                 counter++;
                             } while (File.Exists(destinationFile));
                         }
-                        asset.Media.Title = destinationFile;
+                        asset.Media.Title = Path.GetFileName(destinationFile);
+                        asset.Media.MediaSource = new Uri(destinationFile);
                         // Copy the file to the destination
                         File.Copy(sourceFile, destinationFile);
                         Console.WriteLine($"File copied to: {destinationFile}");
+                        return (true, destinationFile);
                     }
                     catch (Exception ex)
                     {
@@ -746,7 +760,7 @@ namespace MAM.Windows
                 {
                     try
                     {
-                        File.Copy(asset.Media.OriginalPath,asset.Media.MediaSource.LocalPath, overwrite: true);
+                        File.Copy(asset.Media.OriginalPath, asset.Media.MediaSource.LocalPath, overwrite: true);
                     }
                     catch (IOException ex)
                     {
@@ -757,13 +771,13 @@ namespace MAM.Windows
                 {
                     dialog.Hide();
                 }
-                return true;
+                return (true, string.Empty);
             }
             else
             {
                 assetstoRemove.Add(asset);
                 dialog.Hide();
-                return false;
+                return (false, string.Empty);
             }
         }
         public void CopyFileWithRetry(string sourceFile, string destinationFile)
@@ -800,48 +814,44 @@ namespace MAM.Windows
         }
         private async Task<bool> InsertAsset(Asset asset)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = [];
             string query = string.Empty;
-            parameters.Add("@AssetName", asset.Media.Title);
-            parameters.Add("@AssetPath", asset.Media.MediaPath);
-            parameters.Add("@OriginalPath", asset.Media.OriginalPath);
-            parameters.Add("@Duration", Convert.ToDateTime(asset.Media.DurationString));
-            parameters.Add("@Version", asset.Media.Version);
-            parameters.Add("@Type",asset.Media.Type);
-            parameters.Add("@Size", asset.Media.Size);
-            parameters.Add("@createdUser", asset.Media.CreatedUser);
-            parameters.Add("@CreationDate", asset.Media.CreationDate.ToString("yyyy-MM-dd"));
-
-            //query = "INSERT INTO asset (asset_name, asset_path, original_path, duration,version,type,size,created_user,created_at) " +
-            //        $"SELECT * FROM(SELECT @AssetName,@AssetPath,@OriginalPath,@Duration,@Version,@Type,@Size,@createdUser,@CreationDate ) AS tmp " +
-            //        "WHERE NOT EXISTS( SELECT 1 FROM asset WHERE " +
-            //        $"asset_name = @AssetName AND asset_path = @AssetPath " +
-            //        $"AND original_path = @OriginalPath AND duration = @Duration) LIMIT 1;";
-            query= "INSERT INTO asset(asset_name, asset_path, original_path, duration, version, type, size, created_user, created_at) "+
+            parameters.Add(new MySqlParameter("@AssetName", asset.Media.Title));
+            parameters.Add(new MySqlParameter("@AssetPath", asset.Media.MediaPath));
+            parameters.Add(new MySqlParameter("@OriginalPath", asset.Media.OriginalPath));
+            parameters.Add(new MySqlParameter("@Duration", Convert.ToDateTime(asset.Media.DurationString)));
+            parameters.Add(new MySqlParameter("@Version", asset.Media.Version));
+            parameters.Add(new MySqlParameter("@Type", asset.Media.Type));
+            parameters.Add(new MySqlParameter("@Size", asset.Media.Size));
+            parameters.Add(new MySqlParameter("@createdUser", asset.Media.CreatedUser));
+            parameters.Add(new MySqlParameter("@CreationDate", asset.Media.CreationDate.ToString("yyyy-MM-dd")));
+            parameters.Add(new MySqlParameter("@IsArchived", asset.Media.IsArchived));
+            query = "INSERT INTO asset(asset_name, asset_path, original_path, duration, version, type, size, created_user, created_at,is_archived) " +
                     "SELECT * FROM(" +
-                    "SELECT "+
-                    "@AssetName AS asset_name,"+
-                    "@AssetPath AS asset_path,"+
-                    "@OriginalPath AS original_path,"+
-                    "@Duration AS duration,"+
-                    "@Version AS version,"+
-                    "@Type AS type,"+
-                    "@Size AS size,"+
-                    "@createdUser AS created_user,"+
-                    "@CreationDate AS created_at"+
-                    ") AS tmp "+
-                    "WHERE NOT EXISTS("+
-                        "SELECT 1 FROM asset "+
-                        "WHERE asset_name = @AssetName "+
-                        "AND asset_path = @AssetPath "+
-                        "AND original_path = @OriginalPath "+
-                        "AND duration = @Duration"+
+                    "SELECT " +
+                    "@AssetName AS asset_name," +
+                    "@AssetPath AS asset_path," +
+                    "@OriginalPath AS original_path," +
+                    "@Duration AS duration," +
+                    "@Version AS version," +
+                    "@Type AS type," +
+                    "@Size AS size," +
+                    "@createdUser AS created_user," +
+                    "@CreationDate AS created_at," +
+                    "@IsArchived AS is_archived" +
+                    ") AS tmp " +
+                    "WHERE NOT EXISTS(" +
+                        "SELECT 1 FROM asset " +
+                        "WHERE asset_name = @AssetName " +
+                        "AND asset_path = @AssetPath " +
+                        "AND original_path = @OriginalPath " +
+                        "AND duration = @Duration" +
                         ") LIMIT 1";
 
-            int newAssetId = 0, errorCode = 0;
             try
             {
-                if (dataAccess.ExecuteNonQuery(query, parameters, out newAssetId, out errorCode) == 0)
+                var (affectedRows, newAssetId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+                if (newAssetId == 0)
                 {
                     await ShowContentDialogAsync("Asset already exists.");
                     return false;
@@ -924,26 +934,6 @@ namespace MAM.Windows
             get => assetId;
             set => SetProperty(ref assetId, value);
         }
-        //public string FileName
-        //{
-        //    get => fileName;
-        //    set => SetProperty(ref fileName, value);
-        //}
-        //public string AssetPath
-        //{
-        //    get => assetPath;
-        //    set => SetProperty(ref assetPath, value);
-        //}
-        //public string OriginalPath
-        //{
-        //    get => originalPath;
-        //    set => SetProperty(ref originalPath, value);
-        //}
-        //public string Duration
-        //{
-        //    get => duration;
-        //    set => SetProperty(ref duration, value);
-        //}
         public int Progress
         {
             get => progress;
@@ -973,76 +963,10 @@ namespace MAM.Windows
         {
             Media = media;
         }
+        public Asset()
+        {
 
-        //public string Version
-        //{
-        //    get => version;
-        //    set => SetProperty(ref version, value);
-        //}
+        }
 
-        //public string Type
-        //{
-        //    get => type;
-        //    set => SetProperty(ref type, value);
-        //}
-        //public string File
-        //{
-        //    get => file;
-        //    set => SetProperty(ref file, value);
-        //}
-        //public string CreatedUser
-        //{
-        //    get => createdUser;
-        //    set => SetProperty(ref createdUser, value);
-        //}
-        //public DateOnly CreationDate
-        //{
-        //    get => creationDate;
-        //    set => SetProperty(ref creationDate, value);
-        //}
-        //public string UpdatedUser
-        //{
-        //    get => updatedUser;
-        //    set => SetProperty(ref updatedUser, value);
-        //}
-        //public DateTime LastUpdated
-        //{
-        //    get => lastUpdated;
-        //    set => SetProperty(ref lastUpdated, value);
-        //}
-        //public double Size
-        //{
-        //    get => size;
-        //    set => SetProperty(ref size, value);
-        //}
-        //public string Description
-        //{
-        //    get => description;
-        //    set => SetProperty(ref description, value);
-        //}
     }
-    //public static class Win32Interop
-    //{
-    //    private const int GWL_HWNDPARENT = -8;
-
-    //    [DllImport("user32.dll", SetLastError = true)]
-    //    public static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-    //    [DllImport("user32.dll", SetLastError = true)]
-    //    public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
-
-    //    [DllImport("user32.dll", SetLastError = true)]
-    //    public static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
-
-    //    /// <summary>
-    //    /// Sets the owner of a window.
-    //    /// </summary>
-    //    /// <param name="child">Handle to the child window.</param>
-    //    /// <param name="owner">Handle to the owner window.</param>
-    //    public static void SetWindowOwner(IntPtr child, IntPtr owner)
-    //    {
-    //        SetWindowLongPtr(child, GWL_HWNDPARENT, owner);
-    //    }
-    //}
-
 }

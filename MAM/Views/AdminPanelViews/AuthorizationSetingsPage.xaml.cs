@@ -2,6 +2,7 @@ using MAM.Data;
 using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Data;
 
@@ -250,32 +251,38 @@ namespace MAM.Views.AdminPanelViews
             }
             return editedProps;
         }
-        private int InsertPermission(int groupId, int permissionId)
+        private async Task<int> InsertPermission(int groupId, int permissionId)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@GroupId", groupId);
-            parameters.Add("@PermissionId", permissionId);
+            parameters.Add(new MySqlParameter("@GroupId", groupId));
+            parameters.Add(new MySqlParameter("@PermissionId", permissionId));
             query = "INSERT INTO group_permissions (group_id,permission_id) " +
                     $"SELECT {groupId},{permissionId} " +
                     "WHERE NOT EXISTS(" +
                     "SELECT 1 " +
                     "FROM group_permissions " +
                     $"WHERE group_id = {groupId} AND permission_id = {permissionId})";
-            int newUserGroupId = 0,errorCode = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
-            return newUserGroupId;
+           // int newUserGroupId = 0,errorCode = 0;
+           var (_,lastInsertedId,errorCode)= await dataAccess.ExecuteNonQuery(query, parameters);
+            return lastInsertedId;
         }
-        private int DeletePermission(int groupId, int permissionId)
+        private async Task<int> DeletePermission(int groupId, int permissionId)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@GroupId", groupId);
-            parameters.Add("@PermissionId", permissionId);
-            query = $"DELETE FROM group_permissions where group_id={groupId} AND permission_id={permissionId} ";
-            int newUserGroupId = 0, errorCode = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newUserGroupId, out errorCode);
-            return newUserGroupId;
+            parameters.Add(new MySqlParameter("@GroupId", groupId));
+            parameters.Add(new MySqlParameter("@PermissionId", permissionId));
+            query = $"DELETE FROM group_permissions where group_id=@GroupId AND permission_id=@PermissionId ";
+            // Execute query and retrieve affected rows
+            var (affectedRows, _, errorCode) =await dataAccess.ExecuteNonQuery(query, parameters);
+
+            if (errorCode != 0)
+            {
+                Console.WriteLine($"Failed to delete permission. Error code: {errorCode}");
+            }
+
+            return affectedRows; // Return number of deleted rows
         }
         private void SaveUserGroupRights_Click(object sender, RoutedEventArgs e)
         {

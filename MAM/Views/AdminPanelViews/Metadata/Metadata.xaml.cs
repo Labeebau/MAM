@@ -2,6 +2,7 @@ using MAM.Data;
 using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
@@ -21,7 +22,6 @@ namespace MAM.Views.AdminPanelViews.Metadata
         public event PropertyChangedEventHandler PropertyChanged;
         public ObservableCollection<MetadataClass> MetadataList { get; set; } = [];
         public ObservableCollection<string> MetadataTypes { get; set; }
-        private MetadataClass newMetadata;
         public MetadataViewModel ViewModel { get; set; }
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
@@ -61,16 +61,21 @@ namespace MAM.Views.AdminPanelViews.Metadata
         {
             MetadataTypes = new ObservableCollection<string> { "Int", "Double", "Bool", "String", "Text", "Date", "List" };
         }
-        private int InsertMetadata(MetadataClass metadata)
+        private async Task<int> InsertMetadata(MetadataClass metadata)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@Metadata", metadata.Metadata);
-            parameters.Add("@MetadataType", metadata.MetadataType);
+            parameters.Add(new MySqlParameter("@Metadata", metadata.Metadata));
+            parameters.Add(new MySqlParameter("@MetadataType", metadata.MetadataType));
             query = $"insert into metadata(metadata_name,metadata_type) values(@Metadata,@MetadataType) ";
-            int newMetadataId = 0, errorCode = 0;
-            dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode);
-            return newMetadataId;
+            var(affectedRows, newMetadataId, errorCode)=await dataAccess.ExecuteNonQuery(query, parameters);
+            if (errorCode != 0)
+            {
+                await GlobalClass.Instance.ShowErrorDialogAsync($"Failed to insert metadata. Error code: {errorCode}",this.XamlRoot);
+                return -1; // Indicate failure
+            }
+
+            return affectedRows > 0 ? newMetadataId : -1; // Return ID if insert was successful
         }
         private void Add_Click(object sender, RoutedEventArgs e)
         {
@@ -84,8 +89,9 @@ namespace MAM.Views.AdminPanelViews.Metadata
         {
             GetMetadata();
         }
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
+            int result = 0;
             if (ViewModel.Metadata.EditMode)
             {
                 UpdateMetadata();
@@ -93,7 +99,8 @@ namespace MAM.Views.AdminPanelViews.Metadata
             }
             else
             {
-                if (InsertMetadata(ViewModel.Metadata) > 0)
+                result = await InsertMetadata(ViewModel.Metadata);
+                if (result> 0)
                     ViewModel.Metadata = new MetadataClass();
             }
             GetMetadata();

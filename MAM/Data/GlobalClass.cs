@@ -1,9 +1,15 @@
-﻿using System;
+﻿using Microsoft.UI.Windowing;
+using Microsoft.UI;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Graphics;
+using System.Collections.ObjectModel;
 
 namespace MAM.Data
 {
@@ -52,7 +58,9 @@ namespace MAM.Data
         // You can add more properties as needed, like:
         public int SessionTimeout { get; set; }
         public bool IsLoggedIn { get; set; }
-        public string MediaLibraryPath { get; set; } = @"F:\MAM";
+        public string MediaLibraryPath { get; set; } = @"F:\MAM\Data";
+        public string ArchivePath { get; set; } = @"F:\MAM\Archive";
+
         public string ffmpegPath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffmpeg.exe";
         public string ffprobePath = @"C:\Program Files\ffmpeg\ffmpeg-2024-12-04-git-2f95bc3cb3-full_build\bin\ffprobe.exe";
 
@@ -67,10 +75,73 @@ namespace MAM.Data
     .Concat(SupportedImages)
     .Concat(SupportedDocuments)
     .ToList();
-
-
+        public ObservableCollection<string> RecentFiles = new ObservableCollection<string>();
         #endregion Global Data
         #region Global Methods
+        // Helper method for showing ContentDialog
+        public async Task ShowErrorDialogAsync(string message, XamlRoot xamlRoot)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Error",
+                Content = message,
+                CloseButtonText = "OK",
+                XamlRoot = xamlRoot
+            };
+
+            await dialog.ShowAsync();
+        }
+        //public void ShowErrorDialog(string message,XamlRoot xamlRoot)
+        //{
+        //    ContentDialog errorDialog = new ContentDialog
+        //    {
+        //        Title = "Error",
+        //        Content = message,
+        //        CloseButtonText = "OK",
+        //        XamlRoot = xamlRoot // Set the XamlRoot to ensure proper display
+        //    };
+
+        //    errorDialog.ShowAsync();
+        //}
+        public void DisableMaximizeButton(Window window)
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+
+            if (appWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.IsMaximizable = false; // Disable maximize button
+            }
+        }
+        public void SetWindowSizeAndPosition(int width, int height,Window window)
+        {
+            // Get the native window handle of the current window
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+
+            // Get the window ID from the handle
+            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+
+            // Retrieve the AppWindow using the static method GetFromWindowId
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+
+            if (appWindow != null)
+            {
+                // Resize the window to the specified size
+                appWindow.Resize(new SizeInt32(width, height));
+
+                // Get the screen size
+                var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
+                var workArea = displayArea.WorkArea;
+
+                // Calculate the center position
+                int centerX = (workArea.Width - width) / 2;
+                int centerY = (workArea.Height - height) / 2;
+
+                // Move the window to the center of the screen
+                appWindow.Move(new PointInt32(centerX, centerY));
+            }
+        }
         public bool Equals(object obj1,object obj2, out Dictionary<string, object> props)
         {
             props = new Dictionary<string, object>();

@@ -23,6 +23,7 @@ using Google.Protobuf.WellKnownTypes;
 using System.Windows.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static System.Net.Mime.MediaTypeNames;
+using System.ComponentModel;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -55,34 +56,74 @@ namespace MAM.UserControls
         public static readonly DependencyProperty MediaItemProperty =
             DependencyProperty.Register("MediaItem", typeof(MediaPlayerItem), typeof(CustomBinMedia),
             new PropertyMetadata(null, OnMediaItemChanged));
-        //public ICommand DeleteCommand
-        //{
-        //	get => (ICommand)GetValue(DeleteCommandProperty);
-        //	set => SetValue(DeleteCommandProperty, value);
-        //}
-
-        //public static readonly DependencyProperty DeleteCommandProperty =
-        //	DependencyProperty.Register(nameof(DeleteCommand), typeof(ICommand), typeof(CustomMedia), new PropertyMetadata(null));
-
-
 
         private static void OnMediaItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            var control = (CustomBinMedia)d;
-            var newItem = (MediaPlayerItem)e.NewValue;
-            control.OnMediaItemChangedInstance(newItem);
+            if (d is CustomBinMedia control)
+            {
+                if (e.OldValue is MediaPlayerItem oldItem)
+                {
+                    // Unsubscribe from the old item to prevent memory leaks
+                    oldItem.PropertyChanged -= control.MediaItem_PropertyChanged;
+                }
+
+                if (e.NewValue is MediaPlayerItem newItem)
+                {
+                    // Update UI elements based on the new item
+                    control.OnMediaItemChangedInstance(newItem);
+
+                    // Subscribe to listen for property changes
+                    newItem.PropertyChanged += control.MediaItem_PropertyChanged;
+                }
+            }
         }
         private void OnMediaItemChangedInstance(MediaPlayerItem item)
         {
             if (item != null)
             {
-                //SetMediaSource(item.MediaSource);
+                // Load thumbnail image
                 var bitmapImage = new BitmapImage(item.ThumbnailPath);
                 Thumbnail.Source = bitmapImage;
+
+                // Update ViewModel properties
                 viewModel.MediaObj.Title = item.Title;
                 viewModel.MediaObj.Duration = item.DurationString;
+
+                // Update ArchiveLabel visibility
+                UpdateArchiveLabelVisibility(item.IsArchived);
             }
         }
+        private void MediaItem_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (sender is MediaPlayerItem mediaItem && e.PropertyName == nameof(MediaPlayerItem.IsArchived))
+            {
+                UpdateArchiveLabelVisibility(mediaItem.IsArchived);
+            }
+        }
+        private void UpdateArchiveLabelVisibility(bool isArchived)
+        {
+            ArchiveLabel.Visibility = isArchived ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+
+        //private static void OnMediaItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        //{
+        //    var control = (CustomBinMedia)d;
+        //    var newItem = (MediaPlayerItem)e.NewValue;
+        //    control.OnMediaItemChangedInstance(newItem);
+
+        //}
+        //private void OnMediaItemChangedInstance(MediaPlayerItem item)
+        //{
+        //    if (item != null)
+        //    {
+        //        //SetMediaSource(item.MediaSource);
+        //        var bitmapImage = new BitmapImage(item.ThumbnailPath);
+        //        Thumbnail.Source = bitmapImage;
+        //        viewModel.MediaObj.Title = item.Title;
+        //        viewModel.MediaObj.Duration = item.DurationString;
+        //    }
+        //}
         // Method to set media source
         public void SetMediaSource(Uri mediaUri)
         {

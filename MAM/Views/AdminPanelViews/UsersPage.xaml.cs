@@ -3,6 +3,7 @@ using MAM.Data;
 using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Reflection;
 // To learn more about WinUI, the WinUI project structure,
@@ -147,15 +148,18 @@ namespace MAM.Views.AdminPanelViews
                 var user = button?.Tag as User;
                 if (user != null)
                 {
-                    var userDict = new Dictionary<string, object>() { { "@UserId", user.UserId } };
-                    int id = 0, errorCode = 0 ;
-                    if(dataAccess.ExecuteNonQuery($"DELETE FROM user WHERE user_id=@UserId", userDict, out id, out errorCode)==1) 
+                    var userDict = new List<MySqlParameter>{new MySqlParameter( "@UserId", user.UserId ) };
+                    var (affectedRows, id, errorCode) = await dataAccess.ExecuteNonQuery($"DELETE FROM user WHERE user_id=@UserId", userDict);
+                    if (affectedRows == 1)
                         FilteredUserList.Remove(user);
+                    else
+                        await GlobalClass.Instance.ShowErrorDialogAsync($"Can't Delete {user.UserName}",this.XamlRoot);
+                            
                 }
                 
             }
         }
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             ObservableCollection<User> dbUserList = new ObservableCollection<User>((IEnumerable<User>)dataAccess.GetUsers());
             Dictionary<PropertyInfo, string> DbFields = new Dictionary<PropertyInfo, string>();
@@ -163,7 +167,7 @@ namespace MAM.Views.AdminPanelViews
             {
                 if (user.UserId == -1)
                 {
-                    user.UserId = InsertUser(user);
+                    user.UserId =await InsertUser(user);
                     user.IsReadOnly = true;
                 }
                 else
@@ -205,24 +209,23 @@ namespace MAM.Views.AdminPanelViews
             }
             return editedProps;
         }
-        private int InsertUser(User user)
+        private async Task<int> InsertUser(User user)
         {
 
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@FirstName", user.FirstName);
-            parameters.Add("@LastName", user.LastName);
-            parameters.Add("@Email", user.Email);
-            parameters.Add("@UserName", user.UserName);
-            parameters.Add("@Password", user.Password);
-            parameters.Add("@ADUser", user.IsADUser);
-            parameters.Add("@Active", user.IsActive);
+            parameters.Add(new MySqlParameter("@FirstName", user.FirstName));
+            parameters.Add(new MySqlParameter("@LastName", user.LastName));
+            parameters.Add(new MySqlParameter("@Email", user.Email));
+            parameters.Add(new MySqlParameter("@UserName", user.UserName));
+            parameters.Add(new MySqlParameter("@Password", user.Password));
+            parameters.Add(new MySqlParameter("@ADUser", user.IsADUser));
+            parameters.Add(new MySqlParameter("@Active", user.IsActive));
 
             query = $"insert into user(first_name,last_name,email,user_name,password,ad_user,active)" +
                 $"values(@FirstName,@LastName,@Email,@UserName,@Password,@ADUser,@Active)";
-            int newUserId = 0,errorCode=0;
-            dataAccess.ExecuteNonQuery(query, parameters,out newUserId, out errorCode);
-            return newUserId;
+            var (affectedRows, newUserId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+            return affectedRows>0? newUserId:-1;
         }
 
 

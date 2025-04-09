@@ -23,7 +23,15 @@ namespace MAM.Windows
         public AddNewBinWindow(MediaLibraryPage currentPage)
         {
             this.InitializeComponent();
-            SetWindowSizeAndPosition(400, 200);
+            var titleBar = AppWindow.TitleBar;
+            // Set the background colors for active and inactive states
+            titleBar.BackgroundColor = Colors.Black;
+            titleBar.InactiveBackgroundColor = Colors.DarkGray;
+            // Set the foreground colors (text/icons) for active and inactive states
+            titleBar.ForegroundColor = Colors.White;
+            titleBar.InactiveForegroundColor = Colors.Gray;
+            GlobalClass.Instance.DisableMaximizeButton(this);
+            GlobalClass.Instance.SetWindowSizeAndPosition(400,200, this);
             viewModel = new BinViewModel();
             parentMediaLibraryPage = currentPage;
 
@@ -40,34 +48,7 @@ namespace MAM.Windows
                 _instance.Activate(); // Bring the existing window to the front
             }
         }
-        private void SetWindowSizeAndPosition(int width, int height)
-        {
-            // Get the native window handle of the current window
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-
-            // Get the window ID from the handle
-            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
-
-            // Retrieve the AppWindow using the static method GetFromWindowId
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-
-            if (appWindow != null)
-            {
-                // Resize the window to the specified size
-                appWindow.Resize(new SizeInt32(width, height));
-
-                // Get the screen size
-                var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-                var workArea = displayArea.WorkArea;
-
-                // Calculate the center position
-                int centerX = (workArea.Width - width) / 2;
-                int centerY = (workArea.Height - height) / 2;
-
-                // Move the window to the center of the screen
-                appWindow.Move(new PointInt32(centerX, centerY));
-            }
-        }
+       
         private void Window_Closed(object sender, WindowEventArgs args)
         {
             _instance = null;

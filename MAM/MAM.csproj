@@ -32,7 +32,9 @@
 
 	<ItemGroup>
     <Compile Remove="CustomMediaPlayer.cs" />
+    <Compile Remove="ProjectWindow.xaml.cs" />
     <Compile Remove="UserControls\CustomMediaCopy.xaml.cs" />
+    <Compile Remove="Views\ProjectPage.xaml.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Remove="Assets\Fonts\Dillon Francis - Candy ft. Snappy Jit.mp4" />
@@ -50,6 +52,7 @@
     <None Remove="BlankPage.xaml" />
     <None Remove="Fonts.xaml" />
     <None Remove="HomePage.xaml" />
+    <None Remove="ProjectWindow.xaml" />
     <None Remove="SettingsPage.xaml" />
     <None Remove="TestPage.xaml" />
     <None Remove="TestWindow.xaml" />
@@ -63,6 +66,8 @@
     <None Remove="Views\HomePage.xaml" />
     <None Remove="Views\MainProjectPage.xaml" />
     <None Remove="Views\MediaBinPage.xaml" />
+    <None Remove="Views\MediaBinViews\AssetMetadata\AssetMetadata.xaml" />
+    <None Remove="Views\MediaBinViews\AssetMetadata\General.xaml" />
     <None Remove="Views\ProcessesPage.xaml" />
     <None Remove="Views\ProcessesViews\ProcessStatusPage.xaml" />
     <None Remove="Views\ProjectPage.xaml" />
@@ -79,7 +84,7 @@
     <None Remove="Windows\AddNewBinWindow.xaml" />
     <None Remove="Windows\AssetCreationConfirmationWindow.xaml" />
     <None Remove="Windows\AssetWindow.xaml" />
-    <None Remove="Windows\DownloadWindow.xaml" />
+    <None Remove="Windows\DownloadOriginalFile.xaml" />
     <None Remove="Windows\LoginWindow.xaml" />
     <None Remove="Windows\MainWindow.xaml" />
     <None Remove="Windows\ProjectWindow.xaml" />
@@ -107,7 +112,9 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250108002" />
     <PackageReference Include="MySql.Data" Version="9.1.0" />
     <Manifest Remove="app.manifest" />
+    <Page Remove="ProjectWindow.xaml" />
     <Page Remove="UserControls\CustomMediaCopy.xaml" />
+    <Page Remove="Views\ProjectPage.xaml" />
     <COMReference Include="{215d64d2-031c-33c7-96e3-61794cd1ee61}">
       <WrapperTool>tlbimp</WrapperTool>
       <VersionMinor>4</VersionMinor>
@@ -190,6 +197,21 @@
     <Folder Include="Resources\" />
   </ItemGroup>
   <ItemGroup>
+    <Page Update="Windows\DownloadOriginalFile.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\MediaBinViews\AssetMetadata\AssetMetadata.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Views\MediaBinViews\AssetMetadata\General.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="Views\MediaBinViews\AssetMetadata\TagsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -229,11 +251,6 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Views\MainProjectPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Views\ProjectPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
@@ -298,7 +315,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Windows\DownloadWindow.xaml">
+    <Page Update="Windows\DownloadProxy.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

@@ -27,7 +27,7 @@ namespace MAM.Views.MediaBinViews
     /// </summary>
     public sealed partial class UploadHistoryPage : Page,INotifyPropertyChanged
     {
-        private ObservableCollection<UploadHistory> uploadHistories=new ObservableCollection<UploadHistory>();
+        private ObservableCollection<UploadHistory> uploadHistories=new();
       
         public ObservableCollection<UploadHistory> UploadHistories
         {
@@ -46,22 +46,22 @@ namespace MAM.Views.MediaBinViews
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        public static UploadHistoryPage uploadHistory { get; private set; }
+        public static UploadHistoryPage UploadHistory { get; private set; }
 
         public UploadHistoryPage()
         {
             this.InitializeComponent();
            
-            if(uploadHistory!=null && uploadHistory.UploadHistories!=null)
+            if(UploadHistory!=null && UploadHistory.UploadHistories!=null)
             {
-                this.UploadHistories = uploadHistory.UploadHistories;
+                this.UploadHistories = UploadHistory.UploadHistories;
 
             }
             UploadHistories.CollectionChanged += (s, e) =>
             {
                 System.Diagnostics.Debug.WriteLine($"AssetList updated. New count: {UploadHistories.Count}");
             };
-            uploadHistory = this;
+            UploadHistory = this;
             DataContext=this;
         }
     }

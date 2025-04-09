@@ -4,6 +4,7 @@ using MAM.Windows;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Data;
 
@@ -33,7 +34,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         // public string mediaPath { get; private set; }
         DataTable categoryTable;
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override  void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             if (e.Parameter is MediaPlayerViewModel viewmodel)
@@ -135,47 +136,23 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             return categories;
         }
 
-        private int InsertAssetToCategory(int assetId, string categoryName)
+        private async Task<int> InsertAssetToCategory(int assetId, string categoryName)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@AssetId", assetId);
-            parameters.Add("@CategoryName", categoryName);
+            parameters.Add(new MySqlParameter("@AssetId", assetId));
+            parameters.Add(new MySqlParameter("@CategoryName", categoryName));
             query = "INSERT INTO asset_category(asset_id, category_id) " +
                     "VALUES(@AssetId, (SELECT category_id FROM metadata_category WHERE category_name = @CategoryName))";
-
-
-            int newMetadataId = 0,errorCode=0;
-            string errorMessage = string.Empty;
-            if (dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode) > 0)
-            {
-                //var dialog = new ContentDialog
-                //{
-                //    Title = "Saved",
-                //    Content = "Category added successfully",
-                //    CloseButtonText = "OK",
-                //    Height = 10,
-                //    XamlRoot = this.XamlRoot
-                //};
-                //_ = dialog.ShowAsync();
-            }
+            var (affectedRows, lastInsertedId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+            if(affectedRows>0)
+                return lastInsertedId;
             else
             {
                 if (errorCode == 1062)
-                    errorMessage = "Category already added.";
-                var dialog = new ContentDialog
-                {
-                    Title = "Error",
-                    Content =!string.IsNullOrEmpty(errorMessage)?errorMessage: "Cannot add category",
-                    CloseButtonText = "OK",
-                    Height = 10,
-                    XamlRoot = this.XamlRoot
-                };
-                _ = dialog.ShowAsync();
+                    await GlobalClass.Instance.ShowErrorDialogAsync("Category already added.", this.XamlRoot);
+                return -1;
             }
-
-            // MetadataCategoryList = LoadCategories();
-            return newMetadataId;
         }
 
 
@@ -210,49 +187,33 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 {
 
 
-                    Dictionary<string, object> parameters = new Dictionary<string, object>();
+                    List<MySqlParameter> parameters = new ();
                     string query = string.Empty;
-                    parameters.Add("@AssetId", Viewmodel.Media.MediaId);
-                    parameters.Add("@CategoryName", SelectedAssetCategory.CategoryName);
-                    parameters.Add("@ParntId", SelectedAssetCategory.ParentId);
-                    int newId,errorCode;
+                    parameters.Add(new MySqlParameter("@AssetId", Viewmodel.Media.MediaId));
+                    parameters.Add(new MySqlParameter("@CategoryName", SelectedAssetCategory.CategoryName));
+                    parameters.Add(new MySqlParameter("@ParntId", SelectedAssetCategory.ParentId));
                     string errorMessage = string.Empty;
                     query = SelectedAssetCategory.ParentId != null
                         ? "delete from asset_category where asset_id = @AssetId and category_id = (SELECT category_id FROM metadata_category WHERE category_name = @CategoryName and parent_id = @ParntId LIMIT 1)"
                         : "delete from asset_category where asset_id = @AssetId and category_id = (SELECT category_id FROM metadata_category WHERE category_name = @CategoryName and parent_id IS NULL LIMIT 1)";
 
-                    if (dataAccess.ExecuteNonQuery(query, parameters, out newId,out errorCode) > 0)
-                    {
+                    var (affectedRows, newId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+                    if(affectedRows>0)
+                    { 
                         AssetCategories.Remove(SelectedAssetCategory);
                     }
                     else
                     {
-                        
-                        var dialog = new ContentDialog
-                        {
-                            Title = "Delete Failed",
-                            Content = string.IsNullOrWhiteSpace(errorMessage)
-                        ? "An unknown error occurred while trying to delete category."
-                        : errorMessage,
-                            CloseButtonText = "OK",
-                            XamlRoot = this.XamlRoot 
-                        };
-
-                        await dialog.ShowAsync();
+                        await GlobalClass.Instance.ShowErrorDialogAsync(string.IsNullOrWhiteSpace(errorMessage)
+                         ? "An unknown error occurred while trying to delete category."
+                         : errorMessage, this.XamlRoot);
                     }
                 }
             }
             else
             {
-                var dialog = new ContentDialog
-                {
+                await GlobalClass.Instance.ShowErrorDialogAsync("Select any Category", this.XamlRoot);
 
-                    Content = "Select any Category",
-                    CloseButtonText = "OK",
-                    Height = 10,
-                    XamlRoot = this.XamlRoot
-                };
-                _ = dialog.ShowAsync();
             }
         }
 

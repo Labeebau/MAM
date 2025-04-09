@@ -49,7 +49,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
             //  string arguments = $"-v error -select_streams v:0 -show_entries stream=codec_name,width,height,r_frame_rate -of csv=p=0 \"{videoPath}\"";
 
-            ProcessStartInfo psi = new ProcessStartInfo
+            ProcessStartInfo psi = new()
             {
                 FileName = ffprobePath,
                 Arguments = arguments,
@@ -59,28 +59,27 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 CreateNoWindow = true
             };
 
-            using (Process process = new Process { StartInfo = psi })
+            using System.Diagnostics.Process process = new()
+            { StartInfo = psi };
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();  // Capture error output
+            process.WaitForExit();
+
+            if (!string.IsNullOrWhiteSpace(error))
             {
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();  // Capture error output
-                process.WaitForExit();
-
-                if (!string.IsNullOrWhiteSpace(error))
-                {
-                    Console.WriteLine("FFprobe Error: " + error);
-                }
-
-                Console.WriteLine("FFprobe Output: " + output);
-                return output;
+                Console.WriteLine("FFprobe Error: " + error);
             }
+
+            Console.WriteLine("FFprobe Output: " + output);
+            return output;
         }
 
 
         public void LoadCodecInfo(string videoPath)
         {
             CodecInfo.Clear();
-            TreeNode? GeneralNode = new TreeNode("General");
+            TreeNode GeneralNode = new("General");
             if (FileInfo != null)
             {
                 foreach (var info in FileInfo)
@@ -93,8 +92,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 string ffmpegData = GetVideoMetadata(videoPath);
                 var lines = ffmpegData.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 
-                TreeNode? videoStream = null;
-                TreeNode? audioStream = null;
+                TreeNode videoStream = null;
+                TreeNode audioStream = null;
 
                 foreach (var line in lines) //"0,h264,video,1920,1080,25/1"
                 {                           //"1,aac,audio,44100,2,0/0"
@@ -126,7 +125,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 if (audioStream != null) CodecInfo.Add(audioStream);
             }
         }
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override  void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 

@@ -12,7 +12,7 @@
     <!--<Page.DataContext>
         <local:FileInfos/>
     </Page.DataContext>-->
-    <Grid Width="300" Height="300" HorizontalAlignment="Left" Padding="10" VerticalAlignment="Top" >
+    <Grid Height="auto" HorizontalAlignment="Left" Padding="10" VerticalAlignment="Top" Width="670" Background="{StaticResource ThemeSecondaryBackgroundColor}" >
         <StackPanel Orientation="Vertical">
             <TreeView ItemsSource="{Binding CodecInfo}" SelectionMode="None">
                 <TreeView.ItemTemplate>

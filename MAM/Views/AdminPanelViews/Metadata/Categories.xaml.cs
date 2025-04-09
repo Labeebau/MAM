@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
@@ -89,22 +90,26 @@ namespace MAM.Views.AdminPanelViews.Metadata
 
             MetadataCategoryList = categories;
         }
-        private int InsertMetadataCategoryAsync(MetadataCategory metadataCategory, bool IssubCategory)
+        private async Task<int> InsertMetadataCategoryAsync(MetadataCategory metadataCategory, bool IssubCategory)
         {
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-            parameters.Add("@MetadataCategory", metadataCategory.CategoryName);
-            parameters.Add("@ParentId", metadataCategory.ParentId);
+            parameters.Add(new MySqlParameter("@MetadataCategory", metadataCategory.CategoryName));
+            parameters.Add(new MySqlParameter("@ParentId", metadataCategory.ParentId));
             if (IssubCategory)
+            {
                 query = "INSERT INTO metadata_Category (category_name, parent_id)" +
                     "SELECT * FROM (SELECT @MetadataCategory,@ParentId) AS tmp" +
                     " WHERE NOT EXISTS (" +
                     "SELECT 1 FROM metadata_Category WHERE parent_id = @ParentId AND category_name = @MetadataCategory);";
+            }
             else
+            {
                 query = $"insert into metadata_category(category_name) values(@MetadataCategory) ";
+            }
 
-            int newMetadataId = 0, errorCode = 0;
-            if (dataAccess.ExecuteNonQuery(query, parameters, out newMetadataId, out errorCode) > 0)
+            var (affectedRows, newMetadataId,errorCode) = await Task.Run(() => dataAccess.ExecuteNonQuery(query, parameters));
+            if (affectedRows > 0)
             {
                 //var dialog = new ContentDialog
                 //{
@@ -115,23 +120,15 @@ namespace MAM.Views.AdminPanelViews.Metadata
                 //    XamlRoot = this.XamlRoot 
                 //};
                 //_ = dialog.ShowAsync();
+                return newMetadataId;
             }
             else
             {
                 DeleteFromList(metadataCategory);
-                var dialog = new ContentDialog
-                {
-                    Title = "Error",
-                    Content = "Can't save category",
-                    CloseButtonText = "OK",
-                    Height = 10,
-                    XamlRoot = this.XamlRoot 
-                };
-                _ = dialog.ShowAsync();
+                await GlobalClass.Instance.ShowErrorDialogAsync("Can't save category",this.XamlRoot);
+                return -1;
             }
 
-            // MetadataCategoryList = LoadCategories();
-            return newMetadataId;
         }
         private void Add_Click(object sender, RoutedEventArgs e)
         {
@@ -145,14 +142,17 @@ namespace MAM.Views.AdminPanelViews.Metadata
             LoadCategories();
             RefreshTreeView();
         }
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (InsertMetadataCategoryAsync(ViewModel.MetadataCategory, false) > 0)
+            int result = await InsertMetadataCategoryAsync(ViewModel.MetadataCategory, false);
+
+            if (result > 0)
             {
                 LoadCategories();
                 RefreshTreeView();
             }
         }
+
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
@@ -218,7 +218,7 @@ namespace MAM.Views.AdminPanelViews.Metadata
         private void UpdateMetadataCategory(MetadataCategory category)
         {
             Dictionary<string, object> propsList = new Dictionary<string, object>();
-            propsList.Add("Category_name", category.CategoryName);
+            propsList.Add("category_name", category.CategoryName);
             dataAccess.UpdateRecord("metadata_category", "category_id", category.CategoryId, propsList);
         }
 
@@ -290,9 +290,10 @@ namespace MAM.Views.AdminPanelViews.Metadata
                 }
             }
         }
-        private void SaveCategory(MetadataCategory category)
+        private async void SaveCategory(MetadataCategory category)
         {
-            if (InsertMetadataCategoryAsync(category, true) > 0)
+            int result =await InsertMetadataCategoryAsync(category, true);
+            if (result> 0)
             {
                 category.IsEditing = false; // Exit edit mode
                 CategoryTreeView.SelectedItem = category;
@@ -366,7 +367,7 @@ namespace MAM.Views.AdminPanelViews.Metadata
 
 
 
-        private async void AddSubcategory(MetadataCategory category)
+        private  void AddSubcategory(MetadataCategory category)
         {
             if (category == null) return;
             var newSubCategory = new MetadataCategory

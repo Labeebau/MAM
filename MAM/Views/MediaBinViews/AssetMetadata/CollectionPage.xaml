@@ -9,7 +9,7 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid>
+    <Grid Width="670" Background="{StaticResource ThemeSecondaryBackgroundColor}">
 
     </Grid>
 </Page>

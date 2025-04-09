@@ -11,7 +11,7 @@
     
     <Grid Height="450" Background="{StaticResource PageBackgroundColor}" CornerRadius="10"  
           HorizontalAlignment="Center" VerticalAlignment="Center"  Margin="60,50,0,0" Padding="48" >
-        
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -62,6 +62,8 @@
                     <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
+            <FontIcon Glyph="&#xE9F3;" FontFamily="Segoe MDL2 Assets" FontSize="24"/>
+
         </StackPanel>
         
     </Grid>

@@ -50,48 +50,13 @@ namespace MAM.Windows
             // Get the window handle
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             // Remove the maximize button
-            DisableMaximizeButton(hwnd);
-            SetWindowSizeAndPosition(500, 270);
+            GlobalClass.Instance.DisableMaximizeButton(this);
+            GlobalClass.Instance.SetWindowSizeAndPosition(500, 270, this);
             viewModel = new LoginViewModel();
             UserPanel.DataContext = viewModel;
         }
 
-        private void DisableMaximizeButton(IntPtr hwnd)
-        {
-            // Get the current window style
-            int style = GetWindowLong(hwnd, GWL_STYLE);
-
-            // Modify the style to disable the maximize button
-            SetWindowLong(hwnd, GWL_STYLE, style & ~WS_MAXIMIZEBOX);
-        }
-        private void SetWindowSizeAndPosition(int width, int height)
-        {
-            // Get the native window handle of the current window
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-
-            // Get the window ID from the handle
-            var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
-
-            // Retrieve the AppWindow using the static method GetFromWindowId
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-
-            if (appWindow != null)
-            {
-                // Resize the window to the specified size
-                appWindow.Resize(new SizeInt32(width, height));
-
-                // Get the screen size
-                var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-                var workArea = displayArea.WorkArea;
-
-                // Calculate the center position
-                int centerX = (workArea.Width - width) / 2;
-                int centerY = (workArea.Height - height) / 2;
-
-                // Move the window to the center of the screen
-                appWindow.Move(new PointInt32(centerX, centerY));
-            }
-        }
+        
         // Method to get the instance of the window or create it if it doesn't exist
         public static void ShowWindow()
         {

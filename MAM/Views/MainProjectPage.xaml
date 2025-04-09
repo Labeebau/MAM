@@ -10,75 +10,6 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid x:Name="MainAppWindow" Background="{StaticResource ThemePrimaryBackgroundColor}">
-
-        <!--<Grid.RowDefinitions>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="30"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>-->
-        <!--  Title bar  -->
-
-        <!--<Grid
-    x:Name="AppTitleBar"
-    Grid.Row="0"
-    Background="{StaticResource ThemeSecondaryBackgroundColor}">
-            <Image
-        Width="16"
-        Height="32"
-        Margin="8,0"
-        HorizontalAlignment="Left"
-        Source="Assets/WindowIcon.png" />
-            <TextBlock
-        x:Name="AppTitleTextBlock"
-        Foreground="{StaticResource ThemeHighlightColor}"
-        Margin="28,0,0,0"
-        VerticalAlignment="Center"
-        Style="{StaticResource CaptionTextBlockStyle}"
-        Text="MAM"
-        TextWrapping="NoWrap" />
-            --><!--<StackPanel Orientation="Horizontal" Background="Red" HorizontalAlignment="Right" VerticalAlignment="Center" Height="25" Width="150">
-           <Button></Button>
-       </StackPanel>--><!--
-        </Grid>-->
-        <!--<StackPanel Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10,0,0,0">
-            <MenuBar RequestedTheme="Dark" >
-                <MenuBarItem Title="File"  Foreground="White"  >
-                    <MenuFlyoutSubItem Text="New">
-                        <MenuFlyoutItem Text="Plain Text Document" />
-                        <MenuFlyoutItem Text="Rich Text Document"/>
-                        <MenuFlyoutItem Text="Other Formats..."/>
-                    </MenuFlyoutSubItem>
-                    <MenuFlyoutItem Text="Open..."/>
-                    <MenuFlyoutItem Text="Save"/>
-                    <MenuFlyoutSeparator />
-                    <MenuFlyoutItem Text="Exit"/>
-                </MenuBarItem>
-
-                <MenuBarItem Title="Edit" Foreground="White">
-                    <MenuFlyoutItem Text="Undo"/>
-                    <MenuFlyoutItem Text="Cut"/>
-                    <MenuFlyoutItem Text="Copy"/>
-                    <MenuFlyoutItem Text="Paste"/>
-                </MenuBarItem>
-
-                <MenuBarItem Title="View" Foreground="White">
-                    <MenuFlyoutItem Text="Output"/>
-                    <MenuFlyoutSeparator/>
-                    <RadioMenuFlyoutItem Text="Landscape" GroupName="OrientationGroup"/>
-                    <RadioMenuFlyoutItem Text="Portrait" GroupName="OrientationGroup" IsChecked="True"/>
-                    <MenuFlyoutSeparator/>
-                    <RadioMenuFlyoutItem Text="Small icons" GroupName="SizeGroup"/>
-                    <RadioMenuFlyoutItem Text="Medium icons" IsChecked="True" GroupName="SizeGroup"/>
-                    <RadioMenuFlyoutItem Text="Large icons" GroupName="SizeGroup"/>
-                </MenuBarItem>
-
-                <MenuBarItem Title="Help" Foreground="White">
-                    <MenuFlyoutItem Text="How To Use"/>
-                    <MenuFlyoutItem Text="Player Shortcut"/>
-                    <MenuFlyoutItem Text="About"/>
-                </MenuBarItem>
-            </MenuBar>
-        </StackPanel>-->
         <NavigationView 
        x:Name="NavView"
        RequestedTheme="Dark" 
@@ -108,9 +39,7 @@
                 </NavigationViewItem>
                 <NavigationViewItem Content="Processes"   Tag="Processes">
                     <NavigationViewItem.Icon >
-
-                        <FontIcon  Glyph="&#xe5df;"/>
-                        <!--<BitmapIcon UriSource="ms-appx:///Assets/process.png" Height="300" Width="300"/>-->
+                        <FontIcon Glyph="&#xE9F5;" FontFamily="Segoe MDL2 Assets" FontWeight="SemiBold" FontSize="30"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Transfer Job"  Tag="TransferJob" >
@@ -130,14 +59,7 @@
                 </NavigationViewItem>
 
             </NavigationView.MenuItems>
-            <!--<NavigationView.AutoSuggestBox>
-           -->
-            <!-- See AutoSuggestBox documentation for
-         more info about how to implement search. -->
-            <!--
-           <AutoSuggestBox x:Name="NavViewSearchBox" QueryIcon="Find"/>
-       </NavigationView.AutoSuggestBox>-->
-
+         
             <ScrollViewer>
                 <Frame x:Name="ContentFrame" IsTabStop="True">
 

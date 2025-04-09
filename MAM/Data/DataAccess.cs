@@ -42,7 +42,7 @@ namespace MAM.Data
                 connection.Close();
             }
         }
-        public int GetId(string query, Dictionary<string, object> parameters = null)
+        public int GetId(string query, List<MySqlParameter> parameters = null)
         {
             int id = -1;
             using (MySqlConnection connection = OpenConnection())
@@ -54,7 +54,7 @@ namespace MAM.Data
                     {
                         foreach (var param in parameters)
                         {
-                            command.Parameters.AddWithValue(param.Key, param.Value);
+                            command.Parameters.AddWithValue(param.ParameterName, param.Value);
                         }
                         var res = command.ExecuteScalar();
                         if (res != null)
@@ -69,7 +69,36 @@ namespace MAM.Data
                 CloseConnection(connection);
             }
             return id;
+
         }
+        public string GetString(string query, Dictionary<string, object> parameters = null)
+        {
+            string result=string.Empty;
+            using (MySqlConnection connection = OpenConnection())
+            {
+                using (MySqlCommand command = new MySqlCommand(query, connection))
+                {
+
+                    try
+                    {
+                        foreach (var param in parameters)
+                        {
+                            command.Parameters.AddWithValue(param.Key, param.Value);
+                        }
+                        var res = command.ExecuteScalar();
+                        if (res != null)
+                            result = res.ToString();                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error executing query: {ex.Message}");
+                        throw;
+                    }
+                }
+                CloseConnection(connection);
+            }
+            return result;
+        }
+
         public DataTable GetData(string query, Dictionary<string, object> parameters = null)
         {
             DataTable dataTable = new DataTable();
@@ -83,7 +112,7 @@ namespace MAM.Data
                         {
                             foreach (var param in parameters)
                             {
-                                command.Parameters.AddWithValue(param.Key, param.Value);
+                                command.Parameters.Add(new MySqlParameter(param.Key, param.Value));
                             }
                         }
                         using (MySqlDataReader reader = command.ExecuteReader())
@@ -184,59 +213,123 @@ namespace MAM.Data
         }
 
         // Method to execute non-query operations (INSERT/UPDATE/DELETE)
-
-        public int ExecuteNonQuery(string query, Dictionary<string, object> parameters, out int lastInsertedId,out int errorCode)
+        public async Task<(int affectedRows, int lastInsertedId, int errorCode)> ExecuteNonQuery(string query, List<MySqlParameter> parameters)
         {
             int affectedRows = 0;
-            lastInsertedId = -1;
+            int lastInsertedId = -1;
+            int errorCode = 0;
+
             using (MySqlConnection connection = OpenConnection())
             {
                 using (MySqlCommand command = new MySqlCommand(query, connection))
                 {
                     try
                     {
-                        // Add parameters to prevent SQL injection
-                        foreach (var param in parameters)
+                        // Add parameters to the command
+                        if (parameters != null)
                         {
-                            command.Parameters.AddWithValue(param.Key, param.Value);
+                            command.Parameters.AddRange(parameters.ToArray());
                         }
-                        affectedRows = command.ExecuteNonQuery();
-                        lastInsertedId = Convert.ToInt32(command.LastInsertedId);
-                        CloseConnection(connection);
-                        errorCode = 0;
-                        return affectedRows;
+
+                        affectedRows = await command.ExecuteNonQueryAsync();
+
+                        // Only retrieve LastInsertedId for INSERT queries
+                        if (query.TrimStart().StartsWith("INSERT", StringComparison.OrdinalIgnoreCase))
+                        {
+                            lastInsertedId = Convert.ToInt32(command.LastInsertedId);
+                        }
                     }
                     catch (MySqlException ex)
                     {
-                        if (ex.Number == 1062)  // Error codes for primary key and unique constraint violations
+                        switch (ex.Number)
                         {
-                            Console.WriteLine("Duplicate primary key error: Primary key or unique constraint violation.");
-                            errorCode = 1062;
-                            return -1;
+                            case 1062: // Duplicate primary key / unique constraint violation
+                                Console.WriteLine("Duplicate primary key error: Primary key or unique constraint violation.");
+                                errorCode = 1062;
+                                break;
 
+                            case 1451: // Foreign key constraint error
+                                Console.WriteLine("Foreign key error: It is referenced in another table.");
+                                errorCode = 1451;
+                                break;
+
+                            default:
+                                Console.WriteLine($"A MySQL error occurred: {ex.Message}");
+                                errorCode = ex.Number;
+                                break;
                         }
-                        else if (ex.Number == 1451) // Foreign key constraint error
-                        {
-                            Console.WriteLine("Foreign key error: it is referenced in another table.");
-                            errorCode = 1451;
-                            return -1;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"A MySQL error occurred: {ex.Message}");
-                            errorCode = -1;
-                            return 0;
-                        }
+                        return (-1, lastInsertedId, errorCode);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"An error occurred: {ex.Message}");
+                        Console.WriteLine($"An unexpected error occurred: {ex.Message}");
                         errorCode = -1;
-                        return 0;
+                        return (0, lastInsertedId, errorCode);
+                    }
+                    finally
+                    {
+                        // Ensure connection is closed properly
+                        CloseConnection(connection);
                     }
                 }
             }
+
+            return (affectedRows, lastInsertedId, errorCode);
         }
+
+
+        //public int ExecuteNonQuery(string query, Dictionary<string, object> parameters, out int lastInsertedId,out int errorCode)
+        //{
+        //    int affectedRows = 0;
+        //    lastInsertedId = -1;
+        //    using (MySqlConnection connection = OpenConnection())
+        //    {
+        //        using (MySqlCommand command = new MySqlCommand(query, connection))
+        //        {
+        //            try
+        //            {
+        //                // Add parameters to prevent SQL injection
+        //                foreach (var param in parameters)
+        //                {
+        //                    command.Parameters.AddWithValue(param.Key, param.Value);
+        //                }
+        //                affectedRows = command.ExecuteNonQuery();
+        //                lastInsertedId = Convert.ToInt32(command.LastInsertedId);
+        //                CloseConnection(connection);
+        //                errorCode = 0;
+        //                return affectedRows;
+        //            }
+        //            catch (MySqlException ex)
+        //            {
+        //                if (ex.Number == 1062)  // Error codes for primary key and unique constraint violations
+        //                {
+        //                    Console.WriteLine("Duplicate primary key error: Primary key or unique constraint violation.");
+        //                    errorCode = 1062;
+        //                    return -1;
+
+        //                }
+        //                else if (ex.Number == 1451) // Foreign key constraint error
+        //                {
+        //                    Console.WriteLine("Foreign key error: it is referenced in another table.");
+        //                    errorCode = 1451;
+        //                    return -1;
+        //                }
+        //                else
+        //                {
+        //                    Console.WriteLine($"A MySQL error occurred: {ex.Message}");
+        //                    errorCode = -1;
+        //                    return 0;
+        //                }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                Console.WriteLine($"An error occurred: {ex.Message}");
+        //                errorCode = -1;
+        //                return 0;
+        //            }
+        //        }
+        //    }
+        //}
         public bool ExecuteScalar(string query, Dictionary<string, object> parameters)
         {
             using (MySqlConnection connection = OpenConnection())
@@ -265,8 +358,10 @@ namespace MAM.Data
                 }
             }
         }
-        public Task UpdateRecord(string table, string idColumn, int idValue, Dictionary<string, object> columnValues)
+        public async Task<int> UpdateRecord(string table, string idColumn, int idValue, Dictionary<string, object> columnValues)
         {
+            int updatedRows = 0;
+
             try
             {
                 // Construct the update query dynamically based on the provided column names
@@ -277,27 +372,76 @@ namespace MAM.Data
                 {
                     string columnName = kvp.Key;
                     object value = kvp.Value;
+
                     // Append the column name to the query with a parameter placeholder
                     queryBuilder.Append($"{columnName} = @{columnName}, ");
+
                     // Add the parameter to the list
                     parameters.Add(new MySqlParameter($"@{columnName}", value));
-
                 }
+
                 // Remove the trailing comma and space, then add the WHERE clause
                 queryBuilder.Length -= 2; // Remove last comma and space
                 queryBuilder.Append($" WHERE {idColumn} = @Id");
-                columnValues.Add("@Id", idValue);
-                int id = 0,errorCode=0;
-                ExecuteNonQuery(queryBuilder.ToString(), columnValues, out id,out errorCode);
 
+                // Add ID parameter separately
+                parameters.Add(new MySqlParameter("@Id", idValue));
+
+                // Execute query and deconstruct the tuple result
+                var (affectedRows, _, errorCode) = await ExecuteNonQuery(queryBuilder.ToString(), parameters);
+
+                // Assign affectedRows to updatedRows
+                updatedRows = affectedRows;
+
+                // Optional: Handle error codes if needed
+                if (errorCode != 0)
+                {
+                    Console.WriteLine($"Database error occurred with code: {errorCode}");
+                }
             }
             catch (Exception ex)
             {
+                updatedRows = -1;
                 Console.WriteLine($"An error occurred: {ex.Message}");
             }
 
-            return Task.CompletedTask;
+            return updatedRows;
         }
+
+        //public async Task<int> UpdateRecord(string table, string idColumn, int idValue, Dictionary<string, object> columnValues)
+        //{
+        //    int updatedRows = 0;
+        //    try
+        //    {
+        //        // Construct the update query dynamically based on the provided column names
+        //        var queryBuilder = new StringBuilder($"UPDATE {table} SET ");
+        //        var parameters = new List<MySqlParameter>();
+
+        //        foreach (var kvp in columnValues)
+        //        {
+        //            string columnName = kvp.Key;
+        //            object value = kvp.Value;
+        //            // Append the column name to the query with a parameter placeholder
+        //            queryBuilder.Append($"{columnName} = @{columnName}, ");
+        //            // Add the parameter to the list
+        //            parameters.Add(new MySqlParameter($"@{columnName}", value));
+        //        }
+        //        // Remove the trailing comma and space, then add the WHERE clause
+        //        queryBuilder.Length -= 2; // Remove last comma and space
+        //        queryBuilder.Append($" WHERE {idColumn} = @Id");
+        //        columnValues.Add("@Id", idValue);
+        //        int id = 0, errorCode = 0;
+        //        updatedRows = await ExecuteNonQuery(queryBuilder.ToString(), columnValues, out id, out errorCode);
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        updatedRows = -1;
+        //        Console.WriteLine($"An error occurred: {ex.Message}");
+        //    }
+
+        //    return updatedRows;
+        //}
         public bool Delete(string table, string param, object value, out string errorMessage,out int errorCode)
         {
             errorMessage = string.Empty;
