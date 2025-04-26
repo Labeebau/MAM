@@ -1,14 +1,16 @@
 using MAM.Data;
-using MAM.ViewModels;
+using MAM.Utilities;
+using MAM.Views.AdminPanelViews;
 using MAM.Views.SystemAdminPanelViews;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System.Runtime.InteropServices;
-using Windows.Graphics;
 using Windows.System;
+using User = MAM.Views.AdminPanelViews.User;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -20,7 +22,8 @@ namespace MAM.Windows
     /// </summary>
     public sealed partial class LoginWindow : Window
     {
-        private LoginViewModel viewModel;
+        private DataAccess dataAccess = new DataAccess();
+        private Login viewModel;
         // Static instance to track the window
         private static LoginWindow _instance;
         // Constants for window styles
@@ -51,12 +54,12 @@ namespace MAM.Windows
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             // Remove the maximize button
             GlobalClass.Instance.DisableMaximizeButton(this);
-            GlobalClass.Instance.SetWindowSizeAndPosition(500, 270, this);
-            viewModel = new LoginViewModel();
+            GlobalClass.Instance.SetWindowSizeAndPosition(500, 300, this);
+            viewModel = new Login();
             UserPanel.DataContext = viewModel;
         }
 
-        
+
         // Method to get the instance of the window or create it if it doesn't exist
         public static void ShowWindow()
         {
@@ -70,54 +73,109 @@ namespace MAM.Windows
             _instance.Activate(); // Bring the existing window to the front
             //}
         }
-
-        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        private bool ValidateInput()
         {
-            bool isLoginSuccessful = ValidateLogin(viewModel.UserName, viewModel.Password);
+            bool isValid = true;
 
+            // Reset visuals
+            TxtError.Visibility = Visibility.Collapsed;
+            TxtError.Text = string.Empty;
+            TxtUserName.ClearValue(Control.BorderBrushProperty);
+            PwdBox.ClearValue(Control.BorderBrushProperty);
+
+            // Validate username
+            if (string.IsNullOrWhiteSpace(TxtUserName.Text))
+            {
+                TxtUserName.BorderBrush = new SolidColorBrush(Colors.Red);
+                isValid = false;
+            }
+
+            // Validate password
+            if (string.IsNullOrWhiteSpace(PwdBox.Password))
+            {
+                PwdBox.BorderBrush = new SolidColorBrush(Colors.Red);
+                isValid = false;
+            }
+
+            // Show error if invalid
+            if (!isValid)
+            {
+                TxtError.Text = "Please fill in both username and password.";
+                TxtError.Visibility = Visibility.Visible;
+            }
+
+            return isValid;
+        }
+
+
+        private async void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateInput())
+                return;
+            bool isLoginSuccessful = ValidateLogin();
             if (isLoginSuccessful)
             {
-
                 // Safely access the MainFrame and navigate
                 if (App.MainAppWindow != null && App.MainAppWindow.Mainframe != null)
                 {
                     this.Close();
                     App.MainAppWindow.ShowSystemAdminPanel = true;
                     App.MainAppWindow.Mainframe.Navigate(typeof(SystemAdminPanel));  // Navigate to HomePage
-                    GlobalClass.Instance.CurrentUserName = viewModel.UserName;
+                    //GlobalClass.Instance.CurrentUser=new User() {UserId= viewModel.UserId,UserName= viewModel.UserName,u };
+                    //GlobalClass.Instance.CurrentUser.UserName = viewModel.UserName;
+                    //GlobalClass.Instance.CurrentUser.UserId = viewModel.UserId;
+                    //GlobalClass.Instance.CurrentUserGroup.UserGroupId = viewModel.GroupId;
+                    //GlobalClass.Instance.CurrentUserGroup.GroupName = viewModel.GroupName;
                     App.MainAppWindow.CurrentUser = viewModel.UserName;
-
-
-                }
-                else
-                {
-                    // Handle the case where MainAppWindow or MainFrame is null
-                    ShowNavigationError();
+                    GlobalClass.Instance.CurrentUser = GlobalClass.Instance.GetUserRights(viewModel.UserId);
+                    GlobalClass.Instance.CurrentUserGroup=GlobalClass.Instance.GetUserGroupWithRights(viewModel.GroupId);
+                    GlobalClass.Instance.IsAdmin = viewModel.GroupName == "Admin" ? true : false;
+                    await GlobalClass.Instance.AddtoHistoryAsync("Login", "User logged in", viewModel.UserId);
                 }
             }
             else
             {
-                ShowLoginError();
+                if (TxtError.Text == string.Empty)
+                {
+                    TxtError.Text = "Invalid username or password.";
+                }
+                    TxtError.Visibility = Visibility.Visible;
             }
+
         }
 
-        private bool ValidateLogin(string userName, string password)
+        private bool ValidateLogin()
         {
-            string query = "select count(1) from user where user_name=@userName and password=@password";
-            Dictionary<string, object> userCred = new Dictionary<string, object>();
-            userCred.Add("username", userName);
-            userCred.Add("password", password);
+            int userId, groupId;
+            string passwordHash, passwordSalt,groupName;
+            (userId, passwordHash, passwordSalt, groupId, groupName) = dataAccess.GetUserCredentials(viewModel.UserName);// ?? (null, null, null,null,null);
 
-            Data.DataAccess dataAccess = new Data.DataAccess();
-            // Implement actual login logic
-            return dataAccess.ExecuteScalar(query, userCred); // Simulate successful login
+            if (userId>0 && passwordHash != null && passwordSalt != null)
+            {
+                if (PasswordHelper.VerifyPassword(viewModel.Password, passwordHash, passwordSalt))
+                {
+                    viewModel.UserId = userId;
+                    viewModel.GroupId = groupId;
+                    viewModel.GroupName = groupName;
+                    return true;
+                }
+                else
+                {
+                    TxtError.Text = "Invalid Password!!!";
+                    return false;
+                }
+            }
+            else if (userId<=0)
+            {
+                TxtError.Text = "Invalid User Name!!!";
+                return false;
+            }
+            else
+                return false;
         }
 
-        private void ShowLoginError()
-        {
-            // Display login error message
-            TxtError.Text = "Password does not match";
-        }
+
+
 
         private void ShowNavigationError()
         {
@@ -135,17 +193,19 @@ namespace MAM.Windows
         }
         bool isUSerNameValid = false;
         bool isPasswordValid = false;
+
+
         private void TxtUserName_TextChanged(object sender, TextChangedEventArgs e)
         {
-            isUSerNameValid = !string.IsNullOrWhiteSpace(TxtUserName.Text);
+            //isUSerNameValid = !string.IsNullOrWhiteSpace(TxtUserName.Text);
 
-            BtnLogin.IsEnabled = isUSerNameValid && isPasswordValid;
+            //BtnLogin.IsEnabled = isUSerNameValid && isPasswordValid;
         }
 
         private void PwdBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            isPasswordValid = !string.IsNullOrWhiteSpace(PwdBox.Password);
-            BtnLogin.IsEnabled = isUSerNameValid && isPasswordValid;
+            //isPasswordValid = !string.IsNullOrWhiteSpace(PwdBox.Password);
+            //BtnLogin.IsEnabled = isUSerNameValid && isPasswordValid;
         }
 
         private void PwdBox_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -166,10 +226,40 @@ namespace MAM.Windows
             }
         }
     }
-    public class User
+    public class Login : ObservableObject
     {
-        public string UserName { get; set; }
-        public string Password { get; set; }
+        private int userId;
+        private string userName;
+        private string password;
+        private int groupId;
+        private string groupName;
+
+        public int UserId
+        {
+            get => userId;
+            set => SetProperty(ref userId, value);
+        }
+        public string UserName
+        {
+            get => userName;
+            set => SetProperty(ref userName, value);
+        }
+       
+        public int GroupId
+        {
+            get => groupId;
+            set => SetProperty(ref groupId, value);
+        }
+        public string GroupName
+        {
+            get => groupName;
+            set => SetProperty(ref groupName, value);
+        }
+        public string Password
+        {
+            get => password;
+            set => SetProperty(ref password, value);
+        }
 
     }
 }

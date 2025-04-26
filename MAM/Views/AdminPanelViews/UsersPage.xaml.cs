@@ -151,10 +151,12 @@ namespace MAM.Views.AdminPanelViews
                     var userDict = new List<MySqlParameter>{new MySqlParameter( "@UserId", user.UserId ) };
                     var (affectedRows, id, errorCode) = await dataAccess.ExecuteNonQuery($"DELETE FROM user WHERE user_id=@UserId", userDict);
                     if (affectedRows == 1)
+                    {
                         FilteredUserList.Remove(user);
+                        await GlobalClass.Instance.AddtoHistoryAsync("Delete User", $"User '{user.UserName}' deleted.");
+                    }
                     else
-                        await GlobalClass.Instance.ShowErrorDialogAsync($"Can't Delete {user.UserName}",this.XamlRoot);
-                            
+                        await GlobalClass.Instance.ShowErrorDialogAsync($"Can't Delete {user.UserName}", this.XamlRoot);
                 }
                 
             }
@@ -180,7 +182,7 @@ namespace MAM.Views.AdminPanelViews
                             GlobalClass.Instance.Equals(user, dbUser, out propsList);
                             propsList = UpdateFieldNames(propsList);
                             if (propsList.Count > 0)
-                                dataAccess.UpdateRecord("user", "user_id", user.UserId, propsList);
+                               await dataAccess.UpdateRecord("user", "user_id", user.UserId, propsList);
                         }
                     }
                 }
@@ -209,25 +211,74 @@ namespace MAM.Views.AdminPanelViews
             }
             return editedProps;
         }
+        //private async Task<int> InsertUser(User user)
+        //{
+        //    var(hashedPassword,salt)= PasswordHelper.HashPassword(user.Password);
+        //    List<MySqlParameter> parameters = new ();
+        //    string query = string.Empty;
+        //    parameters.Add(new MySqlParameter("@FirstName", user.FirstName));
+        //    parameters.Add(new MySqlParameter("@LastName", user.LastName));
+        //    parameters.Add(new MySqlParameter("@Email", user.Email));
+        //    parameters.Add(new MySqlParameter("@UserName", user.UserName));
+        //    parameters.Add(new MySqlParameter("@PasswordHash", hashedPassword));
+        //    parameters.Add(new MySqlParameter("@PasswordSalt", salt));
+        //    parameters.Add(new MySqlParameter("@ADUser", user.IsADUser));
+        //    parameters.Add(new MySqlParameter("@Active", user.IsActive));
+        //    query = $"insert into user(first_name,last_name,email,user_name,password_hash,password_salt,ad_user,active)" +
+        //        $"values(@FirstName,@LastName,@Email,@UserName,@PasswordHash,@PasswordSalt,@ADUser,@Active)";
+        //    var (affectedRows, newUserId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+        //    var params = new Dictionary<string, object>
+        //            {
+        //                { "@UserId", user.UserId },
+        //                { "@Action", "Login" },
+        //                { "@Description", "User logged in" }
+        //            };
+        //    dataAccess.ExecuteStoredProcedure("InsertUserAction", params);
+        //    return affectedRows>0? newUserId:-1;
+        //}
+
         private async Task<int> InsertUser(User user)
         {
+            // Hash the password
+            var (hashedPassword, salt) = PasswordHelper.HashPassword(user.Password);
+            // Prepare parameters for INSERT
+            List<MySqlParameter> parameters = new()
+            {
+                new MySqlParameter("@FirstName", user.FirstName),
+                new MySqlParameter("@LastName", user.LastName),
+                new MySqlParameter("@Email", user.Email),
+                new MySqlParameter("@UserName", user.UserName),
+                new MySqlParameter("@PasswordHash", hashedPassword),
+                new MySqlParameter("@PasswordSalt", salt),
+                new MySqlParameter("@ADUser", user.IsADUser),
+                new MySqlParameter("@Active", user.IsActive)
+            };
 
-            List<MySqlParameter> parameters = new ();
-            string query = string.Empty;
-            parameters.Add(new MySqlParameter("@FirstName", user.FirstName));
-            parameters.Add(new MySqlParameter("@LastName", user.LastName));
-            parameters.Add(new MySqlParameter("@Email", user.Email));
-            parameters.Add(new MySqlParameter("@UserName", user.UserName));
-            parameters.Add(new MySqlParameter("@Password", user.Password));
-            parameters.Add(new MySqlParameter("@ADUser", user.IsADUser));
-            parameters.Add(new MySqlParameter("@Active", user.IsActive));
+            string query = "INSERT INTO user (first_name, last_name, email, user_name, password_hash, password_salt, ad_user, active) " +
+                           "VALUES (@FirstName, @LastName, @Email, @UserName, @PasswordHash, @PasswordSalt, @ADUser, @Active)";
 
-            query = $"insert into user(first_name,last_name,email,user_name,password,ad_user,active)" +
-                $"values(@FirstName,@LastName,@Email,@UserName,@Password,@ADUser,@Active)";
+            // Execute insert
             var (affectedRows, newUserId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
-            return affectedRows>0? newUserId:-1;
-        }
 
+            if (affectedRows > 0)
+            {
+                // Update user object with new ID
+                user.UserId = newUserId;
+
+                // Log user action
+                //var logParams = new Dictionary<string, object>
+                //{
+                //    { "user_id", user.UserId },
+                //    { "action", "Create User" }, // Changed "Login" to "CreateUser" since this is a registration
+                //    { "description", $"New user '{user.UserName}' created." }
+                //};
+
+                //await dataAccess.ExecuteStoredProcedure("InsertUserAction", logParams);
+                await GlobalClass.Instance.AddtoHistoryAsync("Create User", $"New user '{user.UserName}' created.");
+                return newUserId;
+            }
+            return -1;
+        }
 
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -373,7 +424,7 @@ namespace MAM.Views.AdminPanelViews
         private bool isActive;
         private bool isReadOnly = true;
         private bool isEnabled = false;
-
+        private Right userRighr;
         public int UserId
         {
             get => userId;
@@ -436,29 +487,14 @@ namespace MAM.Views.AdminPanelViews
             get => isEnabled;
             set => SetProperty(ref isEnabled, value);
         }
+        public Right UserRight
+        {
+            get => userRighr;
+            set => SetProperty(ref userRighr, value);
+        }
     }
 
 
-    //    if (FirstName != other.FirstName)
-    //    props.Add("@first_name",firstName);
-    //if(LastName != other.LastName)
-    //    props.Add("@last_name", LastName);
-    //if(email != other.email)
-    //    props.Add("@email", email);
-    //if(userName != other.userName)
-    //    props.Add("@user_name", userName);
-    //if(password != other.password)
-    //    props.Add("@password", password);
-    //if (IsADUSer != other.IsADUSer)
-    //    props.Add("@ad_user",IsADUSer);
-    //if (IsAdmin != other.IsAdmin)
-    //    props.Add("@IsAdmin", IsAdmin);
-    //if(IsActive != other.IsActive)
-    //    props.Add("@active",IsActive);
-    //if (other == null) return false;
-    //    return props.Count>0;
-
-    //}
-    //}
+   
 
 }

@@ -315,7 +315,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Windows\DownloadProxy.xaml">
+    <Page Update="Windows\DownloadProxyWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

@@ -20,7 +20,7 @@
         <local:BoolToGlyphConverter x:Key="BoolToGlyphConverter" />
         <MenuFlyout x:Key="AssetMenuFlyout">
             <MenuFlyoutItem x:Name="AddAssetMenuItem" Text="Add Asset" Icon="Add" Click="AddAsset_Click" IsEnabled="False" />
-            <MenuFlyoutItem Text="Add New Bin" Icon="NewFolder" Click="AddNewBin_Click" />
+            <MenuFlyoutItem x:Name="AddNewBin" Text="Add New Bin" Icon="NewFolder" Click="AddNewBin_Click" />
             <MenuFlyoutItem x:Name="ViewMenuItem" Text="View Asset" Icon="Play" Click="ViewAsset_Click" IsEnabled="False" />
             <MenuFlyoutItem x:Name="RenameMenuItem" Text="Rename" Icon="Rename" Click="Rename_Click" IsEnabled="False"  />
             <MenuFlyoutItem x:Name="DeleteMenuItem" Text="Delete" Icon="Delete" Click="Delete_Click" IsEnabled="False"  />
@@ -48,20 +48,38 @@
 
     </Page.Resources>
 
-    <Grid x:Name="MainGrid" HorizontalAlignment="Left" Padding="10" Height="1000" Width="auto" >
+    <!--<Grid x:Name="MainGrid" HorizontalAlignment="Left" Padding="10" Height="1000" Width="auto" >
 
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <!--<RowDefinition Height="*"/>
-            <RowDefinition Height="2*"/>-->
+            --><!--<RowDefinition Height="*"/>
+            <RowDefinition Height="2*"/>--><!--
 
 
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Vertical" VerticalAlignment="Center" Height="1000" Width="auto" >
-            <Canvas x:Name="MainCanvas"  Height="1000" Width="1850"  Background="{StaticResource ThemePrimaryBackgroundColor }"   >
-                <!-- Left Panel -->
-                <Border x:Name="LeftPanel" Height="700"   Width="300" Canvas.Left="0" Canvas.ZIndex="3" >
+            <Canvas x:Name="MainCanvas"  Height="1000" Width="1850"  Background="{StaticResource ThemePrimaryBackgroundColor }"   >-->
+    <Grid x:Name="MainGrid" Background="{StaticResource ThemePrimaryBackgroundColor}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="LeftColumn" Width="300"/>
+            <ColumnDefinition Width="10"/>
+            <!-- Left Splitter -->
+            <ColumnDefinition x:Name="CenterColumn" Width="*"/>
+            <ColumnDefinition Width="10"/>
+            <!-- Right Splitter -->
+            <ColumnDefinition x:Name="RightColumn" Width="300"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="TopRow" Height="*"/>
+            <RowDefinition Height="10"/>
+            <!-- Horizontal Splitter -->
+            <RowDefinition x:Name="BottomRow" Height="300"/>
+        </Grid.RowDefinitions>
+
+
+        <!-- Left Panel -->
+        <Border x:Name="LeftPanel" Grid.Row="0" Grid.Column="0" Height="700"   Width="300"  >
                     <Grid x:Name="LeftGrid" Padding="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="35"/>
@@ -103,9 +121,9 @@
                 </Border>
 
                 <!-- VerticalSplitter (Rectangle as the draggable divider) -->
-                <Rectangle x:Name="LeftVerticalSplitter" Width="10" Height="700" 
+        <Rectangle x:Name="LeftVerticalSplitter" Grid.Row="0" Grid.Column="1" Width="10" Height="700" 
                        Fill="{StaticResource ThemeSecondaryBackgroundColor}"  
-                       Canvas.Left="300"   IsHitTestVisible="True" Canvas.ZIndex="4" 
+                       IsHitTestVisible="True"  
                        PointerPressed="VerticalSplitter_PointerPressed" 
                        PointerMoved="VerticalSplitter_PointerMoved" 
                        PointerReleased="Splitter_PointerReleased" 
@@ -113,8 +131,8 @@
                        PointerExited="VerticalSplitter_PointerExited"
                            />
                 <!-- Right Panel -->
-                <Border x:Name="CenterPanel"  Canvas.Left="310" Height="700" Width="auto" Canvas.ZIndex="3" Padding="20" >
-                    <Grid x:Name="CenterGrid"  Width="auto" >
+        <Border x:Name="CenterPanel"  Grid.Row="0" Grid.Column="2" Height="700" Width="auto"  Padding="20" >
+                    <Grid x:Name="CenterGrid"  Width="auto" VerticalAlignment="Top" >
                         <Grid.RowDefinitions>
                             <RowDefinition Height="50"/>
                             <RowDefinition Height="*"/>
@@ -158,7 +176,7 @@
                             </GridView.ItemTemplate>
                         </GridView>
 
-                        <StackPanel x:Name="FooterPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,10" Canvas.ZIndex="3">
+                        <StackPanel x:Name="FooterPanel" Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,10" VerticalAlignment="Bottom">
                             <TextBlock x:Name="txtSearchCount" Text="{x:Bind viewModel.MediaLibraryObj.FileCount,Mode=OneWay}" VerticalAlignment="Center" Width="100"/>
                             <ComboBox x:Name="NoofItemscomboBox" VerticalAlignment="Center" Width="400"/>
                             <TextBlock Text="{Binding AssetCount}"  Foreground="Red" VerticalAlignment="Center"/>
@@ -170,18 +188,18 @@
 
 
 
-                <Rectangle x:Name="RightVerticalSplitter" Width="10" Height="700" 
-       Fill="{StaticResource ThemeSecondaryBackgroundColor}"  
-       Canvas.Left="1550"   IsHitTestVisible="True" Canvas.ZIndex="4" 
-       PointerPressed="RightVerticalSplitter_PointerPressed" 
-       PointerMoved="RightVerticalSplitter_PointerMoved" 
-       PointerEntered="RightVerticalSplitter_PointerEntered"
-       PointerExited="VerticalSplitter_PointerExited"
-       PointerReleased="Splitter_PointerReleased"/>
+        <Rectangle x:Name="RightVerticalSplitter" Grid.Row="0" Grid.Column="3" Width="10" Height="700" 
+                   Fill="{StaticResource ThemeSecondaryBackgroundColor}"  
+                   IsHitTestVisible="True" 
+                   PointerPressed="RightVerticalSplitter_PointerPressed"
+                   PointerMoved="RightVerticalSplitter_PointerMoved"
+                   PointerReleased="Splitter_PointerReleased"
+                   PointerEntered="RightVerticalSplitter_PointerEntered"
+                   PointerExited="VerticalSplitter_PointerExited"/>  
 
-                <Border x:Name="RightPanel" Height="700"   Width="300" Canvas.Left="1550" Canvas.ZIndex="5" >
-                    <Grid x:Name="RightGrid">
-                        <StackPanel  Orientation="Vertical" Padding="20" Spacing="3">
+        <Border x:Name="RightPanel" Grid.Row="0" Grid.Column="4" Height="700"   Width="300" >
+                    <Grid x:Name="RightGrid" >
+                        <StackPanel  Orientation="Vertical" Padding="20" Spacing="3" >
                             <!--<TextBlock Text="Add Metadata field"/>-->
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
                                 <AutoSuggestBox x:Name="MetadataAutoSuggestBox"
@@ -207,7 +225,7 @@
                                     <FontIcon  Glyph="&#xf2ed;" FontSize="12"/>
                                 </Button>
                             </StackPanel>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Hidden" Height="600" Canvas.ZIndex="6" >
+                            <ScrollViewer x:Name="RightScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Hidden" Height="600" >
 
                                 <StackPanel Orientation="Vertical" Width="270" HorizontalAlignment="Left" Background="{StaticResource ThemeControlBackgroundColor}"  
                                         CornerRadius="5" Padding="20" Spacing="15" CanBeScrollAnchor="True"  >
@@ -303,15 +321,16 @@
                     </Grid>
                 </Border>
 
-                <Rectangle x:Name="HorizontalSplitter"  Width="1850" Height="10" Fill="{StaticResource ThemeSecondaryBackgroundColor}"   
-                       Canvas.Top="700" IsHitTestVisible="True" Canvas.ZIndex="2" 
-                         PointerPressed="HorizontalSplitter_PointerPressed" 
-                       PointerMoved="HorizontalSplitter_PointerMoved" 
-                       PointerEntered="HorizontalSplitter_PointerEntered"
-                       PointerExited="HorizontalSplitter_PointerExited"/>
+        <Rectangle x:Name="HorizontalSplitter" Grid.Row="1" Grid.ColumnSpan="5"  Width="1850" Height="10" Fill="{StaticResource ThemeSecondaryBackgroundColor}"   
+                   IsHitTestVisible="True"  
+                   PointerPressed="HorizontalSplitter_PointerPressed"
+                   PointerMoved="HorizontalSplitter_PointerMoved"
+                   PointerReleased="Splitter_PointerReleased"
+                   PointerEntered="HorizontalSplitter_PointerEntered"
+                   PointerExited="HorizontalSplitter_PointerExited"/>
 
-                <Border x:Name="BottomPanel"   Height="400" Width="1850" Canvas.Top="710" Canvas.ZIndex="1" >
-                    <StackPanel Orientation="Vertical">
+        <Border x:Name="BottomPanel" Grid.Row="2" Grid.ColumnSpan="5"   Height="500" Width="1850"  >
+            <StackPanel Orientation="Vertical" VerticalAlignment="Top">
                         <TextBlock Text="File History" FontWeight="SemiBold"></TextBlock>
                         <NavigationView x:Name="NavFileHistory" 
                                     PaneDisplayMode="Top"
@@ -321,21 +340,22 @@
                                     SelectionChanged="NavFileHistory_SelectionChanged"
                                     Loaded="NavFileHistory_Loaded"
                                     ItemInvoked="NavFileHistory_ItemInvoked"
-                                    BackRequested="NavFileHistory_BackRequested">
-                            <NavigationView.MenuItems>
+                                    BackRequested="NavFileHistory_BackRequested"
+                                    VerticalAlignment="Top">
+                            <NavigationView.MenuItems >
                                 <NavigationViewItem  Content="Upload Status" Tag="UploadHistory" />
                                 <NavigationViewItem  Content="Download Status" Tag="DownloadHistory" />
                                 <NavigationViewItem  Content="Export Status" Tag="ExportHistory" />
                             </NavigationView.MenuItems>
-                            <ScrollViewer>
-                                <Frame x:Name="ContentFrame" IsTabStop="True">
+                    <ScrollViewer Height="1000" VerticalAlignment="Top">
+                                <Frame x:Name="ContentFrame" IsTabStop="True" VerticalAlignment="Top">
                                 </Frame>
                             </ScrollViewer>
                         </NavigationView>
                     </StackPanel>
                 </Border>
-            </Canvas>
-        </StackPanel>
+            <!--</Canvas>
+        </StackPanel>-->
     </Grid>
 
 </Page>

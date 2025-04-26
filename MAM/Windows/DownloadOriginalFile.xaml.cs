@@ -1,9 +1,12 @@
 using MAM.Data;
+using MAM.Utilities;
 using MAM.Views.MediaBinViews;
+using MAM.Views.ProcessesViews;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
@@ -18,10 +21,9 @@ namespace MAM.Windows
     public sealed partial class DownloadOriginalFile : Window
     {
         private static DownloadOriginalFile _instance;
-        public DownloadHistory ViewModel { get; set; }
+        public DownloadOriginal ViewModel { get; set; }
         private DataAccess dataAccess { get; } = new DataAccess();
         public MediaPlayerItem Asset { get; set; }
-        public ObservableCollection<DownloadHistory> AssetList { get; set; } = new ObservableCollection<DownloadHistory>();
 
         public DownloadOriginalFile(MediaPlayerItem media)
         {
@@ -36,20 +38,11 @@ namespace MAM.Windows
             GlobalClass.Instance.DisableMaximizeButton(this);
             GlobalClass.Instance.SetWindowSizeAndPosition(600, 400, this);
             Asset = media;
-            AssetList.Add(new DownloadHistory { Media = media });
-            string downloadFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Downloads";
-            var newDownload = new DownloadHistory
-            {
-                Media = media,
-                DownloadPath = downloadFolder,
-                Extension = Path.GetExtension(media.MediaSource.LocalPath),
-                Status = "Pending",
-                Progress = 0,
-                StartTime = DateTime.Now
-            };
-            ViewModel = newDownload;
-            MainGrid.DataContext = this;
-            DownloadProxyDropDown.Content = ViewModel.DownloadPath;
+            ViewModel = new DownloadOriginal(media);
+            ViewModel.DownloadItems.Add(ViewModel);
+            MainGrid.DataContext = ViewModel;
+            UpdateRecentFilesMenu();
+            DownloadOriginalDropDown.Content = ViewModel.DownloadPath;
         }
 
         public static void ShowWindow(MediaPlayerItem media)
@@ -84,23 +77,6 @@ namespace MAM.Windows
             else
                 await CopyFileWithProgressAsync(Asset.MediaSource.LocalPath);
 
-            if (DownloadHistoryPage.DownloadHistoryStatic != null)
-            {
-                foreach (var ast in AssetList)
-                {
-                    var newDownload = new DownloadHistory
-                    {
-                        Media = ast.Media,
-                        DownloadPath = ViewModel.DownloadPath,
-                        Extension = Path.GetExtension(ast.Media.MediaSource.LocalPath),
-                        Status = ViewModel.Status,
-                        Progress = ViewModel.Progress,
-                        StartTime = ViewModel.StartTime,
-                        CompletionTime = ViewModel.CompletionTime
-                    };
-                    DownloadHistoryPage.DownloadHistoryStatic.DownloadHistories.Add(newDownload);
-                }
-            }
             DownloadButton.IsEnabled = true;
             this.Close();
 
@@ -108,19 +84,12 @@ namespace MAM.Windows
 
         private async Task CopyFileWithProgressAsync(string sourcePath)
         {
+            //Process DownloadOriginal = ProcessStore.AllProcesses.FirstOrDefault(p => p.FilePath == Asset.MediaSource.LocalPath);
+            Process DownloadOriginal = new Process(sourcePath);
             try
             {
-                ////ViewModel = new DownloadProxyViewModel();
-                // string sourcePath = Asset.MediaSource.LocalPath;
+               // string sourcePath = Asset.MediaSource.LocalPath;
                 string destinationPath = Path.Combine(ViewModel.DownloadPath, Path.GetFileName(Asset.Title));
-                DateTime startTime = DateTime.Now;
-                App.UIDispatcherQueue.TryEnqueue(() =>
-                {
-                    ViewModel.StartTime = startTime;
-                    ViewModel.Status = "Copying started...";
-                    ViewModel.Progress = 0;
-                });
-
                 if (File.Exists(destinationPath))
                 {
                     var dialog = new ContentDialog
@@ -136,44 +105,79 @@ namespace MAM.Windows
                     if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
                 }
 
-                await CopyFileAsync(sourcePath, destinationPath);
+                App.UIDispatcherQueue.TryEnqueue(async () =>
+                {
 
-                ViewModel.CompletionTime = DateTime.Now;
-                ViewModel.Status = $"Copy completed in {(ViewModel.CompletionTime - startTime).TotalSeconds:F2} seconds";
+                    //if (DownloadOriginal == null)
+                    //{
+                         
+                    //}
+                    DownloadOriginal.ProcessType = "Download Original File";
+                    DownloadOriginal.StartTime = DateTime.Now;
+                    DownloadOriginal.Status = "Waiting...";
+                    DownloadOriginal.Result = "Waiting";
+                    Debug.WriteLine(DownloadOriginal.Status);
+                    int newProcessId = await ProcessStore.InsertProcessInDatabaseAsync(DownloadOriginal);
+                    DownloadOriginal.ProcessId = newProcessId;
+                    ProcessStore.AllProcesses.Add(DownloadOriginal);
+                    TransactionHistoryPage.TransactionHistoryStatic.InitializeWithParameter("DownloadHistory");
+
+                });
+                await CopyFileAsync(sourcePath, destinationPath, DownloadOriginal);
+
             }
             catch (Exception ex)
             {
-                ViewModel.Status = "Error: " + ex.Message;
+                DownloadOriginal.Status = "Error: " + ex.Message;
             }
         }
 
-        private async Task CopyFileAsync(string sourcePath, string destinationPath)
+        private async Task CopyFileAsync(string sourcePath, string destinationPath, Process downloadOriginal)
         {
-            FileInfo fileInfo = new(sourcePath);
-            long totalBytes = fileInfo.Length;
-            long copiedBytes = 0;
-            byte[] buffer = new byte[81920];
-
-            try
+            if (downloadOriginal != null)
             {
-                using FileStream sourceStream = new(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                using FileStream destinationStream = new(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                FileInfo fileInfo = new(sourcePath);
+                long totalBytes = fileInfo.Length;
+                long copiedBytes = 0;
+                byte[] buffer = new byte[81920];
 
-                int bytesRead;
-                while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                try
                 {
-                    await destinationStream.WriteAsync(buffer, 0, bytesRead);
-                    copiedBytes += bytesRead;
+                    using FileStream sourceStream = new(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using FileStream destinationStream = new(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
 
-                    App.UIDispatcherQueue.TryEnqueue(() =>
+                    int bytesRead;
+                    while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
-                        ViewModel.Progress = (int)(copiedBytes / (double)totalBytes * 100);
+                        await destinationStream.WriteAsync(buffer, 0, bytesRead);
+                        copiedBytes += bytesRead;
+
+                        App.UIDispatcherQueue.TryEnqueue(() =>
+                        {
+                            downloadOriginal.Progress = (int)(copiedBytes / (double)totalBytes * 100);
+                            downloadOriginal.Status = "Downloading...";
+
+                        });
+                    }
+                    App.UIDispatcherQueue.TryEnqueue(async () =>
+                    {
+                        var process = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == downloadOriginal.ProcessId);
+                        ////Debug.WriteLine($"Updating Process. Found: {process != null}, ProxyGen: {ProxyGeneration.GetHashCode()}, Found: {process?.GetHashCode()}");
+                        if (process != null)
+                        {
+                            process.Status = "Finished";
+                            process.CompletionTime = DateTime.Now;
+                            process.Result = "Finished";
+                            Debug.WriteLine(process.Result);
+                            ProcessStatusPage.Instance?.FilterData();
+                            await ProcessStore.UpdateProcessStatusInDatabaseAsync(process);
+                        }
                     });
                 }
-            }
-            catch (Exception ex)
-            {
-                ViewModel.Status = "Error: " + ex.Message;
+                catch (Exception ex)
+                {
+                    downloadOriginal.Status = "Error: " + ex.Message;
+                }
             }
         }
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -209,8 +213,11 @@ namespace MAM.Windows
 
             if (folder != null)
             {
+                ViewModel.DownloadPath = folder.Path;
                 ViewModel.SelectedFilePath = folder.Path;
-                ViewModel.AddRecentFile(folder.Path);
+                DownloadOriginalDropDown.Content = ViewModel.SelectedFilePath;
+                if(!GlobalClass.Instance.RecentFiles.Contains(folder.Path))
+                    GlobalClass.Instance.RecentFiles.Add(folder.Path);
                 UpdateRecentFilesMenu();
             }
         }
@@ -247,5 +254,33 @@ namespace MAM.Windows
                 ViewModel.DownloadPath = menuItem.Text;
             }
         }
+    }
+    public class DownloadOriginal : ObservableObject
+    {
+        private MediaPlayerItem media;
+        private string selectedFilePath;
+        private string downloadPath = GlobalClass.Instance.DownloadFolder;
+
+        public MediaPlayerItem Media
+        {
+            get => media;
+            set => SetProperty(ref media, value);
+        }
+        public string SelectedFilePath
+        {
+            get => selectedFilePath;
+            set => SetProperty(ref selectedFilePath, value);
+        }
+        public string DownloadPath
+        {
+            get => downloadPath;
+            set => SetProperty(ref downloadPath, value);
+        }
+        public DownloadOriginal(MediaPlayerItem mediaPlayerItem) 
+        {
+            Media = mediaPlayerItem;
+        }
+        public ObservableCollection<DownloadOriginal> DownloadItems { get; set; } = new();
+
     }
 }

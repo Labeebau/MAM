@@ -13,7 +13,7 @@
         <local1:BooleanToVisibilityConverter x:Key="CountToVisibilityConverter"/>
     </Page.Resources>
 
-    <StackPanel Width="670" Background="{StaticResource ThemeSecondaryBackgroundColor}" Height="300" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10">
+    <StackPanel Background="{StaticResource ThemeSecondaryBackgroundColor}"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="10">
 
         <Button Style="{StaticResource SmallIconButton}"  Click="RemoveCategoryFromAsset_Click" 
                  VerticalAlignment="Top"  CornerRadius="3" ToolTipService.ToolTip="Remove category"
@@ -37,18 +37,24 @@
             </ListView>
 
         </StackPanel>
+        <StackPanel>
         <!--<TextBlock Text="Add Asset To Category" VerticalAlignment="Top" FontSize="14"  FontWeight="Bold" Margin="0,0,0,10"/>-->
-        <Button x:Name="AddButton" Style="{StaticResource SmallIconButton}" 
+        <!--<Button x:Name="AddButton" Style="{StaticResource SmallIconButton}" 
 Click="AddToCategory_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadius="3" ToolTipService.ToolTip="Add asset to category">
             <FontIcon  Glyph="&#x2b;" FontSize="12" />
-        </Button>
+        </Button>-->
 
 
-        <Expander  Width="250"  HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" CornerRadius="10" >
-            <Expander.Header>
+        <!--<Expander  Width="250"  HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Left" VerticalContentAlignment="Top" CornerRadius="10" >
+            <Expander.Header>-->
+            <StackPanel Orientation="Vertical"  Margin="0,20,0,0">
+                <Button x:Name="AddButton" Style="{StaticResource SmallIconButton}" 
+Click="AddToCategory_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadius="3" ToolTipService.ToolTip="Add asset to category">
+                    <FontIcon  Glyph="&#x2b;" FontSize="12" />
+                </Button>
                 <TextBlock Text="Add Asset To Category" HorizontalAlignment="Left"/>
-            </Expander.Header>
-            <Expander.Content >
+            <!--</Expander.Header>
+            <Expander.Content >-->
                 <ScrollViewer MaxHeight="400">
                     <StackPanel Orientation="Horizontal"  Spacing="10" >
                         <TreeView x:Name="CategoryTreeView" ItemsSource="{x:Bind AllCategories, Mode=OneWay}" 
@@ -61,8 +67,9 @@ Click="AddToCategory_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadiu
                         </TreeView>
                     </StackPanel>
                 </ScrollViewer>
-            </Expander.Content>
-        </Expander>
-
+            <!--</Expander.Content>
+        </Expander>-->
+            </StackPanel>
+        </StackPanel>
     </StackPanel>
 </Page>

@@ -50,15 +50,15 @@
                     Background="{StaticResource ThemeSecondaryBackgroundColor}"
                      ItemsSource="{x:Bind FilteredUserList,Mode=TwoWay}"
                                    CurrentCellChanged="DgvUSer_CurrentCellChanged"
-                                   
+                                   Padding="10"
                      AutoGenerateColumns="False"
         IsReadOnly="False">
                     <controls:DataGrid.Columns  >
 
-                        <controls:DataGridTemplateColumn Header="First Name">
+                        <controls:DataGridTemplateColumn Header="First Name" Width="200">
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding FirstName}"/>
+                                    <TextBlock Text="{Binding FirstName}" Padding="10,0,10,0"/>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                             <controls:DataGridTemplateColumn.CellEditingTemplate>
@@ -68,10 +68,10 @@
                             </controls:DataGridTemplateColumn.CellEditingTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="Last Name">
+                        <controls:DataGridTemplateColumn Header="Last Name" Width="200">
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding LastName}"/>
+                                    <TextBlock Text="{Binding LastName}" Padding="10,0,10,0"/>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                             <controls:DataGridTemplateColumn.CellEditingTemplate>
@@ -81,28 +81,28 @@
                             </controls:DataGridTemplateColumn.CellEditingTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="Email">
+                        <controls:DataGridTemplateColumn Header="Email" Width="200" >
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Email}"/>
+                                    <TextBlock Text="{Binding Email}" Padding="10,0,10,0"/>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                             <controls:DataGridTemplateColumn.CellEditingTemplate>
                                 <DataTemplate>
-                                    <TextBox Text="{Binding Email,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
+                                    <TextBox Text="{Binding Email,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}" Padding="10,0,10,0" />
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellEditingTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="User Name">
+                        <controls:DataGridTemplateColumn Header="User Name" Width="200" >
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding UserName}"/>
+                                    <TextBlock Text="{Binding UserName}" Padding="10,0,10,0"/>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                             <controls:DataGridTemplateColumn.CellEditingTemplate>
                                 <DataTemplate>
-                                    <TextBox Text="{Binding UserName,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly,Mode=TwoWay}"  />
+                                    <TextBox Text="{Binding UserName,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly,Mode=TwoWay}" Padding="10,0,10,0" />
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellEditingTemplate>
                         </controls:DataGridTemplateColumn>
@@ -110,31 +110,31 @@
                         <controls:DataGridTemplateColumn Header="Password" Width="150"  >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                    <PasswordBox Password="{Binding Password,Mode=TwoWay }"  Background="Transparent" BorderThickness="0"  IsEnabled="{Binding IsEnabled,Mode=TwoWay}"/>
+                                    <PasswordBox Password="{Binding Password,Mode=TwoWay }"  Background="Transparent" BorderThickness="0"  IsEnabled="{Binding IsEnabled,Mode=TwoWay}" Padding="10,0,10,0"/>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="A.D User">
+                        <controls:DataGridTemplateColumn Header="A.D User" Width="100" >
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsADUser,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}"  />
+                                    <CheckBox IsChecked="{Binding IsADUser,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}" HorizontalAlignment="Center"  Padding="10,0,10,0"  />
+                                    </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="Admin" Width="100">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsAdmin,Mode=TwoWay}"  IsEnabled="{Binding IsEnabled,Mode=TwoWay}" Padding="10,0,10,0" />
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="Admin">
+                        <controls:DataGridTemplateColumn Header="Active" Width="100">
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsAdmin,Mode=TwoWay}"  IsEnabled="{Binding IsEnabled,Mode=TwoWay}"  />
-                                </DataTemplate>
-                            </controls:DataGridTemplateColumn.CellTemplate>
-                        </controls:DataGridTemplateColumn>
-
-                        <controls:DataGridTemplateColumn Header="Active">
-                            <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsActive,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}"  />
+                                    <CheckBox IsChecked="{Binding IsActive,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}" Padding="10,0,10,0" />
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                         </controls:DataGridTemplateColumn>

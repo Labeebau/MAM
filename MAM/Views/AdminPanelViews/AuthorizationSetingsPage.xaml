@@ -46,7 +46,7 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="User Group" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center">
                                     <TextBlock  Padding="12,0,0,0" VerticalAlignment="Center"  Text="{x:Bind GroupName }" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
@@ -58,9 +58,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Read" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20" >
-                                    <CheckBox x:Name="ChbADGroup" IsChecked="{x:Bind Read,Mode=TwoWay}"></CheckBox>
+                                    <CheckBox x:Name="ChbADGroup" IsChecked="{x:Bind UserGroupRight.Read,Mode=TwoWay}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -68,9 +68,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Write" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight" >
+                            <DataTemplate x:DataType="local:UserGroup" >
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center"  HorizontalAlignment="Center"  Width="20"  >
-                                    <CheckBox x:Name="ChbAdmin" IsChecked="{x:Bind Write,Mode=TwoWay}"></CheckBox>
+                                    <CheckBox x:Name="ChbAdmin" IsChecked="{x:Bind UserGroupRight.Write,Mode=TwoWay}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -78,9 +78,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Edit" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20"  >
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Edit,Mode=TwoWay}" ></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserGroupRight.Edit,Mode=TwoWay}" ></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -88,9 +88,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Delete" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20" >
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Delete,Mode=TwoWay}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserGroupRight.Delete,Mode=TwoWay}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -99,9 +99,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Org.Download" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20" >
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind OrgDownload,Mode=TwoWay}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserGroupRight.OrgDownload,Mode=TwoWay}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -109,9 +109,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Pre.Download" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"   Width="20" >
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind PrxDownload,Mode=TwoWay}"></CheckBox>
+                                <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserGroupRight.PrxDownload,Mode=TwoWay}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -119,9 +119,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Archive" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Archive,Mode=TwoWay}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserGroupRight.Archive,Mode=TwoWay}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -129,9 +129,9 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
 
                     <controls:DataGridTemplateColumn Header="Broadcast" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserGroupRight">
+                            <DataTemplate x:DataType="local:UserGroup">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Broadcast,Mode=TwoWay}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserGroupRight.Broadcast,Mode=TwoWay}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -141,7 +141,7 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
                 <!-- other columns below -->
             </controls:DataGrid>
         </Border>
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="5">
             <ComboBox  Width="200"
     ItemsSource="{Binding UserGroupList,Mode=TwoWay}"
 DisplayMemberPath="GroupName"
@@ -151,7 +151,7 @@ PlaceholderText="Select user group "
                        SelectedIndex="0"/>
             <!--SelectionChangedTrigger="Always" SelectedIndex="0"-->
             <Button x:Name="BtnSaveUserGroupRights" Style="{StaticResource SmallIconButton}" 
-                    VerticalAlignment="Center" Click="SaveUserGroupRights_Click">
+                    VerticalAlignment="Top" Click="SaveUserGroupRights_Click">
                 <FontIcon  Glyph="&#x2b;" />
             </Button>
         </StackPanel>
@@ -167,7 +167,7 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="User" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center">
                                     <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind UserName }" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
@@ -178,7 +178,7 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="User Group" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center">
                                     <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind UserGroup.GroupName }" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
@@ -188,9 +188,9 @@ PlaceholderText="Select user group "
                     
                     <controls:DataGridTemplateColumn Header="Read" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="ChbADGroup" IsChecked="{x:Bind Read }"></CheckBox>
+                                    <CheckBox x:Name="ChbADGroup" IsChecked="{x:Bind UserRight.Read }"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -198,9 +198,9 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="Write" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight" >
+                            <DataTemplate x:DataType="local:User" >
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center"  HorizontalAlignment="Center"  Width="20"  >
-                                    <CheckBox x:Name="ChbAdmin" IsChecked="{x:Bind Write}"></CheckBox>
+                                    <CheckBox x:Name="ChbAdmin" IsChecked="{x:Bind UserRight.Write}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -208,9 +208,9 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="Edit" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Edit}" ></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserRight.Edit}" ></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -218,9 +218,9 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="Delete" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20" >
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Delete}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserRight.Delete}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -229,9 +229,9 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="Org.Download" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind OrgDownload}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserRight.OrgDownload}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -239,9 +239,9 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="Pre.Download" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind PrxDownload}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserRight.PrxDownload}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -249,9 +249,9 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="Archive" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Archive}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserRight.Archive}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -259,9 +259,9 @@ PlaceholderText="Select user group "
 
                     <controls:DataGridTemplateColumn Header="Broadcast" Width="auto">
                         <controls:DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate x:DataType="local:UserRight">
+                            <DataTemplate x:DataType="local:User">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center"  Width="20">
-                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind Broadcast}"></CheckBox>
+                                    <CheckBox x:Name="chbActive" IsChecked="{x:Bind UserRight.Broadcast}"></CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -274,6 +274,7 @@ PlaceholderText="Select user group "
         <StackPanel Grid.Row="5" Orientation="Horizontal">
 
             <!--Command="{x:Bind ViewModel.ChangeLanguageCommand}"-->
+            <StackPanel Orientation="Horizontal">
             <ComboBox  Width="200"
     ItemsSource="{Binding UserList,Mode=TwoWay}"
 DisplayMemberPath="UserName"
@@ -282,9 +283,10 @@ PlaceholderText="Select a user "
                        SelectionChanged="ComboBoxUSer_SelectionChanged"/>
 
             <Button x:Name="BtnAddUser" Style="{StaticResource SmallIconButton}" 
-             VerticalAlignment="Center" Click="BtnAddUser_Click">
+             VerticalAlignment="Top" Click="BtnAddUser_Click">
                 <FontIcon  Glyph="&#x2b;" />
             </Button>
+            </StackPanel>
         </StackPanel>
         <StackPanel Grid.Row="6" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
             <Button Click="SaveButton_Click">

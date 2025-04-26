@@ -24,6 +24,7 @@ using System.Windows.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using static System.Net.Mime.MediaTypeNames;
 using System.ComponentModel;
+using MAM.Windows;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,6 +36,8 @@ namespace MAM.UserControls
         private MediaPlayer _mediaPlayer;
         private MediaAssetViewModel viewModel;
         public event EventHandler<CustomBinMedia> DeleteRequested;
+        public event EventHandler<CustomBinMedia> PlayButtonClicked;
+
 
         public CustomBinMedia()
         {
@@ -142,19 +145,21 @@ namespace MAM.UserControls
 
         private void PlayButton_Click(object sender, RoutedEventArgs e)
         {
-            // Toggle play/pause
-            if (_mediaPlayer != null)
-            {
+            PlayButtonClicked?.Invoke(this, this);
 
-                if (_mediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
-                {
-                    _mediaPlayer.Pause();
-                }
-                else
-                {
-                    _mediaPlayer.Play();
-                }
-            }
+            // Toggle play/pause
+            //if (_mediaPlayer != null)
+            //{
+
+            //    if (_mediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+            //    {
+            //        _mediaPlayer.Pause();
+            //    }
+            //    else
+            //    {
+            //        _mediaPlayer.Play();
+            //    }
+            //}
 
         }
         private void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)

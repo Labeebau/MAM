@@ -89,12 +89,16 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             }
         }
 
-        private void AddToCategory_Click(object sender, RoutedEventArgs e)
+        private async void AddToCategory_Click(object sender, RoutedEventArgs e)
         {
             if (SelectedAllCategory != null)
             {
-                InsertAssetToCategory(Viewmodel.Media.MediaId, SelectedAllCategory.CategoryName);
-                GetAssetCategories();
+                bool addedRows=await InsertAssetToCategory(Viewmodel.Media.MediaId, SelectedAllCategory.CategoryName);
+                if (addedRows)
+                {
+                    await GlobalClass.Instance.AddtoHistoryAsync("Add asset to category", $"Added asset '{Viewmodel.Media.MediaSource.LocalPath}' to category '{SelectedAllCategory.CategoryName}' ");
+                    GetAssetCategories();
+                }
             }
             else
             {
@@ -136,7 +140,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             return categories;
         }
 
-        private async Task<int> InsertAssetToCategory(int assetId, string categoryName)
+        private async Task<bool> InsertAssetToCategory(int assetId, string categoryName)
         {
             List<MySqlParameter> parameters = new ();
             string query = string.Empty;
@@ -145,14 +149,14 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             query = "INSERT INTO asset_category(asset_id, category_id) " +
                     "VALUES(@AssetId, (SELECT category_id FROM metadata_category WHERE category_name = @CategoryName))";
             var (affectedRows, lastInsertedId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
-            if(affectedRows>0)
-                return lastInsertedId;
-            else
+           
+            if(affectedRows<=0)
             {
                 if (errorCode == 1062)
                     await GlobalClass.Instance.ShowErrorDialogAsync("Category already added.", this.XamlRoot);
-                return -1;
+                return false;
             }
+            return affectedRows > 0;
         }
 
 
@@ -199,7 +203,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
                     var (affectedRows, newId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
                     if(affectedRows>0)
-                    { 
+                    {
+                        await GlobalClass.Instance.AddtoHistoryAsync("Delete asset from category", $"Deleted asset '{Viewmodel.Media.MediaSource.LocalPath}' from category '{SelectedAssetCategory.CategoryName}' ");
                         AssetCategories.Remove(SelectedAssetCategory);
                     }
                     else

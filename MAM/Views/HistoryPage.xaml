@@ -5,7 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:MAM.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls" 
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Enabled">
@@ -13,88 +14,90 @@
 
     <Grid Background="{StaticResource ThemePrimaryBackgroundColor}" Padding="20">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="2*"/>
             <ColumnDefinition Width="8*"/>
         </Grid.ColumnDefinitions>
-        <!-- Search Boxes for each Column -->
-        <StackPanel Grid.Column="0" >
-        <StackPanel  Orientation="Vertical"  Padding="20" Width="auto">
-            <TextBlock Text="User Name" Foreground="{StaticResource ThemeHighlightColor}"/>
-            <TextBox x:Name="UserNameTextBox" PlaceholderText="Search by user name"  />
-            <TextBlock Text="Action" Foreground="{StaticResource ThemeHighlightColor}"/>
-            <DropDownButton Width="300">
+        <StackPanel Grid.Column="0" Padding="20" Width="340" >
+            <!-- User Name -->
+            <TextBlock Text="User Name" Foreground="{StaticResource ThemeHighlightColor}" Margin="0,30,0,0"/>
+            <TextBox x:Name="UserNameTextBox" PlaceholderText="Search by user name" Text="{Binding FilterUser,Mode=TwoWay}"/>
 
+            <!-- Action -->
+            <TextBlock Text="Action" Foreground="{StaticResource ThemeHighlightColor}" Margin="0,10,0,0"/>
+            <DropDownButton x:Name="ActionDropDown"  Content="Select Action" Width="200" >
+                <DropDownButton.Flyout >
+                    <Flyout x:Name="ActionFlyOut" Placement="Bottom">
+                        <ListView x:Name="testListView" ItemsSource="{Binding ActionList, Mode=OneWay}" 
+                      SelectionMode="Single" SelectedItem="{Binding FilterAction,Mode=TwoWay}"
+                      SelectionChanged="OnSelectionChanged" >
+                          
+                        </ListView>
+                    </Flyout>
+                </DropDownButton.Flyout>
             </DropDownButton>
-            <TextBlock Text="Description" Foreground="{StaticResource ThemeHighlightColor}"/>
-            <TextBox x:Name="DescriptionTextBox" PlaceholderText="Search by description" />
 
-            <TextBlock Text="Date" Foreground="{StaticResource ThemeHighlightColor}"/>
+            <!-- Description -->
+            <TextBlock Text="Description" Foreground="{StaticResource ThemeHighlightColor}" Margin="0,10,0,0"/>
+            <TextBox x:Name="DescriptionTextBox" PlaceholderText="Search by description" Text="{Binding FilterDescription,Mode=TwoWay}"/>
+
+            <!-- Date -->
+            <TextBlock Text="Date" Foreground="{StaticResource ThemeHighlightColor}" Margin="0,10,0,0"/>
             <StackPanel Orientation="Horizontal" Spacing="5">
-                <CalendarDatePicker x:Name="DateSearchBox" PlaceholderText="From" Width="75" ></CalendarDatePicker>
-                    <CalendarDatePicker PlaceholderText="To" Width="75"></CalendarDatePicker>
+                <CalendarDatePicker x:Name="FromDateSearchBox"  PlaceholderText="From" Width="145"/>
+                <CalendarDatePicker x:Name="ToDateSearchBox"  PlaceholderText="To" Width="145"/>
             </StackPanel>
-            <StackPanel Grid.Row="3" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" 
-                         Spacing="5" Margin="0,10,0,0" >
+
+            <!-- Buttons -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="5" Margin="0,20,0,0">
                 <Button Click="ExportButton_Click">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="5">
-                        <FontIcon Glyph="&#xf1c3;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="16" />
-                        <TextBlock Text="Export" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <FontIcon Glyph="&#xf1c3;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="16"/>
+                        <TextBlock Text="Export"/>
                     </StackPanel>
                 </Button>
-                <Button   Click="SearchButton_Click">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="5">
-                        <FontIcon Glyph="&#xf002;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="16" />
-                        <TextBlock Text="Search" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <Button Click="SearchButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <FontIcon Glyph="&#xf002;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="16"/>
+                        <TextBlock Text="Search"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
         </StackPanel>
-        </StackPanel>
+
         <StackPanel Grid.Column="1" Orientation="Vertical" Padding="20" Spacing="10">
             <Border Grid.Row="1" CornerRadius="15">
                 <controls:DataGrid x:Name="DgvProcesses" 
-                                Height="480" 
+                                Height="800" 
                                 AutoGenerateColumns="False"
                                 Background="{StaticResource ThemeSecondaryBackgroundColor}"
-    >
+                                ItemsSource="{Binding FilteredHistory}">
                     <controls:DataGrid.Columns>
-                        <controls:DataGridTemplateColumn Header="User Name" Width="auto" >
+                        <controls:DataGridTemplateColumn Header="User Name" Width="200" >
                             <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate  >
-                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                                        <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind  }" FontWeight="Light" FontSize="14"/>
+                                <DataTemplate x:DataType="local:History"  >
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Padding="12,0,10,0"  >
+                                        <TextBlock  VerticalAlignment="Center"  Text="{Binding UserName,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="Action" Width="auto" >
+                        <controls:DataGridTemplateColumn Header="Action" Width="200" >
                             <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate >
-                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                                        <TextBlock  Padding="2,0,10,0" VerticalAlignment="Center"  Text="{x:Bind  }" FontWeight="Light" FontSize="14"/>
+                                <DataTemplate x:DataType="local:History" >
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Padding="2,0,10,0" >
+                                        <TextBlock   VerticalAlignment="Center"  Text="{Binding Action,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="Description"  Width="auto">
+                        <controls:DataGridTemplateColumn Header="Description"  Width="*">
                             <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate >
-                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                                        <TextBlock  Padding="2,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{x:Bind }" FontWeight="Light" FontSize="14"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </controls:DataGridTemplateColumn.CellTemplate>
-                        </controls:DataGridTemplateColumn>
-
-
-
-                        <controls:DataGridTemplateColumn Header="Date" Width="auto" >
-                            <controls:DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                                        <TextBlock  Padding="2,0,10,0" VerticalAlignment="Center"  Text="{x:Bind }" FontWeight="Light" FontSize="14"/>
+                                <DataTemplate x:DataType="local:History">
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Padding="2,0,10,0">
+                                        <TextBlock   HorizontalAlignment="Left" VerticalAlignment="Center" 
+                                                    Text="{Binding Description,Mode=OneWay}" FontWeight="Light" FontSize="14" TextWrapping="NoWrap"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
@@ -102,6 +105,15 @@
 
 
 
+                        <controls:DataGridTemplateColumn Header="Date" Width="200" >
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="local:History" >
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Padding="2,0,10,0">
+                                        <TextBlock   VerticalAlignment="Center"  Text="{Binding Date,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
                     </controls:DataGrid.Columns>
                 </controls:DataGrid>
             </Border>

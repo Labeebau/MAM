@@ -6,17 +6,18 @@
     xmlns:local="using:MAM.Views.MediaBinViews.AssetMetadata"
     xmlns:local1="using:MAM.Utilities"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    d:DataContext="{d:DesignInstance Type=local:TagViewModel}"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-   
 
-    <StackPanel Width="670" Background="{StaticResource ThemeSecondaryBackgroundColor}" Height="300" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10">
-        <TextBlock Text="No tags found" Foreground="Red" Visibility="{x:Bind HasTags, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+    <StackPanel Background="{StaticResource ThemeSecondaryBackgroundColor}"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Padding="10">
+        <TextBlock Text="No tags found" Foreground="Red"  Visibility="{Binding HasTags, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
         <StackPanel x:Name="TagsPanel" Orientation="Horizontal" Margin="0,5,0,20">
             <ListView ItemsSource="{Binding AssetTags,Mode=OneWay}" 
                       BorderBrush="Gray" BorderThickness="1" CornerRadius="5" 
                       SelectionChanged="ListView_SelectionChanged"
+                      
                       Margin="0,0,5,0">
                 <ListView.ItemsPanel >
                     <ItemsPanelTemplate>
@@ -33,18 +34,18 @@
 
             <Button Style="{StaticResource SmallIconButton}"  Click="RemoveTagFromAsset_Click" 
          VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Remove Tag From Asset"
-                Visibility="{x:Bind HasTags, Converter={StaticResource BooleanToVisibilityConverter}}">
+                Visibility="{Binding HasTags, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <FontIcon  Glyph="&#xf2ed;" FontSize="12"/>
             </Button>
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="5" Padding="5" >
+        <StackPanel Orientation="Horizontal" Spacing="5" Padding="5" Margin="0,20,0,0" >
             <TextBlock Text="Add Tag" VerticalAlignment="Center"/>
             <Button x:Name="AddTagToAssetButton" Style="{StaticResource SmallIconButton}" 
                     Click="AddTagToAsset_Click" VerticalAlignment="top"  CornerRadius="3" ToolTipService.ToolTip="Add tag to asset">
                 <FontIcon  Glyph="&#x2b;" />
             </Button>
         </StackPanel>
-        <StackPanel Orientation="Horizontal">
+        <StackPanel Orientation="Horizontal" >
             <AutoSuggestBox x:Name="KeywordsAutoSuggestBox"
                 Width="200"
                 HorizontalAlignment="Left"
@@ -58,12 +59,12 @@
                 SuggestionChosen="MyAutoSuggestBox_SuggestionChosen"/>
 
             <Button x:Name="AddTagButton" Style="{StaticResource SmallIconButton}" 
-                    Click="AddTag_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadius="3" ToolTipService.ToolTip="Add Tag">
+                    Click="AddTag_Click" VerticalAlignment="Top" Margin="2,2,0,0" CornerRadius="3" ToolTipService.ToolTip="Add New Tag">
                 <FontIcon  Glyph="&#x2b;" />
             </Button>
             <Button Style="{StaticResource SmallIconButton}"  Click="RemoveTag_Click" 
                     VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Delete Tag"
-                    Visibility="{x:Bind HasTags, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    Visibility="{Binding HasTags, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                 <FontIcon  Glyph="&#xf2ed;" FontSize="12"/>
             </Button>
         </StackPanel>

@@ -63,7 +63,6 @@ namespace MAM.Views
 			{
 				ContentFrame.Navigate(_page, null, recommendedNavigationTransitionInfo);
 			}
-
 		}
 
 

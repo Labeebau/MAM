@@ -74,16 +74,7 @@ namespace MAM
         public int Progress
         {
             get => progress;
-            //set => SetProperty(ref progress, value);
-            set
-            {
-                if (SetProperty(ref progress, value))
-                {
-                    
-                    Debug.WriteLine($"PropertyChanged fired for Progress: {value}");
-                }
-            }
-
+            set => SetProperty(ref progress, value);
         }
         public string Result
         {
@@ -97,20 +88,12 @@ namespace MAM
                 }
             }
         }
-        public bool IsVisible
-        {
-            get => isVisible;
-            set => SetProperty(ref isVisible, value);
-        }
-
         public Process(string filePath)
         {
             FilePath = filePath;
-            IsVisible = true;
         }
         public Process()
         {
-            IsVisible = true;
         }
     }
 }

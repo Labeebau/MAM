@@ -197,7 +197,7 @@ namespace MAM.Views.MediaBinViews
         private readonly List<(string Tag, Type Page)> _pages = new List<(string Tag, Type Page)>
         {
             ("UploadHistory",typeof(UploadHistoryPage)),
-            ("DownloadHistory",typeof(DownloadHistoryPage)),
+            ("DownloadHistory",typeof(TransactionHistoryPage)),
             ("ExportHistory",typeof(ExportHistoryPage)),
         };
         private void navFileHistory_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)

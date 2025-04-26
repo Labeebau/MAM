@@ -22,7 +22,8 @@ using System.Collections.ObjectModel;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 using System.ComponentModel;
-using MAM.ViewModels;
+using System.Diagnostics;
+using MAM.Views.ProcessesViews;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -34,15 +35,16 @@ namespace MAM.Windows
     /// </summary>
     /// 
 
-    public sealed partial class DownloadProxy :Window 
+    public sealed partial class DownloadProxyWindow :Window 
     {
-        private static DownloadProxy _instance;
-        public DownloadHistory ViewModel { get; set; }
+        private static DownloadProxyWindow _instance;
+
+        public DownloadProxy ViewModel { get; set; }
         private DataAccess dataAccess { get; } = new DataAccess();
         public MediaPlayerItem Asset { get; set; }
-        public ObservableCollection<DownloadHistory> AssetList { get; set; } = new ObservableCollection<DownloadHistory>();
+       // public ObservableCollection<DownloadHistory> AssetList { get; set; } = new ObservableCollection<DownloadHistory>();
 
-        public DownloadProxy(MediaPlayerItem media)
+        public DownloadProxyWindow(MediaPlayerItem media)
         {
             this.InitializeComponent();
             var titleBar = AppWindow.TitleBar;
@@ -55,38 +57,30 @@ namespace MAM.Windows
             GlobalClass.Instance.DisableMaximizeButton(this);
             GlobalClass.Instance.SetWindowSizeAndPosition(600, 400, this);
             Asset = media;
-            AssetList.Add(new DownloadHistory { Media = media });
-            // downloadFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Downloads";
-            var newDownload = new DownloadHistory
-            { 
-                Media=media,
-                Extension = Path.GetExtension(media.MediaSource.LocalPath),
-                Status = "Pending",
-                Progress = 0,
-                StartTime = DateTime.Now,
-            };
-            ViewModel = newDownload;
-            MainGrid.DataContext = this;
-           // DownloadProxyDropDown.Content = ViewModel.DownloadPath;
+            ViewModel = new DownloadProxy(media);
+            ViewModel.DownloadItems.Add(ViewModel);
+            MainGrid.DataContext = ViewModel;
             UpdateRecentFilesMenu();
+            DownloadProxyDropDown.Content = ViewModel.DownloadPath;
+
         }
-      
+
         public static void ShowWindow(MediaPlayerItem media)
         {
             if (_instance == null)
             {
-                _instance = new DownloadProxy(media);
+                _instance = new DownloadProxyWindow(media);
                 _instance.Activate(); // Show the window
             }
-            else 
+            else
             {
                 try
                 {
                     _instance.Activate(); // Bring the existing window to the front
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    _instance=new DownloadProxy(media);
+                    _instance = new DownloadProxyWindow(media);
                     _instance.Activate();
                 }
             }
@@ -99,23 +93,6 @@ namespace MAM.Windows
         {
             DownloadButton.IsEnabled = false;
             await CopyFileWithProgressAsync();
-
-            if (DownloadHistoryPage.DownloadHistoryStatic != null)
-            {
-                foreach (var ast in AssetList)
-                {
-                    var newDownload = new DownloadHistory
-                    {   Media=ast.Media,
-                        DownloadPath = ViewModel.DownloadPath,
-                        Extension = Path.GetExtension(ast.Media.MediaSource.LocalPath),
-                        Status = ViewModel.Status,
-                        Progress = ViewModel.Progress,
-                        StartTime = ViewModel.StartTime,
-                        CompletionTime = ViewModel.CompletionTime
-                    };
-                    DownloadHistoryPage.DownloadHistoryStatic.DownloadHistories.Add(newDownload);
-                }
-            }
             DownloadButton.IsEnabled = true;
             this.Close();
 
@@ -123,18 +100,12 @@ namespace MAM.Windows
 
         private async Task CopyFileWithProgressAsync()
         {
+            Process DownloadProxy = ProcessStore.AllProcesses.FirstOrDefault(p => p.FilePath == Asset.MediaSource.LocalPath);
+
             try
             {
-                ////ViewModel = new DownloadProxyViewModel();
                 string sourcePath = Asset.ProxyPath.LocalPath;
-                string destinationPath = Path.Combine(ViewModel.DownloadPath, Path.GetFileName(Asset.Title));
-                DateTime startTime = DateTime.Now;
-                App.UIDispatcherQueue.TryEnqueue(() =>
-                {
-                    ViewModel.StartTime = startTime;
-                    ViewModel.Status = "Copying started...";
-                    ViewModel.Progress = 0;
-                    });
+                string destinationPath =Path.Combine(ViewModel.DownloadPath,ViewModel.Media.Title);
 
                 if (File.Exists(destinationPath))
                 {
@@ -151,24 +122,40 @@ namespace MAM.Windows
                     if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
                 }
 
-                await CopyFileAsync(sourcePath, destinationPath);
+                App.UIDispatcherQueue.TryEnqueue(async () =>
+                {
 
-                ViewModel.CompletionTime = DateTime.Now;
-                ViewModel.Status = $"Copy completed in {(ViewModel.CompletionTime - startTime).TotalSeconds:F2} seconds";
+                    if (DownloadProxy == null)
+                    {
+                        DownloadProxy = new Process(Asset.MediaSource.LocalPath);
+                    }
+                    DownloadProxy.ProcessType = "Download Proxy";
+                    DownloadProxy.StartTime = DateTime.Now;
+                    DownloadProxy.Status = "Waiting...";
+                    DownloadProxy.Result = "Waiting";
+                    Debug.WriteLine(DownloadProxy.Status);
+                    int newProcessId = await ProcessStore.InsertProcessInDatabaseAsync(DownloadProxy);
+                    DownloadProxy.ProcessId = newProcessId;
+                    ProcessStore.AllProcesses.Add(DownloadProxy);
+                    TransactionHistoryPage.TransactionHistoryStatic.InitializeWithParameter("DownloadHistory");
+
+                });
+                await CopyFileAsync(sourcePath, destinationPath,DownloadProxy);
+
             }
             catch (Exception ex)
             {
-                ViewModel.Status = "Error: " + ex.Message;
+                DownloadProxy.Status = "Error: " + ex.Message;
             }
         }
 
-        private async Task CopyFileAsync(string sourcePath, string destinationPath)
+        private async Task CopyFileAsync(string sourcePath, string destinationPath, Process downloadProxy)
         {
             FileInfo fileInfo = new(sourcePath);
             long totalBytes = fileInfo.Length;
             long copiedBytes = 0;
             byte[] buffer = new byte[81920];
-
+           
             try
             {
                 using FileStream sourceStream = new(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -182,13 +169,29 @@ namespace MAM.Windows
 
                     App.UIDispatcherQueue.TryEnqueue(() =>
                     {
-                        ViewModel.Progress = (int)(copiedBytes / (double)totalBytes * 100);
+                        downloadProxy.Progress = (int)(copiedBytes / (double)totalBytes * 100);
+                        downloadProxy.Status = "Downloading...";
+
                     });
                 }
+                App.UIDispatcherQueue.TryEnqueue(async () =>
+                {
+                    var process = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == downloadProxy.ProcessId);
+                    ////Debug.WriteLine($"Updating Process. Found: {process != null}, ProxyGen: {ProxyGeneration.GetHashCode()}, Found: {process?.GetHashCode()}");
+                    if (process != null)
+                    {
+                        process.Status = "Finished";
+                        process.CompletionTime = DateTime.Now;
+                        process.Result = "Finished";
+                        Debug.WriteLine(process.Result);
+                        ProcessStatusPage.Instance?.FilterData();
+                        await ProcessStore.UpdateProcessStatusInDatabaseAsync(process);
+                    }
+                });
             }
             catch (Exception ex)
             {
-                ViewModel.Status = "Error: " + ex.Message;
+                downloadProxy.Status = "Error: " + ex.Message;
             }
         }
 
@@ -202,7 +205,7 @@ namespace MAM.Windows
         }
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.SelectedFilePath = string.Empty;
+            //ViewModel.SelectedFilePath = string.Empty;
         }
         private void ChbActive_Checked(object sender, RoutedEventArgs e)
         {
@@ -227,13 +230,13 @@ namespace MAM.Windows
             // Show picker and get selected files
             var folder = await picker.PickSingleFolderAsync();
 
-            if (folder != null )
+            if (folder != null)
             {
-               ////ViewModel.DownloadPath=folder.Path;
-               //// DownloadProxyDropDown.Content = ViewModel.DownloadPath;
-
+                ViewModel.DownloadPath=folder.Path;
                 ViewModel.SelectedFilePath = folder.Path;
-                ViewModel.AddRecentFile(folder.Path);
+                DownloadProxyDropDown.Content = ViewModel.SelectedFilePath;
+                if (!GlobalClass.Instance.RecentFiles.Contains(folder.Path))
+                    GlobalClass.Instance.RecentFiles.Add(folder.Path);
                 UpdateRecentFilesMenu();
             }
         }
@@ -267,9 +270,33 @@ namespace MAM.Windows
         {
             if (sender is MenuFlyoutItem menuItem)
             {
-                ViewModel.DownloadPath= menuItem.Text;
+                ViewModel.DownloadPath = menuItem.Text;
             }
         }
     }
-    
+    public class DownloadProxy:ObservableObject
+    {
+        private MediaPlayerItem media;
+        private string selectedFilePath;
+        private string downloadPath=GlobalClass.Instance.DownloadFolder;
+
+        public MediaPlayerItem Media
+        {
+            get => media;
+            set => SetProperty(ref media, value);
+        }
+        public string SelectedFilePath
+        {
+            get => selectedFilePath;
+            set => SetProperty(ref selectedFilePath, value);
+        }
+        public string DownloadPath
+        {
+            get => downloadPath;
+            set => SetProperty(ref downloadPath, value);
+        }
+        public DownloadProxy(MediaPlayerItem mediaPlayerItem) { Media = mediaPlayerItem; }
+        public ObservableCollection<DownloadProxy> DownloadItems { get; set; } = new();
+
+    }
 }

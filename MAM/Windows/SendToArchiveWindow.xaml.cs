@@ -78,8 +78,9 @@ namespace MAM.Windows
                     };
                     File.Copy(ViewModel.MediaPath, destinationPath, false);
                     File.Delete(ViewModel.MediaPath);
-                    dataAccess.UpdateRecord("Asset", "asset_id", ViewModel.AssetId, propsList);
+                    await dataAccess.UpdateRecord("Asset", "asset_id", ViewModel.AssetId, propsList);
                     Asset.IsArchived = true;
+                    await GlobalClass.Instance.AddtoHistoryAsync("Send to archive", $"Send asset '{ViewModel.MediaPath}' to archive .");
                     this.Close();
                 }
                 else

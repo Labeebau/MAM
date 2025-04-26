@@ -8,7 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d"
-    Title="DownloadOriginalFile">
+    Title="Download Original File">
 
     <Grid x:Name="MainGrid" Height="auto" Width="auto" Background="{StaticResource ThemePrimaryBackgroundColor}" Padding="20" VerticalAlignment="Center" >
         <Grid.RowDefinitions>
@@ -24,13 +24,13 @@
                            AutoGenerateColumns="False"
                            SelectionMode="Single"
                            Background="{StaticResource ThemeSecondaryBackgroundColor}"
-                           ItemsSource="{Binding AssetList}">
+                           ItemsSource="{Binding DownloadItems}">
                 <controls:DataGrid.Columns>
                     <controls:DataGridTemplateColumn  Width="*" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{Binding  Media.MediaPath,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{Binding  Media.MediaSource.LocalPath,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -59,7 +59,7 @@
         </Border>
         <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0,10,0,10">
             <TextBlock Grid.Row="1" Text="File Path" VerticalAlignment="Center" />
-            <DropDownButton x:Name="DownloadProxyDropDown" Content="{Binding ViewModel.SelectedFilePath}" Margin="5,0,0,0" Width="440" 
+            <DropDownButton x:Name="DownloadOriginalDropDown" Content="{Binding ViewModel.SelectedFilePath}" Margin="5,0,0,0" Width="440" 
                             HorizontalContentAlignment="Left" Click="MenuFlyoutItem_Click" >
                 <DropDownButton.Flyout>
                     <MenuFlyout x:Name="RecentFilesFlyout" Placement="BottomEdgeAlignedLeft" />

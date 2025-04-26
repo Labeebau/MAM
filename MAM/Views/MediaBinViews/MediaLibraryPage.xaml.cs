@@ -29,11 +29,7 @@ namespace MAM.Views.MediaBinViews
     public sealed partial class MediaLibraryPage : Page
     {
         private DataAccess dataAccess = new();
-        private bool _isDraggingLeftVertical;
-        private bool _isDraggingRightVertical;
-
-        private bool _isDraggingHorizontal;
-        private double _originalSplitterPosition;
+       
 
         public ObservableCollection<FileSystemItem> FileSystemItems { get; set; }
         public ObservableCollection<string> FilteredTags { get; set; } = new();
@@ -120,169 +116,302 @@ namespace MAM.Views.MediaBinViews
                 {
                     await DeleteMediaItemAsync(args.MediaItem);
                 };
+                customMedia.PlayButtonClicked += async (s, args) =>
+                {
+                    await ShowAssetWindow();
+                };
             }
         }
-        private void VerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-            // Set the resize cursor
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
-            this.ProtectedCursor = inputCursor;  // Assign it directly to the page
-        }
-        // Vertical Splitter events
+        //private void VerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        //{
+        //    // Set the resize cursor
+        //    var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+        //    this.ProtectedCursor = inputCursor;  // Assign it directly to the page
+        //}
+        //// Vertical Splitter events
+        //private void VerticalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
+        //{
+        //    _isDraggingLeftVertical = true;
+        //    _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+
+        //    // Capture the pointer so we continue receiving events even when the pointer leaves the splitter
+        //    LeftVerticalSplitter.CapturePointer(e.Pointer);
+        //    // Set the resize cursor (for vertical resizing)
+        //    var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+        //    ProtectedCursor = inputCursor;
+        //}
+
+        //private void VerticalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
+        //{
+        //    if (_isDraggingLeftVertical)
+        //    {
+        //        // Move the vertical splitter and resize the panels
+        //        double currentPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+        //        double delta = currentPosition - _originalSplitterPosition;
+        //        double newLeft = Canvas.GetLeft(LeftVerticalSplitter) + delta;
+
+        //        // Ensure the splitter stays within bounds
+        //        if (newLeft > 300 && newLeft < MainCanvas.ActualWidth - 1200)
+        //        {
+        //            Canvas.SetLeft(LeftVerticalSplitter, newLeft);
+        //            Canvas.SetLeft(CenterPanel, newLeft + LeftVerticalSplitter.ActualWidth);
+        //            LeftPanel.Width = newLeft;
+        //            CenterPanel.Width = MainCanvas.ActualWidth - newLeft - LeftVerticalSplitter.ActualWidth - RightPanel.ActualWidth;
+        //            //MainCanvas.ActualWidth- (newLeft+LeftVerticalSplitter.ActualWidth+RightPanel.ActualWidth);
+        //            MediaBinGridView.Width = CenterPanel.ActualWidth;
+        //            _originalSplitterPosition = currentPosition;
+        //        }
+        //    }
+        //}
+
+        //private void RightVerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        //{
+
+        //    // Set the resize cursor
+        //    var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+        //    this.ProtectedCursor = inputCursor;  // Assign it directly to the page
+        //}
+        //// Vertical Splitter events
+        //private void RightVerticalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
+        //{
+        //    _isDraggingRightVertical = true;
+        //    _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+
+        //    // Capture the pointer so we continue receiving events even when the pointer leaves the splitter
+        //    RightVerticalSplitter.CapturePointer(e.Pointer);
+        //    // Set the resize cursor (for vertical resizing)
+        //    var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+        //    ProtectedCursor = inputCursor;
+        //}
+
+        //private void RightVerticalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
+        //{
+        //    if (_isDraggingRightVertical)
+        //    {
+        //        // Move the vertical splitter and resize the panels
+        //        double currentPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+        //        double delta = currentPosition - _originalSplitterPosition;
+        //        double newRight = Canvas.GetLeft(RightVerticalSplitter) + delta;
+
+        //        // Ensure the splitter stays within bounds
+        //        if (newRight > 1250 && newRight < 1500)
+        //        {
+        //            Canvas.SetLeft(RightVerticalSplitter, newRight);
+        //            Canvas.SetLeft(RightPanel, newRight + RightVerticalSplitter.ActualWidth);
+        //            RightPanel.Width = newRight;
+        //            CenterPanel.Width = newRight - RightVerticalSplitter.ActualWidth - LeftPanel.ActualWidth;
+        //            MediaBinGridView.Width = CenterPanel.ActualWidth - 50;
+        //            _originalSplitterPosition = currentPosition;
+        //        }
+        //    }
+        //}
+        //private void VerticalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+        //{
+        //    //_isDraggingVertical = false;
+
+        //    //// Reset cursor to default
+        //    var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        //    this.ProtectedCursor = defaultCursor;  // Assign it directly to the page
+        //}
+        //// Horizontal Splitter events
+        //private void HorizontalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        //{
+        //    // Set the resize cursor
+        //    var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
+        //    this.ProtectedCursor = inputCursor;  // Assign it directly to the page
+        //}
+
+        //private void HorizontalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+        //{
+        //    //_isDraggingHorizontal = false;
+
+        //    //// Reset cursor to default
+        //    var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        //    this.ProtectedCursor = defaultCursor;  // Assign it directly to the page
+        //}
+        //private void HorizontalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
+        //{
+        //    _isDraggingHorizontal = true;
+        //    _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.Y;
+
+        //    // Capture the pointer for horizontal splitter. This ensures that the control continues to receive pointer events even if the pointer moves quickly or leaves the splitter area.
+        //    _ = HorizontalSplitter.CapturePointer(e.Pointer);
+
+        //    // Set the resize cursor (for horizontal resizing)
+        //    var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
+        //    this.ProtectedCursor = inputCursor;
+        //}
+
+        //private void HorizontalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
+        //{
+        //    if (_isDraggingHorizontal)
+        //    {
+        //        // Move the horizontal splitter and resize the top and bottom panels
+        //        double currentPosition = e.GetCurrentPoint(MainCanvas).Position.Y;
+        //        double delta = currentPosition - _originalSplitterPosition;
+        //        double newTop = Canvas.GetTop(HorizontalSplitter) + delta;
+
+        //        // Ensure the splitter stays within bounds
+        //        if (newTop > 100 && newTop < MainCanvas.ActualHeight - 100)
+        //        {
+        //            Canvas.SetTop(HorizontalSplitter, newTop);
+        //            Canvas.SetTop(BottomPanel, newTop + HorizontalSplitter.Height);
+        //            LeftPanel.Height = newTop;
+        //            CenterPanel.Height = newTop;
+        //            LeftVerticalSplitter.Height = newTop;
+        //            RightVerticalSplitter.Height = newTop;
+        //            BottomPanel.Height = MainCanvas.ActualHeight - newTop - HorizontalSplitter.Height;
+        //            _originalSplitterPosition = currentPosition;
+        //        }
+        //    }
+        //}
+
+        //private void Splitter_PointerReleased(object sender, PointerRoutedEventArgs e)
+        //{
+        //    _isDraggingLeftVertical = false;
+        //    _isDraggingRightVertical = false;
+        //    _isDraggingHorizontal = false;
+
+        //    // Release the pointer capture
+        //    LeftVerticalSplitter.ReleasePointerCapture(e.Pointer);
+        //    RightVerticalSplitter.ReleasePointerCapture(e.Pointer);
+        //    HorizontalSplitter.ReleasePointerCapture(e.Pointer);
+
+        //    // Reset cursor to default
+        //    var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        //    this.ProtectedCursor = defaultCursor;
+        //}
+        private bool _isDraggingLeftVertical;
+        private bool _isDraggingRightVertical;
+        private bool _isDraggingHorizontal;
+
+        private double _originalSplitterPosition;
+        private GridLength _originalLeftWidth;
+        private GridLength _originalRightWidth;
+        private GridLength _originalTopHeight;
+        // LEFT SPLITTER EVENTS
         private void VerticalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             _isDraggingLeftVertical = true;
-            _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+            _originalSplitterPosition = e.GetCurrentPoint(MainGrid).Position.X;
+            _originalLeftWidth = LeftColumn.Width;
 
-            // Capture the pointer so we continue receiving events even when the pointer leaves the splitter
             LeftVerticalSplitter.CapturePointer(e.Pointer);
-            // Set the resize cursor (for vertical resizing)
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
-            ProtectedCursor = inputCursor;
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
 
         private void VerticalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             if (_isDraggingLeftVertical)
             {
-                // Move the vertical splitter and resize the panels
-                double currentPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+                double currentPosition = e.GetCurrentPoint(MainGrid).Position.X;
                 double delta = currentPosition - _originalSplitterPosition;
-                double newLeft = Canvas.GetLeft(LeftVerticalSplitter) + delta;
+                double newWidth = _originalLeftWidth.Value + delta;
 
-                // Ensure the splitter stays within bounds
-                if (newLeft > 300 && newLeft < MainCanvas.ActualWidth - 1200)
+                if (newWidth >= 200 && newWidth <= 600)
                 {
-                    Canvas.SetLeft(LeftVerticalSplitter, newLeft);
-                    Canvas.SetLeft(CenterPanel, newLeft + LeftVerticalSplitter.ActualWidth);
-                    LeftPanel.Width = newLeft;
-                    CenterPanel.Width = MainCanvas.ActualWidth - newLeft - LeftVerticalSplitter.ActualWidth - RightPanel.ActualWidth;
-                    //MainCanvas.ActualWidth- (newLeft+LeftVerticalSplitter.ActualWidth+RightPanel.ActualWidth);
-                    MediaBinGridView.Width = CenterPanel.ActualWidth;
-                    _originalSplitterPosition = currentPosition;
+                    LeftColumn.Width = new GridLength(newWidth, GridUnitType.Pixel);
+                    CenterColumn.Width = new GridLength(1, GridUnitType.Star);
                 }
             }
         }
 
-        private void RightVerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        private void VerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-
-            // Set the resize cursor
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
-            this.ProtectedCursor = inputCursor;  // Assign it directly to the page
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
-        // Vertical Splitter events
+
+        private void VerticalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        }
+
+        // RIGHT SPLITTER EVENTS
         private void RightVerticalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             _isDraggingRightVertical = true;
-            _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+            _originalSplitterPosition = e.GetCurrentPoint(MainGrid).Position.X;
+            _originalRightWidth = RightColumn.Width;
 
-            // Capture the pointer so we continue receiving events even when the pointer leaves the splitter
             RightVerticalSplitter.CapturePointer(e.Pointer);
-            // Set the resize cursor (for vertical resizing)
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
-            ProtectedCursor = inputCursor;
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
 
         private void RightVerticalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             if (_isDraggingRightVertical)
             {
-                // Move the vertical splitter and resize the panels
-                double currentPosition = e.GetCurrentPoint(MainCanvas).Position.X;
-                double delta = currentPosition - _originalSplitterPosition;
-                double newRight = Canvas.GetLeft(RightVerticalSplitter) + delta;
+                double currentPosition = e.GetCurrentPoint(MainGrid).Position.X;
+                double delta = _originalSplitterPosition - currentPosition;
+                double newWidth = _originalRightWidth.Value + delta;
 
-                // Ensure the splitter stays within bounds
-                if (newRight > 1250 && newRight < 1500)
+                if (newWidth >= 200 && newWidth <= 600)
                 {
-                    Canvas.SetLeft(RightVerticalSplitter, newRight);
-                    Canvas.SetLeft(RightPanel, newRight + RightVerticalSplitter.ActualWidth);
-                    RightPanel.Width = newRight;
-                    CenterPanel.Width = newRight - RightVerticalSplitter.ActualWidth - LeftPanel.ActualWidth;
-                    MediaBinGridView.Width = CenterPanel.ActualWidth - 50;
-                    _originalSplitterPosition = currentPosition;
+                    RightColumn.Width = new GridLength(newWidth, GridUnitType.Pixel);
+                    CenterColumn.Width = new GridLength(1, GridUnitType.Star);
                 }
             }
         }
-        private void VerticalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            //_isDraggingVertical = false;
 
-            //// Reset cursor to default
-            var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-            this.ProtectedCursor = defaultCursor;  // Assign it directly to the page
-        }
-        // Horizontal Splitter events
-        private void HorizontalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        private void RightVerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            // Set the resize cursor
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
-            this.ProtectedCursor = inputCursor;  // Assign it directly to the page
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
 
-        private void HorizontalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            //_isDraggingHorizontal = false;
-
-            //// Reset cursor to default
-            var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-            this.ProtectedCursor = defaultCursor;  // Assign it directly to the page
-        }
+        // HORIZONTAL SPLITTER EVENTS
         private void HorizontalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             _isDraggingHorizontal = true;
-            _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.Y;
+            _originalSplitterPosition = e.GetCurrentPoint(null).Position.Y;
+            _originalTopHeight = TopRow.Height;
 
-            // Capture the pointer for horizontal splitter. This ensures that the control continues to receive pointer events even if the pointer moves quickly or leaves the splitter area.
-            _ = HorizontalSplitter.CapturePointer(e.Pointer);
-
-            // Set the resize cursor (for horizontal resizing)
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
-            this.ProtectedCursor = inputCursor;
+            HorizontalSplitter.CapturePointer(e.Pointer);
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
         }
 
         private void HorizontalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             if (_isDraggingHorizontal)
             {
-                // Move the horizontal splitter and resize the top and bottom panels
-                double currentPosition = e.GetCurrentPoint(MainCanvas).Position.Y;
+                double currentPosition = e.GetCurrentPoint(null).Position.Y;
                 double delta = currentPosition - _originalSplitterPosition;
-                double newTop = Canvas.GetTop(HorizontalSplitter) + delta;
+                double newHeight = _originalTopHeight.Value + delta;
 
-                // Ensure the splitter stays within bounds
-                if (newTop > 100 && newTop < MainCanvas.ActualHeight - 100)
+                if (double.IsNaN(newHeight) || double.IsInfinity(newHeight))
+                    return;
+
+                if (newHeight >= 200 && newHeight <= MainGrid.ActualHeight - 200)
                 {
-                    Canvas.SetTop(HorizontalSplitter, newTop);
-                    Canvas.SetTop(BottomPanel, newTop + HorizontalSplitter.Height);
-                    LeftPanel.Height = newTop;
-                    CenterPanel.Height = newTop;
-                    LeftVerticalSplitter.Height = newTop;
-                    RightVerticalSplitter.Height = newTop;
-                    BottomPanel.Height = MainCanvas.ActualHeight - newTop - HorizontalSplitter.Height;
-                    _originalSplitterPosition = currentPosition;
+                    TopRow.Height = new GridLength(newHeight, GridUnitType.Pixel);
+                    BottomRow.Height = new GridLength(1, GridUnitType.Star);
                 }
             }
         }
 
+
+        private void HorizontalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
+        }
+
+        private void HorizontalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        }
+
+        // POINTER RELEASED (ALL)
         private void Splitter_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
             _isDraggingLeftVertical = false;
             _isDraggingRightVertical = false;
             _isDraggingHorizontal = false;
 
-            // Release the pointer capture
             LeftVerticalSplitter.ReleasePointerCapture(e.Pointer);
             RightVerticalSplitter.ReleasePointerCapture(e.Pointer);
             HorizontalSplitter.ReleasePointerCapture(e.Pointer);
 
-            // Reset cursor to default
-            var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-            this.ProtectedCursor = defaultCursor;
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
         }
-
-
 
 
 
@@ -703,13 +832,12 @@ namespace MAM.Views.MediaBinViews
             }
             //NoofItemscomboBox.SelectedItem = i;
         }
-        NavigationParameter navParameter;
 
         private readonly List<(string Tag, Type Page)> _pages =
         [
-            ("UploadHistory",typeof(UploadHistoryPage)),
-            ("DownloadHistory",typeof(DownloadHistoryPage)),
-            ("ExportHistory",typeof(ExportHistoryPage)),
+            ("UploadHistory",typeof(TransactionHistoryPage)),
+            ("DownloadHistory",typeof(TransactionHistoryPage)),
+            ("ExportHistory",typeof(TransactionHistoryPage)),
 
         ];
 
@@ -717,22 +845,21 @@ namespace MAM.Views.MediaBinViews
         {
             if (args.InvokedItemContainer != null)
             {
-                navParameter = new NavigationParameter(viewModel.MediaObj, viewModel.MediaLibraryObj);
 
                 var navItemTag = args.InvokedItemContainer.Tag.ToString();
-                NavFileHistory_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo, navParameter);
+                NavFileHistory_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo);
             }
         }
-        private void NavFileHistory_Navigate(string navItemTag, NavigationTransitionInfo recommendedNavigationTransitionInfo, object navParameter)
+        private void NavFileHistory_Navigate(string navItemTag, NavigationTransitionInfo recommendedNavigationTransitionInfo)
         {
             Type _page = null;
 
             var item = _pages.FirstOrDefault(p => p.Tag.Equals(navItemTag));
             _page = item.Page;
             var prevNavPAgeType = ContentFrame.CurrentSourcePageType;
-            if (!(_page is null) && !Type.Equals(prevNavPAgeType, _page))
+            if (!(_page is null))
             {
-                ContentFrame.Navigate(_page, navParameter, recommendedNavigationTransitionInfo);
+                ContentFrame.Navigate(_page,navItemTag, recommendedNavigationTransitionInfo);
             }
 
         }
@@ -755,7 +882,7 @@ namespace MAM.Views.MediaBinViews
             ////	// If navigation occurs on SelectionChanged, this isn't needed.
             ////	// Because we use ItemInvoked to navigate, we need to call Navigate
             ////	// here to load the home page.
-            NavFileHistory_Navigate("UploadHistory", new EntranceNavigationTransitionInfo(), navParameter);
+            NavFileHistory_Navigate("UploadHistory", new EntranceNavigationTransitionInfo());
         }
         private void NavFileHistory_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
         {
@@ -826,7 +953,7 @@ namespace MAM.Views.MediaBinViews
                         File.Delete(System.IO.Path.Combine(item.MediaPath, item.Title));
                         File.Delete(System.IO.Path.Combine(item.MediaPath, item.ThumbnailPath.LocalPath));
                         File.Delete(System.IO.Path.Combine(item.MediaPath, item.ProxyPath.LocalPath));
-                        DeleteAssetAsync(item.Title, item.MediaPath);
+                        await DeleteAssetAsync(item.Title, item.MediaPath);
                     }
                     catch (IOException ex)
                     {
@@ -858,6 +985,7 @@ namespace MAM.Views.MediaBinViews
             }
             else
             {
+                await GlobalClass.Instance.AddtoHistoryAsync("Delete from Library", $"Deleted '{assetPath}\\{assetName}' from library .");
                 return affectedRows;
             }
         }
@@ -881,8 +1009,8 @@ namespace MAM.Views.MediaBinViews
             MediaPlayerItem mediaPlayerItem = (MediaPlayerItem)MediaBinGridView.SelectedItem;
             if (mediaPlayerItem != null)
             {
-                DownloadProxy.ShowWindow(mediaPlayerItem);
-                NavFileHistory_Navigate("DownloadHistory", new EntranceNavigationTransitionInfo(), viewModel.MediaObj);
+                DownloadProxyWindow.ShowWindow(mediaPlayerItem);
+                NavFileHistory_Navigate("DownloadHistory", new EntranceNavigationTransitionInfo());
                 NavFileHistory.SelectedItem = "DownloadHistory";
             }
         }
@@ -893,7 +1021,7 @@ namespace MAM.Views.MediaBinViews
             if (mediaPlayerItem != null)
             {
                 DownloadOriginalFile.ShowWindow(mediaPlayerItem);
-                NavFileHistory_Navigate("DownloadHistory", new EntranceNavigationTransitionInfo(), viewModel.MediaObj);
+                NavFileHistory_Navigate("DownloadHistory", new EntranceNavigationTransitionInfo());
                 NavFileHistory.SelectedItem = "DownloadHistory";
             }
         }
@@ -1050,14 +1178,17 @@ namespace MAM.Views.MediaBinViews
             }
 
         }
-
-        private async void MediaBinGridView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        private async Task ShowAssetWindow()
         {
             if (MediaBinGridView.SelectedItem != null)
             {
                 MediaPlayerItem mediaPlayerItem = await GetAssetsAsync(((MediaPlayerItem)MediaBinGridView.SelectedItem).MediaPath, ((Views.MediaBinViews.MediaPlayerItem)MediaBinGridView.SelectedItem).Title);
                 AssetWindow.ShowWindow(mediaPlayerItem, viewModel.MediaPlayerItems);
             }
+        }
+        private async void MediaBinGridView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            await ShowAssetWindow();
         }
         private void TypeMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
         {
@@ -1303,7 +1434,6 @@ namespace MAM.Views.MediaBinViews
             viewModel.ClearFilters();
             TypeDropDown.Content = "Select Type";
 
-
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -1323,7 +1453,8 @@ namespace MAM.Views.MediaBinViews
 
         private async void RefreshMediaLibrary_Click(object sender, RoutedEventArgs e)
         {
-            if (((FileSystemItem)FileTreeView.SelectedNode.Content) != null)
+            if(FileTreeView.SelectedNode!=null)
+            if (((FileSystemItem)FileTreeView.SelectedNode.Content)!= null)
             {
                 await LoadAssetsAsync();
             }
@@ -1346,10 +1477,14 @@ namespace MAM.Views.MediaBinViews
                     menuFlyout.ShowAt(element);
                 }
             }
-            if(MediaLibrary.BinName.StartsWith(GlobalClass.Instance.MediaLibraryPath))
+            if(MediaLibrary.BinName.StartsWith(GlobalClass.Instance.MediaLibraryPath) && GlobalClass.Instance.CurrentUser.UserRight.Write)
                 AddAssetMenuItem.IsEnabled= true;
             else
                 AddAssetMenuItem.IsEnabled = false;
+            if(GlobalClass.Instance.CurrentUser.UserRight.Write)
+                AddNewBin.IsEnabled= true;
+            else
+                AddNewBin.IsEnabled = false;
 
         }
 
@@ -1374,8 +1509,11 @@ namespace MAM.Views.MediaBinViews
                     };
 
                     int res =await dataAccess.UpdateRecord("Asset", "asset_id", viewModel.MediaObj.MediaId, propsList);
-                    if (res > 0) 
+                    if (res > 0)
+                    {
                         viewModel.MediaObj.IsArchived = false;
+                        await GlobalClass.Instance.AddtoHistoryAsync("Unarchive", $"Unarchived asset '{destinationPath}' .");
+                    }
                 }
                 else
                 {
@@ -1815,17 +1953,17 @@ namespace MAM.Views.MediaBinViews
             throw new NotImplementedException(); // One-way binding only
         }
     }
-    public class NavigationParameter
-    {
-        public MediaPlayerItem MediaObj { get; set; }
-        public MediaLibrary MediaLibraryObj { get; set; }
+    ////public class NavigationParameter
+    ////{
+    ////    public MediaPlayerItem MediaObj { get; set; }
+    ////    public MediaLibrary MediaLibraryObj { get; set; }
 
-        public NavigationParameter(MediaPlayerItem media, MediaLibrary library)
-        {
-            MediaObj = media;
-            MediaLibraryObj = library;
-        }
-    }
+    ////    public NavigationParameter(MediaPlayerItem media, MediaLibrary library)
+    ////    {
+    ////        MediaObj = media;
+    ////        MediaLibraryObj = library;
+    ////    }
+    ////}
 
 }
 

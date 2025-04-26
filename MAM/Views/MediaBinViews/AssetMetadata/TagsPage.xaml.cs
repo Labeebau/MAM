@@ -32,16 +32,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         public ObservableCollection<Tag> AllTags { get; private set; } = new();
         public TagViewModel ViewModel { get; set; }
         public Tag SelectedAssetTag { get; set; }
-        private bool hasTags = false;
-        public bool HasTags 
-        {
-            get { return hasTags; }
-            set 
-            { 
-                hasTags = value;
-                OnPropertyChanged(nameof(HasTags)); 
-            }
-        }
+        
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -115,8 +106,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                     TagId = Convert.ToInt32(row[0]),
                     TagName = row[1].ToString(),
                 });
+                ViewModel.HasTags = ViewModel.AssetTags.Any();
             }
-            HasTags = ViewModel.AssetTags.Any();
         }
 
 
@@ -154,6 +145,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             var (affectedRows, newMetadataId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
             if (affectedRows > 0)
             {
+                await GlobalClass.Instance.AddtoHistoryAsync("Add tag to asset", $"Added tag '{tagName}' to asset '{Asset.Media.MediaSource.LocalPath}' ");
                 return newMetadataId;
             }
             else
@@ -176,6 +168,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             var (affectedRows, newTagId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
            if(affectedRows>0)
             {
+                await GlobalClass.Instance.AddtoHistoryAsync("Add tag", $"Added tag '{tagName}' ");
                 return newTagId;
             }
             else
@@ -203,7 +196,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         private async void RemoveTagFromAsset_Click(object sender, RoutedEventArgs e)
         {
-            await DeleteTagFromAssetAsync();
+            if(ViewModel.HasTags)
+                await DeleteTagFromAssetAsync();
 
         }
         private async Task<int> DeleteTagFromAssetAsync()
@@ -235,6 +229,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                     if(affectedRows>0)
                     {
                         ViewModel.AssetTags.Remove(SelectedAssetTag);
+                        await GlobalClass.Instance.AddtoHistoryAsync("Delete tag from asset", $"Delete tag '{SelectedAssetTag.TagName}' from asset '{Asset.Media.MediaSource.LocalPath}' ");
+                        GetAssetTags();
                         return affectedRows;
                     }
                     else
@@ -293,6 +289,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                     int errorCode = 0;
                     if (dataAccess.Delete("tag", "tag_id", ViewModel.NewTag.TagId, out errorMessage, out errorCode))
                     {
+                        await GlobalClass.Instance.AddtoHistoryAsync("Delete tag", $"Deleted tag '{ViewModel.NewTag.TagName}' ");
                         AllTags.Remove(ViewModel.NewTag);
                         GetAllTags();
                     }
@@ -329,14 +326,15 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         }
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if(e.AddedItems.Count>0)
             SelectedAssetTag = (Tag)((ListView)sender).SelectedItem;
         }
 
-        private void AddTagToAsset_Click(object sender, RoutedEventArgs e)
+        private async void AddTagToAsset_Click(object sender, RoutedEventArgs e)
         {
             if (Asset.Media.MediaId != 0 && ViewModel.NewTag.TagName != null)
             {
-                InsertTagToAsset(Asset.Media.MediaId, ViewModel.NewTag.TagName);
+                await InsertTagToAsset(Asset.Media.MediaId, ViewModel.NewTag.TagName);
                 GetAssetTags();
 
             }
@@ -395,6 +393,9 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
     {
         private Tag newTag;
         private ObservableCollection<Tag> _suggestions;
+        private bool hasTags = false;
+        private ObservableCollection<Tag> assetTags;
+
         public List<Tag> _allTags;  // Store all available tags for searching
 
         public Tag NewTag
@@ -408,8 +409,16 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             get => _suggestions;
             set => SetProperty(ref _suggestions, value);
         }
-        public ObservableCollection<Tag> AssetTags { get; private set; }
-
+        public ObservableCollection<Tag> AssetTags 
+        {
+            get => assetTags;
+            set { SetProperty(ref assetTags, value); }
+        }
+        public bool HasTags
+        {
+            get => hasTags;
+            set => SetProperty(ref hasTags, value);
+        }
         public TagViewModel()
         {
             NewTag = new Tag();

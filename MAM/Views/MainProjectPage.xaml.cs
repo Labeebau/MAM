@@ -1,3 +1,4 @@
+using MAM.Data;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -13,25 +14,11 @@ namespace MAM.Views
     /// </summary>
     public sealed partial class MainProjectPage : Page
     {
-
+        public bool IsAdmin { get; set; }
         public MainProjectPage()
         {
             this.InitializeComponent();
-            // ExtendsContentIntoTitleBar = true;  // enable custom titlebar
-            //SetTitleBar(AppTitleBar);
-            // SetWindowSizeAndPosition(1200, 1000);
-            // Access the PaneRoot (which holds the width of the pane)
-            //var paneRoot = (Grid)NavView.FindName("PaneRoot");
-            //if (paneRoot != null)
-            //{
-            //    paneRoot.Width = 100;  // Set the desired width here
-            //}
-
-
         }
-
-       
-
         private readonly List<(string Tag, Type Page)> _pages = new List<(string Tag, Type Page)>
         {
             ("MediaBin",typeof(MediaBinPage)),
@@ -95,7 +82,10 @@ namespace MAM.Views
         private void NavView_Loaded(object sender, RoutedEventArgs e)
         {
 
-
+            if (!IsAdmin)
+            {
+                //AdminPanelItem.Visibility = Visibility.Collapsed;
+            }
             ////	// Add handler for ContentFrame navigation.
             //ContentFrame.Navigated += On_Navigated;
 

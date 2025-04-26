@@ -8,7 +8,7 @@ namespace MAM.Data
 {
     public class DataAccess
     {
-        private readonly string _connectionString = "server=localhost;uid=root;pwd=root;database=mam";
+        private readonly string _connectionString = "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
         public DataAccess()
         {
         }
@@ -21,7 +21,7 @@ namespace MAM.Data
         // Open MySQL connection
         private MySqlConnection OpenConnection()
         {
-            var connection = new MySqlConnection(_connectionString);
+            var connection = new  MySqlConnection(_connectionString);
             try
             {
                 connection.Open();
@@ -42,6 +42,80 @@ namespace MAM.Data
                 connection.Close();
             }
         }
+        public async Task ExecuteStoredProcedure(string procedureName, Dictionary<string, object> parameters)
+        {
+            try
+            {
+                using (var connection = OpenConnection())
+                {
+                    using (var command = new MySqlCommand(procedureName, connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        // Add parameters if any
+                        if (parameters != null)
+                        {
+                            foreach (var param in parameters)
+                            {
+                                command.Parameters.AddWithValue(param.Key, param.Value);
+                            }
+                        }
+                      await  command.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Invalid UserId "+ex.ToString());
+            }
+        }
+        //public (int, string, string,int,string) GetUserCredentials(string userName)
+        //{
+        //    string query = "SELECT u.user_id, u.password_hash, u.password_salt,ug.group_id,ug.group_name FROM user u inner join mam.user_roles ur on u.user_id = ur.user_id inner join mam.user_group ug on ug.group_id = ur.group_id ug WHERE user_name = @userName";
+        //    var parameters = new List<MySqlParameter> { new("@userName", userName) };
+            
+        //    var reader = ExecuteReader(query, parameters);
+
+        //    if (reader.Read())
+        //    {
+        //        return (
+        //            Convert.ToInt32(reader["user_id"]),
+        //            reader["password_hash"].ToString(),
+        //            reader["password_salt"].ToString(),
+        //            Convert.ToInt32(reader["group_id"].ToString()),
+        //            reader["group_name"].ToString()
+        //        );
+        //    }
+        //    reader.DisposeAsync();
+        //    return (-1,string.Empty, string.Empty,-1, string.Empty);
+        //}
+        public (int, string, string, int, string) GetUserCredentials(string userName)
+        {
+            string query = @"
+        SELECT u.user_id, u.password_hash, u.password_salt, ug.group_id, ug.group_name
+        FROM user u
+        INNER JOIN mam.user_roles ur ON u.user_id = ur.user_id
+        INNER JOIN mam.user_group ug ON ug.group_id = ur.group_id
+        WHERE user_name = @userName";
+
+            var parameters = new List<MySqlParameter> { new("@userName", userName) };
+
+            using var reader = ExecuteReader(query, parameters);
+            if (reader.Read())
+            {
+                return (
+                    Convert.ToInt32(reader["user_id"]),
+                    reader["password_hash"].ToString(),
+                    reader["password_salt"].ToString(),
+                    Convert.ToInt32(reader["group_id"]),
+                    reader["group_name"].ToString()
+                );
+            }
+
+            return (-1, string.Empty, string.Empty, -1, string.Empty);
+        }
+
+
         public int GetId(string query, List<MySqlParameter> parameters = null)
         {
             int id = -1;
@@ -135,11 +209,11 @@ namespace MAM.Data
         public List<User> GetUsers()
         {
             List<User> UserList = new List<User>();
-            string query = "SELECT u.user_id, u.first_name ,u.last_name,u.email, u.user_name, u.password,u.ad_user,u.active," +
-                      "case when ug.group_name = 'Admin' then True else false end as IsAdmin " +
-                      "FROM user u " +
-                      "left join user_roles ur on u.user_id = ur.user_id " +
-                      "left join user_group ug on ug.group_id = ur.group_id";
+            string query = "SELECT u.user_id, u.first_name, u.last_name, u.email, u.user_name, u.password_hash, u.ad_user, u.active, " +
+                "CASE WHEN ug.group_name = 'Admin' THEN TRUE ELSE FALSE END AS IsAdmin " +
+                "FROM user u " +
+                "LEFT JOIN user_roles ur ON u.user_id = ur.user_id " +
+                "LEFT JOIN user_group ug ON ug.group_id = ur.group_id";
 
             using (MySqlConnection connection = OpenConnection())
             {
@@ -159,10 +233,10 @@ namespace MAM.Data
                                     LastName = reader.GetString("last_name"),
                                     Email = reader.GetString("email"),
                                     UserName = reader.GetString("user_name"),
-                                    Password = reader.GetString("password"),
+                                    Password = reader.GetString("password_hash"),
                                     IsADUser = reader.GetBoolean("ad_user"),
                                     IsActive = reader.GetBoolean("active"),
-                                    IsAdmin = reader.GetBoolean("IsAdmin")
+                                    IsAdmin = reader.GetBoolean("IsAdmin"),
                                 });
                             }
                         }
@@ -278,58 +352,7 @@ namespace MAM.Data
         }
 
 
-        //public int ExecuteNonQuery(string query, Dictionary<string, object> parameters, out int lastInsertedId,out int errorCode)
-        //{
-        //    int affectedRows = 0;
-        //    lastInsertedId = -1;
-        //    using (MySqlConnection connection = OpenConnection())
-        //    {
-        //        using (MySqlCommand command = new MySqlCommand(query, connection))
-        //        {
-        //            try
-        //            {
-        //                // Add parameters to prevent SQL injection
-        //                foreach (var param in parameters)
-        //                {
-        //                    command.Parameters.AddWithValue(param.Key, param.Value);
-        //                }
-        //                affectedRows = command.ExecuteNonQuery();
-        //                lastInsertedId = Convert.ToInt32(command.LastInsertedId);
-        //                CloseConnection(connection);
-        //                errorCode = 0;
-        //                return affectedRows;
-        //            }
-        //            catch (MySqlException ex)
-        //            {
-        //                if (ex.Number == 1062)  // Error codes for primary key and unique constraint violations
-        //                {
-        //                    Console.WriteLine("Duplicate primary key error: Primary key or unique constraint violation.");
-        //                    errorCode = 1062;
-        //                    return -1;
-
-        //                }
-        //                else if (ex.Number == 1451) // Foreign key constraint error
-        //                {
-        //                    Console.WriteLine("Foreign key error: it is referenced in another table.");
-        //                    errorCode = 1451;
-        //                    return -1;
-        //                }
-        //                else
-        //                {
-        //                    Console.WriteLine($"A MySQL error occurred: {ex.Message}");
-        //                    errorCode = -1;
-        //                    return 0;
-        //                }
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                Console.WriteLine($"An error occurred: {ex.Message}");
-        //                errorCode = -1;
-        //                return 0;
-        //            }
-        //        }
-        //    }
-        //}
+      
         public bool ExecuteScalar(string query, Dictionary<string, object> parameters)
         {
             using (MySqlConnection connection = OpenConnection())
@@ -343,19 +366,38 @@ namespace MAM.Data
                         {
                             command.Parameters.AddWithValue(param.Key, param.Value);
                         }
-
                         var result = command.ExecuteScalar();
                         CloseConnection(connection);
-
                         return Convert.ToInt32(result) > 0;
                     }
                     catch (Exception ex)
                     {
+                        CloseConnection(connection);
                         Debug.WriteLine($"Error executing query: {ex.Message}");
                         throw;
                     }
-
                 }
+            }
+        }
+        public MySqlDataReader ExecuteReader(string query, List<MySqlParameter> parameters)
+        {
+             MySqlConnection connection = OpenConnection();
+             MySqlCommand command = new MySqlCommand(query, connection);
+            try
+            {
+                // Add parameters to prevent SQL injection
+                foreach (var param in parameters)
+                {
+                    command.Parameters.Add(new MySqlParameter(param.ParameterName, param.Value));
+                }
+                return command.ExecuteReader(CommandBehavior.CloseConnection);
+
+            }
+            catch (Exception ex)
+            {
+                CloseConnection(connection);
+                Debug.WriteLine($"Error executing query: {ex.Message}");
+                throw;
             }
         }
         public async Task<int> UpdateRecord(string table, string idColumn, int idValue, Dictionary<string, object> columnValues)

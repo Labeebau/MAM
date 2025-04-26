@@ -1,5 +1,4 @@
 ﻿using MAM.Data;
-using MAM.ViewModels;
 using MAM.Views.AdminPanelViews.Metadata;
 using MAM.Windows;
 using Microsoft.UI.Xaml;
@@ -106,14 +105,15 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 sender.Text = selected.Metadata;
             }
         }
-        private void MetadataButton_Click(object sender, RoutedEventArgs e)
+        private async void MetadataButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
                 // Get the DataContext of the button (which should be AssetsMetadata)
                 if (button.DataContext is AssetsMetadata metadataItem)
                 {
-                    UpdateMetadata(metadataItem.MetadataValue, metadataItem.MetadataId);
+                   await UpdateMetadata(metadataItem.MetadataValue, metadataItem.MetadataId);
+                   await GlobalClass.Instance.AddtoHistoryAsync("Update Metadata", $"Added metadata '{metadataItem.Metadata}'={metadataItem.MetadataValue} ");
                 }
             }
         }
@@ -128,7 +128,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 " VALUES (@asset_id,@metadata_id, @metadata_value)" +
                 " ON DUPLICATE KEY UPDATE" +
                 " metadata_value = VALUES(@metadata_value);", propsList);
-            return affectedRows;
+                      return affectedRows;
         }
         private async void AddMetadata_Click(object sender, RoutedEventArgs e)
         {

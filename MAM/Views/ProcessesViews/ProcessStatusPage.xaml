@@ -107,12 +107,11 @@ ItemsSource="{x:Bind FilteredProcesses, Mode=OneWay}">
                             </controls:DataGridTemplateColumn.CellTemplate>
                         </controls:DataGridTemplateColumn>
 
-                        <controls:DataGridTemplateColumn Header="Status" Width="auto" >
+                        <controls:DataGridTemplateColumn Header="Progress" Width="auto" >
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="local1:Process">
                                     <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="10" >
-                                        <TextBlock Text="{Binding Progress}" FontSize="10"/>
-
+                                        <!--<TextBlock Text="{Binding Progress}" FontSize="10"/>-->
                                         <ProgressBar Value="{Binding Progress,Mode=OneWay}" Width="80"   />
                                     </StackPanel>
                                 </DataTemplate>
@@ -133,7 +132,7 @@ ItemsSource="{x:Bind FilteredProcesses, Mode=OneWay}">
                 </controls:DataGrid>
             </Border>
             <StackPanel Grid.Row="2"   Orientation="Horizontal">
-                <TextBlock />
+                <TextBlock Text="{Binding FilteredProcesses.Count}" />
                 <DropDownButton  Width="200"></DropDownButton>
             </StackPanel>
         </StackPanel>

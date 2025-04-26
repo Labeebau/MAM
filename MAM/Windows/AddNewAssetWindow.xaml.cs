@@ -2,7 +2,6 @@ using MAM.Data;
 using MAM.Utilities;
 using MAM.Views.MediaBinViews;
 using MAM.Views.ProcessesViews;
-using MAM.Views.TransferJobs;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -150,7 +149,7 @@ namespace MAM.Windows
                         long fileSize = fileInfo.Length / (1024 * 1024);//Converts bytes to MB
                         MediaPlayerItem media = new()
                         {
-                            CreatedUser = GlobalClass.Instance.CurrentUserName,
+                            CreatedUser = GlobalClass.Instance.CurrentUser.UserName,
                             CreationDate = DateOnly.FromDateTime(DateTime.Today.Date),
                             Duration = duration,
                             DurationString = duration.ToString(@"hh\:mm\:ss"),
@@ -305,6 +304,8 @@ namespace MAM.Windows
             }
             await ProcessAssetsAsync(AssetList);
             this.Close();
+
+
             foreach (Asset item in assetstoRemove)
             {
                 AssetList.Remove(item);
@@ -353,16 +354,16 @@ namespace MAM.Windows
             }
             return (int)progressPercentage;
         }
-        public static void RemoveProcessFromAllAndFiltered(Process process)
-        {
-            var matchAll = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == process.ProcessId);
-            if (matchAll != null)
-                ProcessStore.AllProcesses.Remove(matchAll);
+        //public static void RemoveProcessFromAllAndFiltered(Process process)
+        //{
+        //    var matchAll = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == process.ProcessId);
+        //    if (matchAll != null)
+        //        ProcessStore.AllProcesses.Remove(matchAll);
 
-            var matchFiltered = ProcessStatusPage.Instance?.FilteredProcesses?.FirstOrDefault(p => p.ProcessId == process.ProcessId);
-            if (matchFiltered != null)
-                ProcessStatusPage.Instance.FilteredProcesses.Remove(matchFiltered);
-        }
+        //    var matchFiltered = ProcessStatusPage.Instance?.FilteredProcesses?.FirstOrDefault(p => p.ProcessId == process.ProcessId);
+        //    if (matchFiltered != null)
+        //        ProcessStatusPage.Instance.FilteredProcesses.Remove(matchFiltered);
+        //}
 
 
         private async Task ProcessAssetAsync(Asset asset)
@@ -374,7 +375,7 @@ namespace MAM.Windows
 
             App.UIDispatcherQueue.TryEnqueue(async () =>
             {
-                asset.Status = "Waiting...";
+               // asset.Status = "Waiting...";
 
                 if (ProxyGeneration == null)
                 {
@@ -385,9 +386,11 @@ namespace MAM.Windows
                 ProxyGeneration.Status = "Waiting...";
                 ProxyGeneration.Result = "Waiting";
                 Debug.WriteLine(ProxyGeneration.Status);
-                newProcessId = await InsertProcessInDatabaseAsync(ProxyGeneration);
+                newProcessId = await ProcessStore.InsertProcessInDatabaseAsync(ProxyGeneration);
                 ProxyGeneration.ProcessId = newProcessId;
                 ProcessStore.AllProcesses.Add(ProxyGeneration);
+                TransactionHistoryPage.TransactionHistoryStatic.InitializeWithParameter("UploadHistory");
+
             });
             try
             {
@@ -409,19 +412,19 @@ namespace MAM.Windows
                             var progressPercentage = (currentTime.TotalSeconds / totalDuration.Value.TotalSeconds) * 100;
                             App.UIDispatcherQueue.TryEnqueue(() =>
                             {
-                                asset.Progress = (int)progressPercentage;
-
+                               // asset.Progress = (int)progressPercentage;
                                 var process = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == ProxyGeneration.ProcessId);
-                                Debug.WriteLine($"Updating Process. Found: {process != null}, ProxyGen: {ProxyGeneration.GetHashCode()}, Found: {process?.GetHashCode()}");
+                                //Debug.WriteLine($"Updating Process. Found: {process != null}, ProxyGen: {ProxyGeneration.GetHashCode()}, Found: {process?.GetHashCode()}");
                                 if (process != null)
                                 {
                                     process.Progress = (int)progressPercentage;
-                                }
-                                if (asset.Status != "Transferring...")
-                                {
-                                    asset.Status = "Transferring..."; // Update status to 'transferring'
                                     process.Status = "Generating Proxy...";
+
                                 }
+                                //if (asset.Status != "Transferring...")
+                                //{
+                                //    asset.Status = "Transferring..."; // Update status to 'transferring'
+                                //}
                             });
                         }
                     }
@@ -429,22 +432,23 @@ namespace MAM.Windows
                 string outputFile = Path.Combine(MediaLibraryPage.MediaLibrary.ProxyFolder, "Proxy_" + Path.GetFileNameWithoutExtension(asset.Media.Title) + ".mp4");
                 string arguments = $"-i \"{asset.Media.OriginalPath}\" -vf scale=640:-1 -c:v libx264 -b:v 200k  -c:a aac -b:a 128k \"{outputFile}\"";
                 // Update status to 'transferring' just before starting
-                App.UIDispatcherQueue.TryEnqueue(() =>
-                {
-                    asset.Status = "Generating Proxy";
-                    ProxyGeneration.Status = "Generating Proxy";
-                    asset.StartTime = DateTime.Now;
-                    ProxyGeneration.StartTime = DateTime.Now;
+                //App.UIDispatcherQueue.TryEnqueue(() =>
+                //{
+                //   // asset.Status = "Generating Proxy";
+                //    ProxyGeneration.Status = "Generating Proxy";
+                //   // asset.StartTime = DateTime.Now;
+                //    //ProxyGeneration.StartTime = DateTime.Now;
 
-                });
+                //});
 
                 await RunFFmpegProcessWithProgress(arguments, progress);
+
                 // Record the completion time
                 App.UIDispatcherQueue.TryEnqueue(async () =>
                 {
-                asset.Status = "Finished";
-                asset.CompletionTime = DateTime.Now;
-                var process = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == ProxyGeneration.ProcessId);
+                    //asset.Status = "Finished";
+                    //asset.CompletionTime = DateTime.Now;
+                    var process = ProcessStore.AllProcesses.FirstOrDefault(p => p.ProcessId == ProxyGeneration.ProcessId);
                     ////Debug.WriteLine($"Updating Process. Found: {process != null}, ProxyGen: {ProxyGeneration.GetHashCode()}, Found: {process?.GetHashCode()}");
                     if (process != null)
                     {
@@ -453,15 +457,11 @@ namespace MAM.Windows
                         process.Result = "Finished";
                         Debug.WriteLine(process.Result);
                         ProcessStatusPage.Instance?.FilterData();
-                        await UpdateProcessStatusInDatabaseAsync(process);
+                        await ProcessStore.UpdateProcessStatusInDatabaseAsync(process);
+                        await GlobalClass.Instance.AddtoHistoryAsync("Add asset to library", $"Added '{asset.Media.MediaSource.LocalPath}' to library .");
                     }
-            });
-                //}
-                //else
-                //{
-                //    ProxyGeneration.Result = "Proxy Generation Failed";
-                //    Debug.WriteLine(ProxyGeneration.Result);
-                //}
+                });
+               
             }
             catch (Exception ex)
             {
@@ -474,7 +474,7 @@ namespace MAM.Windows
         {
             var tasks = assets.Select(asset => ProcessAssetAsync(asset));
             await Task.WhenAll(tasks); // Process all assets concurrently
-            UploadHistoryPage.UploadHistory.UploadHistories.Clear();
+            //UploadHistoryPage.UploadHistory.UploadHistories.Clear();
         }
 
         private async Task RunFFmpegProcessWithProgress(string arguments, IProgress<string> progress)
@@ -592,7 +592,7 @@ namespace MAM.Windows
 
         private async Task GenerateThumbnailAsync(StorageFile videoFile, StorageFile thumbnailFile)
         {
-            Process  ThumbnailGeneration = new Process(videoFile.Path);
+            Process ThumbnailGeneration = new Process(videoFile.Path);
             ThumbnailGeneration.FilePath = videoFile.Path;
             ThumbnailGeneration.ProcessType = "Thumbnail Generation";
             ThumbnailGeneration.StartTime = DateTime.Now;
@@ -600,7 +600,7 @@ namespace MAM.Windows
             ThumbnailGeneration.Progress = 0;
             ThumbnailGeneration.Result = "Waiting";
             Debug.WriteLine(ThumbnailGeneration.Status);
-            int newProcessId = await InsertProcessInDatabaseAsync(ThumbnailGeneration);
+            int newProcessId = await ProcessStore.InsertProcessInDatabaseAsync(ThumbnailGeneration);
             try
             {
                 // Obtain a thumbnail of the video
@@ -617,7 +617,7 @@ namespace MAM.Windows
                     ThumbnailGeneration.Progress = 100;
                     ThumbnailGeneration.Result = "Finished";
                     Debug.WriteLine(ThumbnailGeneration.Result);
-                    await UpdateProcessStatusInDatabaseAsync(ThumbnailGeneration);
+                    await ProcessStore.UpdateProcessStatusInDatabaseAsync(ThumbnailGeneration);
                 }
                 else
                 {
@@ -631,29 +631,7 @@ namespace MAM.Windows
                 Debug.WriteLine($"Error: {ex.Message}");
             }
         }
-        private async Task UpdateProcessStatusInDatabaseAsync(Process process)
-        {
-            Dictionary<string, object> propsList = new Dictionary<string, object>();
-            propsList.Add("start_time", process.StartTime);
-            propsList.Add("end_time", process.StartTime);
-            propsList.Add("status", process.Status);
-            propsList.Add("result", process.Result);
-            int result = await dataAccess.UpdateRecord("process", "process_id", process.ProcessId, propsList);
-        }
-        private async Task<int> InsertProcessInDatabaseAsync(Process process)
-        {
-            List<MySqlParameter> propsList = new();
-            propsList.Add(new MySqlParameter("@Server", process.Server));
-            propsList.Add(new MySqlParameter("@FilePath", process.FilePath));
-            propsList.Add(new MySqlParameter("@Type", process.ProcessType));
-
-            propsList.Add(new MySqlParameter("@StartTime", process.StartTime));
-            propsList.Add(new MySqlParameter("@Status", process.Status));
-            propsList.Add(new MySqlParameter("@Result", process.Result));
-            string query = "insert into process (server,file_name,type,start_time,status,result)values(@Server,@FilePath,@Type,@StartTime,@Status,@Result)";
-            var (affectedRows, newId, errorCode) = await dataAccess.ExecuteNonQuery(query, propsList);
-            return affectedRows > 0 ? newId : -1;
-        }
+       
 
 
 
@@ -905,55 +883,55 @@ namespace MAM.Windows
     }
     public class Asset : ObservableObject
     {
-        private int assetId;
-        private string fileName = string.Empty;
-        private string assetPath = string.Empty;
-        private string originalPath = string.Empty;
-        private string duration = string.Empty;
-        private int progress = 0;
-        private DateTime startTime;
-        private DateTime completionTime;
-        private string status = "Waiting...";
+        //private int assetId;
+        //private string fileName = string.Empty;
+        //private string assetPath = string.Empty;
+        //private string originalPath = string.Empty;
+        //private string duration = string.Empty;
+        //private int progress = 0;
+        //private DateTime startTime;
+        //private DateTime completionTime;
+        //private string status = "Waiting...";
 
-        private int id;
-        private string name = string.Empty;
-        private string version = "1";
-        //  private TimeSpan duration = TimeSpan.Zero;
-        private string type = string.Empty;
-        private string file = string.Empty;
-        private string createdUser = string.Empty;
-        private DateOnly creationDate = DateOnly.MinValue;
-        private string updatedUser = string.Empty;
-        private DateTime lastUpdated = DateTime.Now;
-        private double size = 0;
-        private string description = string.Empty;
+        //private int id;
+        //private string name = string.Empty;
+        //private string version = "1";
+        ////  private TimeSpan duration = TimeSpan.Zero;
+        //private string type = string.Empty;
+        //private string file = string.Empty;
+        //private string createdUser = string.Empty;
+        //private DateOnly creationDate = DateOnly.MinValue;
+        //private string updatedUser = string.Empty;
+        //private DateTime lastUpdated = DateTime.Now;
+        //private double size = 0;
+        //private string description = string.Empty;
         private MediaPlayerItem media;
 
-        public int AssetId
-        {
-            get => assetId;
-            set => SetProperty(ref assetId, value);
-        }
-        public int Progress
-        {
-            get => progress;
-            set => SetProperty(ref progress, value);
-        }
-        public DateTime StartTime
-        {
-            get => startTime;
-            set => SetProperty(ref startTime, value);
-        }
-        public DateTime CompletionTime
-        {
-            get => completionTime;
-            set => SetProperty(ref completionTime, value);
-        }
-        public string Status
-        {
-            get => status;
-            set => SetProperty(ref status, value);
-        }
+        //public int AssetId
+        //{
+        //    get => assetId;
+        //    set => SetProperty(ref assetId, value);
+        //}
+        //public int Progress
+        //{
+        //    get => progress;
+        //    set => SetProperty(ref progress, value);
+        //}
+        //public DateTime StartTime
+        //{
+        //    get => startTime;
+        //    set => SetProperty(ref startTime, value);
+        //}
+        //public DateTime CompletionTime
+        //{
+        //    get => completionTime;
+        //    set => SetProperty(ref completionTime, value);
+        //}
+        //public string Status
+        //{
+        //    get => status;
+        //    set => SetProperty(ref status, value);
+        //}
         public MediaPlayerItem Media
         {
             get => media;
@@ -963,10 +941,10 @@ namespace MAM.Windows
         {
             Media = media;
         }
-        public Asset()
-        {
+        //public Asset()
+        //{
 
-        }
+        //}
 
     }
 }

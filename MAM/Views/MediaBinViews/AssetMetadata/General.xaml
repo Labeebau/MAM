@@ -16,7 +16,7 @@
             <TextBox  Text="{Binding Media.MediaId }" Foreground="White" BorderThickness="0" IsReadOnly="True"  />
 
             <TextBlock   Text="Name" Foreground="LightGray"  Margin="0,5,0,0"/>
-            <TextBox  Text="{Binding Media.Title }" Foreground="White" BorderThickness="0"/>
+            <TextBox  Text="{Binding Media.Title }" Foreground="White" BorderThickness="0" IsReadOnly="{StaticResource bo}" />
 
             <TextBlock  Text="File" Foreground="LightGray"  Margin="0,5,0,0"/>
             <TextBox  Text="{Binding Media.MediaSource.LocalPath }" Foreground="White" BorderThickness="0" />

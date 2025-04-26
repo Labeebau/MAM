@@ -27,12 +27,10 @@
 
                 <NavigationViewItem Content="Media Bin"  Tag="MediaBin"  >
                     <NavigationViewItem.Icon >
-                        <!--<FontIcon FontFamily="./Assets/Fonts/Font Awesome 6 Free-Solid-900.otf#Font Awesome 6 Free Solid" Glyph="&#xf015;" />-->
                         <FontIcon FontFamily="{StaticResource FontAwesome}"  Glyph="&#xf87c;" />
-                        <!--<BitmapIcon UriSource="ms-appx:///Assets/MediaLibraryStorage.png" Height="100" Width="100"/>-->
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Admin Panel"  Tag="AdminPanel" >
+                <NavigationViewItem x:Name="AdminPanelItem" Content="Admin Panel"  Tag="AdminPanel" >
                     <NavigationViewItem.Icon >
                         <FontIcon Glyph="&#xf51c;" />
                     </NavigationViewItem.Icon>

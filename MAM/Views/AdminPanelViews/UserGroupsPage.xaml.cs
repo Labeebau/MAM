@@ -7,6 +7,7 @@ using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Reflection;
+using Windows.System;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
@@ -131,6 +132,8 @@ namespace MAM.Views.AdminPanelViews
             {
                 // Remove the item from the collection
                 UserGroupsList.Remove(itemToDelete);
+               // GlobalClass.Instance.AddtoHistoryAsync("Delete User", $"User '{itemToDelete.GroupName}' deleted.");
+
             }
         }
 
@@ -240,8 +243,11 @@ namespace MAM.Views.AdminPanelViews
                 {
                     var userGrpDict = new List<MySql.Data.MySqlClient.MySqlParameter>() { new MySql.Data.MySqlClient.MySqlParameter("@GroupId", userGroup.UserGroupId) };
                     var (affectedRows, _, erroeCode) = await dataAccess.ExecuteNonQuery($"DELETE FROM user_group WHERE group_id=@GroupId", userGrpDict);
-                    if(affectedRows==1)
+                    if (affectedRows == 1)
+                    {
                         UserGroupsList.Remove(userGroup);
+                        await GlobalClass.Instance.AddtoHistoryAsync("Delete User Group", $"User group '{userGroup.GroupName}' deleted.");
+                    }
                 }
             }
         }
@@ -257,7 +263,8 @@ namespace MAM.Views.AdminPanelViews
             query = $"insert into user_group(group_name,ad_group,active)" +
                 $"values(@UserGroupName,@IsAdGroup,@IsActive)";
             var(affectedRows, newUserGroupId ,errorCode)=await dataAccess.ExecuteNonQuery(query, parameters);
-            return affectedRows>0? newUserGroupId:-1;
+            await GlobalClass.Instance.AddtoHistoryAsync("Create User Group", $"New user group '{userGroup.GroupName}' created.");
+            return affectedRows >0? newUserGroupId:-1;
         }
 
         private void AddUSer_Click(object sender, RoutedEventArgs e)
@@ -294,6 +301,7 @@ namespace MAM.Views.AdminPanelViews
                 NewUser.UserName = row[1].ToString();
                 UserList.Add(NewUser);
             }
+
         }
 
         private async void AddUSerToGroup_Click(object sender, RoutedEventArgs e)
@@ -318,12 +326,12 @@ namespace MAM.Views.AdminPanelViews
         {
             List<MySqlParameter> parameters = new ();
             string query = string.Empty;
-
             parameters.Add(new MySqlParameter("@UserId", SelectedUser.UserId));
             parameters.Add(new MySqlParameter("@GroupId", SelectedUserGroup.UserGroupId));
             query = $"insert into user_roles(user_id,group_id) values(@UserId,@GroupId)";
             var(affectedRows,newUserGroupId,errorCode)=await dataAccess.ExecuteNonQuery(query, parameters);
-            return affectedRows>0? newUserGroupId:-1;
+            await GlobalClass.Instance.AddtoHistoryAsync("Add user to group", $"User '{SelectedUser.UserName}' is added to User Group '{SelectedUser.UserGroup}");
+            return affectedRows >0? newUserGroupId:-1;
         }
 
         private void RefreshGroups_Click(object sender, RoutedEventArgs e)
@@ -334,11 +342,8 @@ namespace MAM.Views.AdminPanelViews
 
         private void RefreshGroupedUsers_Click(object sender, RoutedEventArgs e)
         {
-           // GroupedUsersList.Clear();
             GetGroupedData();
         }
-
-
 
         private void DgvGroup_CurrentCellChanged(object sender, EventArgs e)
         {
@@ -361,7 +366,7 @@ namespace MAM.Views.AdminPanelViews
         private bool isActive;
         private bool isReadOnly = true;
         private bool isEnabled = false;
-
+        private Right userGroupRight;
         public int UserGroupId
         {
             get => userGroupId;
@@ -397,6 +402,11 @@ namespace MAM.Views.AdminPanelViews
         {
             get => isEnabled;
             set => SetProperty(ref isEnabled, value);
+        }
+        public Right UserGroupRight
+        {
+            get => userGroupRight;
+            set => SetProperty(ref userGroupRight, value);
         }
     }
     public class UserForGrouping

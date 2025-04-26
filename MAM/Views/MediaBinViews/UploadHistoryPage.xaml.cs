@@ -69,10 +69,16 @@ namespace MAM.Views.MediaBinViews
     public class UploadHistory: ObservableObject
     {
         private Asset asset;
+        private Process process;
         public Asset AssetObj 
         { 
             get => asset; 
             set => SetProperty(ref asset, value); 
+        }
+        public Process ProcessObj
+        {
+            get => process;
+            set => SetProperty(ref process, value);
         }
     }
 }

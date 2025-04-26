@@ -17,7 +17,7 @@ namespace MAM.Views.ProcessesViews
         public static ProcessStatusPage Instance { get; private set; }
         // Collection that will be bound to the GridView and filtered
         public ObservableCollection<Process> FilteredProcesses { get; set; } = new ObservableCollection<Process>();
-        //public ObservableCollection<Process> AllProcesss { get; set; } = new ObservableCollection<Process>();
+      //  public ObservableCollection<Process> AllProcesses { get; set; } = new ObservableCollection<Process>();
         private static DataAccess dataAccess = new DataAccess();
         private string OpenedTab { get; set; } = string.Empty;
         // public ObservableCollection<Process> ProcessList { get; set; }
@@ -35,14 +35,18 @@ namespace MAM.Views.ProcessesViews
                 OpenedTab = openedTab;
                 FilteredProcesses.Clear();
                 ProcessStore.AllProcesses = GetProcesses();
+
+                //AllProcesses = GetProcesses();
                 SyncProcessesFromDatabase(ProcessStore.AllProcesses);
+
+                //SyncProcessesFromDatabase(AllProcesses);
                 foreach (var process in ProcessStore.AllProcesses)
                     FilteredProcesses.Add(process);
-
+                //foreach (var process in AllProcesses)
+                //    FilteredProcesses.Add(process);
             }
             FromDateSearchBox.Date = new DateTimeOffset(new DateTime(2000, 1, 1));
             ToDateSearchBox.Date = DateTime.Now;
-
             DataContext = this;
             // FilterData();
         }
@@ -113,7 +117,6 @@ namespace MAM.Views.ProcessesViews
                     existing.CompletionTime = dbProcess.CompletionTime;
                     existing.Result = dbProcess.Result;
                     existing.Progress = dbProcess.Progress;
-                    existing.IsVisible = true;
                     // ... any other properties
                 }
                 else
