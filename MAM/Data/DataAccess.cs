@@ -8,20 +8,22 @@ namespace MAM.Data
 {
     public class DataAccess
     {
-        private readonly string _connectionString = "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
+        //private readonly string _connectionString = "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
+        public static string ConnectionString { get; set; }//= "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
+
         public DataAccess()
         {
         }
         // Constructor to initialize with a connection string
         public DataAccess(string connectionString)
         {
-            _connectionString = connectionString;
+            ConnectionString = connectionString;
         }
 
         // Open MySQL connection
         private MySqlConnection OpenConnection()
         {
-            var connection = new  MySqlConnection(_connectionString);
+            var connection = new  MySqlConnection(ConnectionString);
             try
             {
                 connection.Open();
@@ -42,7 +44,34 @@ namespace MAM.Data
                 connection.Close();
             }
         }
-        public async Task ExecuteStoredProcedure(string procedureName, Dictionary<string, object> parameters)
+        public async Task<MySqlDataReader> ExecuteReaderStoredProcedure(string procedureName, List<MySqlParameter> parameters=null)
+        {
+            MySqlConnection connection = OpenConnection();
+            try
+            {
+                using (var command = new MySqlCommand(procedureName, connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    // Add parameters to prevent SQL injection
+                    if (parameters != null)
+                    {
+                        foreach (var param in parameters)
+                        {
+                            command.Parameters.Add(new MySqlParameter(param.ParameterName, param.Value));
+                        }
+                    }
+                    return await command.ExecuteReaderAsync(CommandBehavior.CloseConnection);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                CloseConnection(connection);
+                Debug.WriteLine($"Error executing query: {ex.Message}");
+                return null;
+            }
+        }
+        public async Task<int> ExecuteNonQueryStoredProcedure(string procedureName, Dictionary<string, object> parameters)
         {
             try
             {
@@ -51,7 +80,6 @@ namespace MAM.Data
                     using (var command = new MySqlCommand(procedureName, connection))
                     {
                         command.CommandType = CommandType.StoredProcedure;
-
                         // Add parameters if any
                         if (parameters != null)
                         {
@@ -60,13 +88,14 @@ namespace MAM.Data
                                 command.Parameters.AddWithValue(param.Key, param.Value);
                             }
                         }
-                      await  command.ExecuteNonQueryAsync();
+                     return await  command.ExecuteNonQueryAsync();
                     }
                 }
             }
             catch (MySqlException ex)
             {
                 Console.WriteLine("Invalid UserId "+ex.ToString());
+                return 0;
             }
         }
         //public (int, string, string,int,string) GetUserCredentials(string userName)

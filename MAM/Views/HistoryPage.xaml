@@ -30,7 +30,7 @@
                         <ListView x:Name="testListView" ItemsSource="{Binding ActionList, Mode=OneWay}" 
                       SelectionMode="Single" SelectedItem="{Binding FilterAction,Mode=TwoWay}"
                       SelectionChanged="OnSelectionChanged" >
-                          
+
                         </ListView>
                     </Flyout>
                 </DropDownButton.Flyout>

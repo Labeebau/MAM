@@ -24,7 +24,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         public MediaPlayerViewModel Viewmodel { get; set; }
         public MetadataCategory SelectedAllCategory { get; set; }
         public MetadataCategory SelectedAssetCategory { get; set; }
-        public bool HasCategories ;
+        public bool HasCategories;
 
         public AssetCategoriesPage()
         {
@@ -34,7 +34,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         // public string mediaPath { get; private set; }
         DataTable categoryTable;
-        protected override  void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             if (e.Parameter is MediaPlayerViewModel viewmodel)
@@ -93,7 +93,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
         {
             if (SelectedAllCategory != null)
             {
-                bool addedRows=await InsertAssetToCategory(Viewmodel.Media.MediaId, SelectedAllCategory.CategoryName);
+                bool addedRows = await InsertAssetToCategory(Viewmodel.Media.MediaId, SelectedAllCategory.CategoryName);
                 if (addedRows)
                 {
                     await GlobalClass.Instance.AddtoHistoryAsync("Add asset to category", $"Added asset '{Viewmodel.Media.MediaSource.LocalPath}' to category '{SelectedAllCategory.CategoryName}' ");
@@ -142,15 +142,15 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         private async Task<bool> InsertAssetToCategory(int assetId, string categoryName)
         {
-            List<MySqlParameter> parameters = new ();
+            List<MySqlParameter> parameters = new();
             string query = string.Empty;
             parameters.Add(new MySqlParameter("@AssetId", assetId));
             parameters.Add(new MySqlParameter("@CategoryName", categoryName));
             query = "INSERT INTO asset_category(asset_id, category_id) " +
                     "VALUES(@AssetId, (SELECT category_id FROM metadata_category WHERE category_name = @CategoryName))";
             var (affectedRows, lastInsertedId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
-           
-            if(affectedRows<=0)
+
+            if (affectedRows <= 0)
             {
                 if (errorCode == 1062)
                     await GlobalClass.Instance.ShowErrorDialogAsync("Category already added.", this.XamlRoot);
@@ -191,7 +191,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 {
 
 
-                    List<MySqlParameter> parameters = new ();
+                    List<MySqlParameter> parameters = new();
                     string query = string.Empty;
                     parameters.Add(new MySqlParameter("@AssetId", Viewmodel.Media.MediaId));
                     parameters.Add(new MySqlParameter("@CategoryName", SelectedAssetCategory.CategoryName));
@@ -202,7 +202,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                         : "delete from asset_category where asset_id = @AssetId and category_id = (SELECT category_id FROM metadata_category WHERE category_name = @CategoryName and parent_id IS NULL LIMIT 1)";
 
                     var (affectedRows, newId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
-                    if(affectedRows>0)
+                    if (affectedRows > 0)
                     {
                         await GlobalClass.Instance.AddtoHistoryAsync("Delete asset from category", $"Deleted asset '{Viewmodel.Media.MediaSource.LocalPath}' from category '{SelectedAssetCategory.CategoryName}' ");
                         AssetCategories.Remove(SelectedAssetCategory);

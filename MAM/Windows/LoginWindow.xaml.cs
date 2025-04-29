@@ -10,7 +10,12 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System.Runtime.InteropServices;
 using Windows.System;
+using CommunityToolkit.WinUI.Helpers;
+using Windows.Storage;
 using User = MAM.Views.AdminPanelViews.User;
+using System.Security.Cryptography;
+using MAM.Views;
+using MySql.Data.MySqlClient;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -57,7 +62,33 @@ namespace MAM.Windows
             GlobalClass.Instance.SetWindowSizeAndPosition(500, 300, this);
             viewModel = new Login();
             UserPanel.DataContext = viewModel;
+            LoadSavedLogin();
+            _ = LoadDbPropertiesAsync();
         }
+        private void LoadSavedLogin()
+        {
+            var savedUserName = SettingsService.Get<string>("SavedUserName");
+            var savedPassword = SettingsService.Get<string>("SavedPassword");
+            var keepSignedIn = SettingsService.Get<bool>("KeepSignedIn");
+            viewModel.UserName = savedUserName;
+
+            if (!string.IsNullOrEmpty(savedPassword))
+            {
+                try
+                {
+                    // Try to decrypt
+                    viewModel.Password = EncryptionHelper.Decrypt(savedPassword);
+                }
+                catch (CryptographicException)
+                {
+                    // If decryption fails, treat it as plain text
+                    viewModel.Password = savedPassword;
+                }
+            }
+
+            viewModel.KeepSignedIn = keepSignedIn;
+        }
+
 
 
         // Method to get the instance of the window or create it if it doesn't exist
@@ -110,28 +141,47 @@ namespace MAM.Windows
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
+           // await LoadDbPropertiesAsync();
+
             if (!ValidateInput())
                 return;
             bool isLoginSuccessful = ValidateLogin();
             if (isLoginSuccessful)
             {
-                // Safely access the MainFrame and navigate
-                if (App.MainAppWindow != null && App.MainAppWindow.Mainframe != null)
+                if (viewModel.KeepSignedIn)
                 {
-                    this.Close();
-                    App.MainAppWindow.ShowSystemAdminPanel = true;
-                    App.MainAppWindow.Mainframe.Navigate(typeof(SystemAdminPanel));  // Navigate to HomePage
-                    //GlobalClass.Instance.CurrentUser=new User() {UserId= viewModel.UserId,UserName= viewModel.UserName,u };
-                    //GlobalClass.Instance.CurrentUser.UserName = viewModel.UserName;
-                    //GlobalClass.Instance.CurrentUser.UserId = viewModel.UserId;
-                    //GlobalClass.Instance.CurrentUserGroup.UserGroupId = viewModel.GroupId;
-                    //GlobalClass.Instance.CurrentUserGroup.GroupName = viewModel.GroupName;
+                    // Save to local settings (or encrypted storage if needed)
+                    SettingsService.Set("SavedUserName", viewModel.UserName);
+                    // Encrypt password before saving
+                    SettingsService.Set("SavedPassword", EncryptionHelper.Encrypt(viewModel.Password));
+                    SettingsService.Set("KeepSignedIn", viewModel.KeepSignedIn);
+                }
+                else
+                {
+                    // Clear saved login info
+                    SettingsService.Remove("SavedUserName");
+                    SettingsService.Remove("SavedPassword");
+                    SettingsService.Remove("KeepSignedIn");
+                }
+
+
+                // Safely access the MainFrame and navigate
+                //if (App.MainAppWindow != null && App.MainAppWindow.Mainframe != null)
+                //{
+                    App.MainAppWindow = new MainWindow();
+                this.Close();
+
+                App.MainAppWindow.Activate();
+                   // App.MainAppWindow.Mainframe.Navigate(typeof(MainProjectPage));  // Navigate to HomePage
+                    //App.MainAppWindow.ShowSystemAdminPanel = true;
+                    //App.MainAppWindow.Mainframe.Navigate(typeof(SystemAdminPanel));  // Navigate to HomePage
                     App.MainAppWindow.CurrentUser = viewModel.UserName;
                     GlobalClass.Instance.CurrentUser = GlobalClass.Instance.GetUserRights(viewModel.UserId);
                     GlobalClass.Instance.CurrentUserGroup=GlobalClass.Instance.GetUserGroupWithRights(viewModel.GroupId);
                     GlobalClass.Instance.IsAdmin = viewModel.GroupName == "Admin" ? true : false;
                     await GlobalClass.Instance.AddtoHistoryAsync("Login", "User logged in", viewModel.UserId);
-                }
+
+                //}
             }
             else
             {
@@ -174,7 +224,21 @@ namespace MAM.Windows
                 return false;
         }
 
-
+        private async Task LoadDbPropertiesAsync()
+        {
+            MySqlDataReader reader = await dataAccess.ExecuteReaderStoredProcedure("GetDbProperties");
+            if (await reader.ReadAsync())
+            {
+                string serverIP = reader["server_IP"].ToString();
+                string serverName = reader["server_name"].ToString();
+                string dBName = reader["db_name"].ToString();
+                string dBUserName = reader["db_user_name"].ToString();
+                string dBPassword = reader["db_password"].ToString();
+                DataAccess.ConnectionString = $"server={serverName};uid={dBUserName};pwd={dBPassword};database={dBName};Connection Timeout=30;";
+        // Use the values as needed
+    }
+    reader.Close(); // Always close the reader after reading
+        }
 
 
         private void ShowNavigationError()
@@ -225,6 +289,16 @@ namespace MAM.Windows
                 BtnLogin.Focus(FocusState.Programmatic);
             }
         }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void KeepSignedInCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
     public class Login : ObservableObject
     {
@@ -233,6 +307,7 @@ namespace MAM.Windows
         private string password;
         private int groupId;
         private string groupName;
+        private bool keepSignedIn;
 
         public int UserId
         {
@@ -259,6 +334,12 @@ namespace MAM.Windows
         {
             get => password;
             set => SetProperty(ref password, value);
+        }
+        public bool KeepSignedIn
+        {
+            get => keepSignedIn;
+            set => SetProperty(ref keepSignedIn, value); 
+
         }
 
     }

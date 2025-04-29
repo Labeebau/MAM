@@ -19,7 +19,7 @@ using User = MAM.Views.AdminPanelViews.User;
 
 namespace MAM.Data
 {
-   
+
     public class GlobalClass
     {
         #region Global Data
@@ -34,7 +34,7 @@ namespace MAM.Data
         private GlobalClass()
         {
             // Initialize default values
-           // CurrentUserName = "admin";
+            // CurrentUserName = "admin";
             AppTheme = "Dark";
         }
 
@@ -60,8 +60,9 @@ namespace MAM.Data
         //public int CurrentUserId { get; set; } = 0;
         //public int CurrentUserGroupId { get; set; } =0 ;
         //public string CurrentUserGroupName { get; set; } = string.Empty;
+        //public string ConnectionString { get; set; }
         public User CurrentUser { get; set; }
-        public UserGroup CurrentUserGroup{ get; set; }
+        public UserGroup CurrentUserGroup { get; set; }
         public bool IsAdmin { get; set; } = false;
 
         public string AppTheme { get; set; }
@@ -79,10 +80,10 @@ namespace MAM.Data
 
 
         //public List<string> SupportedFiles = new List<string> { ".avi", ".mpeg", ".mpg", ".mov", ".mkv", ".mp4", ".mp3", ".flac", ".wav", ".aac", ".ogg", ".jpeg", ".jpg", ".png", ".gif", ".tiff", ".bmp", ".svg" };
-        public List<string> SupportedVideos = new List<string> { ".avi", ".mpeg", ".mpg", ".mov", ".mkv", ".mp4" ,".wmv"};
-        public List<string> SupportedAudios = new List<string> { ".mp3", ".flac",".wma", ".wav", ".aac", ".ogg" };
-        public List<string> SupportedImages = new List<string> { ".jpeg", ".jpg", ".png", ".gif", ".tiff", ".bmp", ".svg",".webp" };
-        public List<string> SupportedDocuments = new List<string> { ".txt", ".rtf", ".doc", ".docx", ".csv", ".pdf", ".xls", ".xlsx",".html",".ppt", ".pptx",".odt" };
+        public List<string> SupportedVideos = new List<string> { ".avi", ".mpeg", ".mpg", ".mov", ".mkv", ".mp4", ".wmv" };
+        public List<string> SupportedAudios = new List<string> { ".mp3", ".flac", ".wma", ".wav", ".aac", ".ogg" };
+        public List<string> SupportedImages = new List<string> { ".jpeg", ".jpg", ".png", ".gif", ".tiff", ".bmp", ".svg", ".webp" };
+        public List<string> SupportedDocuments = new List<string> { ".txt", ".rtf", ".doc", ".docx", ".csv", ".pdf", ".xls", ".xlsx", ".html", ".ppt", ".pptx", ".odt" };
         public List<string> SupportedFiles => SupportedVideos
     .Concat(SupportedAudios)
     .Concat(SupportedImages)
@@ -101,41 +102,41 @@ namespace MAM.Data
                                     "left join user_group ug on ur.group_id = ug.group_id " +
                                     "left JOIN group_permissions gp ON ug.group_id = gp.group_id " +
                                     "left JOIN permissions p ON gp.permission_id = p.permission_id " +
-                                    "WHERE u.user_id = @UserId "+
+                                    "WHERE u.user_id = @UserId " +
                                     "group by ug.group_id, u.user_name " +
-                                    "order by ug.group_id, u.user_name ",parameters);
+                                    "order by ug.group_id, u.user_name ", parameters);
 
             //foreach (DataRow row in dt.Rows)
             //{
-                DataRow row= dt.Rows[0];
-                if (row.ItemArray!=null&& !string.IsNullOrEmpty(row["user_name"].ToString()))
-                {
-                    NewUserWithRights = new User();
-                    NewUserWithRights.UserRight = new Right();
-                    NewUserWithRights.UserId = Convert.ToInt32(row["user_id"]);
-                    NewUserWithRights.UserName =row["user_name"].ToString();
-                    NewUserWithRights.UserGroup = new UserGroup();
-                    NewUserWithRights.UserGroup.GroupName = row["group_name"].ToString();
-                    if (row["permissions"].ToString().Contains("Read"))
-                        NewUserWithRights.UserRight.Read = true;
-                    if (row["permissions"].ToString().Contains("Write"))
-                        NewUserWithRights.UserRight.Write = true;
-                    if (row["permissions"].ToString().Contains("Edit"))
-                        NewUserWithRights.UserRight.Edit = true;
-                    if (row["permissions"].ToString().Contains("Delete"))
-                        NewUserWithRights.UserRight.Delete = true;
-                    if (row["permissions"].ToString().Contains("OrgDownload"))
-                        NewUserWithRights.UserRight.OrgDownload = true;
-                    if (row["permissions"].ToString().Contains("PrxDownload"))
-                        NewUserWithRights.UserRight.PrxDownload = true;
-                    if (row["permissions"].ToString().Contains("Archive"))
-                        NewUserWithRights.UserRight.Archive = true;
-                    if (row["permissions"].ToString().Contains("Broadcast"))
-                        NewUserWithRights.UserRight.Broadcast = true;
-                    return NewUserWithRights;
-                }
-                else
-                     return null; 
+            DataRow row = dt.Rows[0];
+            if (row.ItemArray != null && !string.IsNullOrEmpty(row["user_name"].ToString()))
+            {
+                NewUserWithRights = new User();
+                NewUserWithRights.UserRight = new Right();
+                NewUserWithRights.UserId = Convert.ToInt32(row["user_id"]);
+                NewUserWithRights.UserName = row["user_name"].ToString();
+                NewUserWithRights.UserGroup = new UserGroup();
+                NewUserWithRights.UserGroup.GroupName = row["group_name"].ToString();
+                if (row["permissions"].ToString().Contains("Read"))
+                    NewUserWithRights.UserRight.Read = true;
+                if (row["permissions"].ToString().Contains("Write"))
+                    NewUserWithRights.UserRight.Write = true;
+                if (row["permissions"].ToString().Contains("Edit"))
+                    NewUserWithRights.UserRight.Edit = true;
+                if (row["permissions"].ToString().Contains("Delete"))
+                    NewUserWithRights.UserRight.Delete = true;
+                if (row["permissions"].ToString().Contains("OrgDownload"))
+                    NewUserWithRights.UserRight.OrgDownload = true;
+                if (row["permissions"].ToString().Contains("PrxDownload"))
+                    NewUserWithRights.UserRight.PrxDownload = true;
+                if (row["permissions"].ToString().Contains("Archive"))
+                    NewUserWithRights.UserRight.Archive = true;
+                if (row["permissions"].ToString().Contains("Broadcast"))
+                    NewUserWithRights.UserRight.Broadcast = true;
+                return NewUserWithRights;
+            }
+            else
+                return null;
         }
         public UserGroup GetUserWithRights(int groupId)
         {
@@ -250,7 +251,7 @@ namespace MAM.Data
                 presenter.IsMaximizable = false; // Disable maximize button
             }
         }
-        public void SetWindowSizeAndPosition(int width, int height,Window window)
+        public void SetWindowSizeAndPosition(int width, int height, Window window)
         {
             // Get the native window handle of the current window
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
@@ -278,7 +279,7 @@ namespace MAM.Data
                 appWindow.Move(new PointInt32(centerX, centerY));
             }
         }
-        public bool Equals(object obj1,object obj2, out Dictionary<string, object> props)
+        public bool Equals(object obj1, object obj2, out Dictionary<string, object> props)
         {
             props = new Dictionary<string, object>();
             if (obj1 == null || obj2 == null)
@@ -286,10 +287,10 @@ namespace MAM.Data
 
             if (obj1.GetType() != obj2.GetType())
                 return false;
-           
+
             foreach (PropertyInfo userProperty in obj1.GetType().GetProperties())
             {
-                if ((userProperty.Name== "IsReadOnly") || (userProperty.Name == "IsEnabled"))
+                if ((userProperty.Name == "IsReadOnly") || (userProperty.Name == "IsEnabled"))
                     continue;
                 var value1 = userProperty.GetValue(obj1);
                 var value2 = userProperty.GetValue(obj2);
@@ -298,10 +299,10 @@ namespace MAM.Data
             }
             return props.Count > 0;
         }
-        public async Task AddtoHistoryAsync(string action, string description,int userId=0)
-        { 
-            if(userId==0)
-             userId = GlobalClass.Instance.CurrentUser.UserId;
+        public async Task AddtoHistoryAsync(string action, string description, int userId = 0)
+        {
+            if (userId == 0)
+                userId = GlobalClass.Instance.CurrentUser.UserId;
             var parameters = new Dictionary<string, object>
                     {
                         { "user_id", userId },
@@ -309,7 +310,7 @@ namespace MAM.Data
                         { "description", description }
                     };
 
-            await dataAccess.ExecuteStoredProcedure("InsertUserAction", parameters);
+            await dataAccess.ExecuteNonQueryStoredProcedure("InsertUserAction", parameters);
         }
         #endregion Global Methods
     }

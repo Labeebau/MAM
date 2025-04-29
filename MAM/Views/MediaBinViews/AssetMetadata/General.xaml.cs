@@ -1,4 +1,6 @@
+using MAM.Data;
 using MAM.Utilities;
+using MAM.Views.AdminPanelViews;
 using MAM.Windows;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -11,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -42,7 +45,7 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-
+            
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -65,5 +68,6 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         }
     }
-   
-}
+    
+
+    }

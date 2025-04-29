@@ -33,7 +33,7 @@ namespace MAM.Views
         };
         private void navProcesses_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
-          if(args.InvokedItemContainer!=null)
+            if (args.InvokedItemContainer != null)
                 openedTab = args.InvokedItemContainer.Tag.ToString();
             //if (openedTab == "WaitingProcesses")
             //    ProcessList = GetProcesses("Waiting");
@@ -55,7 +55,7 @@ namespace MAM.Views
                 ContentFrame.Navigate(_page, openedTab, recommendedNavigationTransitionInfo);
             }
         }
-       
+
 
         private void navProcesses_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {

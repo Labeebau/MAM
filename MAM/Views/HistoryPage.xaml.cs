@@ -24,7 +24,7 @@ namespace MAM.Views
         public HistoryPage()
         {
             this.InitializeComponent();
-            
+
 
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -78,7 +78,7 @@ namespace MAM.Views
         private void SearchButton_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.FilterUSer = UserNameTextBox.Text;
-           // ViewModel.FilterAction = testListView.SelectedItem.ToString();
+            // ViewModel.FilterAction = testListView.SelectedItem.ToString();
             ViewModel.FilterDescription = DescriptionTextBox.Text;
             ViewModel.FilterFromDate = FromDateSearchBox.Date?.DateTime;
             ViewModel.FilterToDate = ToDateSearchBox.Date?.DateTime;
@@ -87,7 +87,7 @@ namespace MAM.Views
 
         private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           
+
             ActionDropDown.Content = ViewModel.FilterAction;
             if (ViewModel.FilterAction == ("Select Action"))
                 ViewModel.FilterAction = string.Empty;
@@ -105,7 +105,7 @@ namespace MAM.Views
         private string filterUser = string.Empty;
         private string filterAction = string.Empty;
         private string filterDescription = string.Empty;
-        private DateTime? filterFromDate =DateTime.Today;
+        private DateTime? filterFromDate = DateTime.Today;
         private DateTime? filterToDate = DateTime.Today;
         public int UserId
         {
@@ -156,7 +156,7 @@ namespace MAM.Views
         public DateTime? FilterToDate
         {
             get => filterToDate;
-            set { SetProperty(ref filterToDate, value);  }
+            set { SetProperty(ref filterToDate, value); }
         }
         public ObservableCollection<History> HistoryList { get; set; } = new();
         public ObservableCollection<History> FilteredHistory { get; set; } = new();

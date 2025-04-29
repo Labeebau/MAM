@@ -1,4 +1,7 @@
-﻿using Microsoft.UI;
+﻿using MAM.Data;
+using MAM.Views.AdminPanelViews;
+using MAM.Windows;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -48,22 +51,40 @@ namespace MAM
             UIDispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
 
         }
-        public static MainWindow MainAppWindow { get; private set; }
+        public static MainWindow MainAppWindow { get;  set; }
         /// <summary>
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
 		{
-			//m_window = new TestWindow();
-			////m_window = new MainWindow();
-			////m_window = new ProjectWindow();
-			//m_window.Activate();
+            //m_window = new TestWindow();
+            ////m_window = new MainWindow();
+            ////m_window = new ProjectWindow();
+            //m_window.Activate();
 
 
-			// Store reference to MainWindow
-			MainAppWindow = new MainWindow();
-			MainAppWindow.Activate();
+            // Store reference to MainWindow
+            //MainAppWindow = new MainWindow();
+            //MainAppWindow.Activate();
+            bool isFirstLaunch = SettingsService.Get<bool>("IsFirstLaunch", defaultValue: true);
+
+            if (isFirstLaunch)
+            {
+                MainAppWindow = new MainWindow();
+                MainAppWindow.Activate();
+                // Show DB setup page
+                MainAppWindow.Mainframe.Navigate(typeof(GeneralPage), args.Arguments);
+                //SettingsService.Set("IsFirstLaunch", false);
+            }
+            else
+            {
+                var connectionString = SettingsService.Get<string>("ConnectionString");
+                DataAccess.ConnectionString = EncryptionHelper.Decrypt(connectionString);
+
+                LoginWindow loginWindow = new LoginWindow();
+                loginWindow.Activate();
+            }
 		}
 
 		private Window m_window;

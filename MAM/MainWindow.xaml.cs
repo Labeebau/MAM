@@ -1,4 +1,6 @@
+using MAM.Data;
 using MAM.Views;
+using MAM.Windows;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -20,7 +22,8 @@ namespace MAM
             this.InitializeComponent();
             ExtendsContentIntoTitleBar = true;  // enable custom titlebar
             SetTitleBar(AppTitleBar);
-            MainFrame.Navigate(typeof(HomePage));
+            //MainFrame.Navigate(typeof(HomePage));
+            MainFrame.Navigate(typeof(MainProjectPage));
 
             //if(ShowSystemAdminPanel)
             //{
@@ -48,12 +51,17 @@ namespace MAM
         {
             //LsbProjects.SelectedIndex = 2;
         }
-       
-        private void BtnLogOut_Click(object sender, RoutedEventArgs e)
+
+        private  void BtnLogOut_Click(object sender, RoutedEventArgs e)
         {
-            //if(MainFrame.CanGoBack)
-            //MainFrame.GoBack();
-            MainFrame.Navigate(typeof(HomePage));
+             Logout();
+        }
+        private async void Logout()
+        { 
+            LoginWindow loginWindow = new LoginWindow();
+            loginWindow.Activate();
+            this.Close();
+            await GlobalClass.Instance.AddtoHistoryAsync("Logout", "User logged out", GlobalClass.Instance.CurrentUser.UserId);
         }
     }
 

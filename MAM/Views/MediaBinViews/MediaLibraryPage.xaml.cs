@@ -29,7 +29,7 @@ namespace MAM.Views.MediaBinViews
     public sealed partial class MediaLibraryPage : Page
     {
         private DataAccess dataAccess = new();
-       
+
 
         public ObservableCollection<FileSystemItem> FileSystemItems { get; set; }
         public ObservableCollection<string> FilteredTags { get; set; } = new();
@@ -363,7 +363,8 @@ namespace MAM.Views.MediaBinViews
         {
             _isDraggingHorizontal = true;
             _originalSplitterPosition = e.GetCurrentPoint(null).Position.Y;
-            _originalTopHeight = TopRow.Height;
+
+            _originalTopHeight = new GridLength(TopRow.ActualHeight, GridUnitType.Pixel);
 
             HorizontalSplitter.CapturePointer(e.Pointer);
             this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
@@ -859,7 +860,7 @@ namespace MAM.Views.MediaBinViews
             var prevNavPAgeType = ContentFrame.CurrentSourcePageType;
             if (!(_page is null))
             {
-                ContentFrame.Navigate(_page,navItemTag, recommendedNavigationTransitionInfo);
+                ContentFrame.Navigate(_page, navItemTag, recommendedNavigationTransitionInfo);
             }
 
         }
@@ -978,7 +979,7 @@ namespace MAM.Views.MediaBinViews
             int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and asset_path = @Asset_path;", parameters);
             parameters.Add(new MySqlParameter("@Asset_id", id));
             var (affectedRows, newId, errorCode) = await dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters);
-            if(errorCode<0)
+            if (errorCode < 0)
             {
                 await GlobalClass.Instance.ShowErrorDialogAsync("Delete Failed.An unknown error occurred while trying to delete asset.", this.XamlRoot);
                 return -1;
@@ -1126,6 +1127,7 @@ namespace MAM.Views.MediaBinViews
         {
             // Enable or disable menu items based on selection state
             bool isItemSelected = MediaBinGridView.SelectedItem != null;
+            
             ViewMenuItem.IsEnabled = isItemSelected;
             RenameMenuItem.IsEnabled = isItemSelected;
             DeleteMenuItem.IsEnabled = isItemSelected;
@@ -1453,11 +1455,11 @@ namespace MAM.Views.MediaBinViews
 
         private async void RefreshMediaLibrary_Click(object sender, RoutedEventArgs e)
         {
-            if(FileTreeView.SelectedNode!=null)
-            if (((FileSystemItem)FileTreeView.SelectedNode.Content)!= null)
-            {
-                await LoadAssetsAsync();
-            }
+            if (FileTreeView.SelectedNode != null)
+                if (((FileSystemItem)FileTreeView.SelectedNode.Content) != null)
+                {
+                    await LoadAssetsAsync();
+                }
 
         }
 
@@ -1477,15 +1479,115 @@ namespace MAM.Views.MediaBinViews
                     menuFlyout.ShowAt(element);
                 }
             }
-            if(MediaLibrary.BinName.StartsWith(GlobalClass.Instance.MediaLibraryPath) && GlobalClass.Instance.CurrentUser.UserRight.Write)
-                AddAssetMenuItem.IsEnabled= true;
+            if(MediaBinGridView.SelectedItems.Count==0)
+            {
+                AddAssetMenuItem.IsEnabled = true;
+                AddNewBinMenuItem.IsEnabled = true;
+                ViewMenuItem.IsEnabled = false;
+                RenameMenuItem.IsEnabled = false;
+                DeleteMenuItem.IsEnabled = false;
+                UpdateMenuItem.IsEnabled = false;
+                AuthorizationMenuItem.IsEnabled = false;
+                CutMenuItem.IsEnabled = false;
+                CopyMenuItem.IsEnabled = false;
+                SendToMenuItem.IsEnabled = false;
+                DownloadMenuItem.IsEnabled = false;
+                UnarchiveItem.IsEnabled = false;
+            }
             else
+            {
                 AddAssetMenuItem.IsEnabled = false;
-            if(GlobalClass.Instance.CurrentUser.UserRight.Write)
-                AddNewBin.IsEnabled= true;
+                AddNewBinMenuItem.IsEnabled = false;
+                ViewMenuItem.IsEnabled = true;
+                RenameMenuItem.IsEnabled = true;
+                DeleteMenuItem.IsEnabled = true;
+                UpdateMenuItem.IsEnabled = true;
+                AuthorizationMenuItem.IsEnabled = true;
+                CutMenuItem.IsEnabled = true;
+                CopyMenuItem.IsEnabled = true;
+                SendToMenuItem.IsEnabled = true;
+                DownloadMenuItem.IsEnabled = true;
+                UnarchiveItem.IsEnabled = true;
+            }
+            if (MediaLibrary.BinName.StartsWith(GlobalClass.Instance.MediaLibraryPath))
+                AddAssetMenuItem.Visibility = Visibility.Visible;
             else
-                AddNewBin.IsEnabled = false;
+                AddAssetMenuItem.Visibility = Visibility.Collapsed;
+            if (GlobalClass.Instance.CurrentUser.UserRight.Read)
+            {
+                ViewMenuItem.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ViewMenuItem.Visibility = Visibility.Collapsed;
+            }
+            if (GlobalClass.Instance.CurrentUser.UserRight.Write)
+            {
+                AddAssetMenuItem.Visibility = Visibility.Visible;
+                AddNewBinMenuItem.Visibility = Visibility.Visible;
+                AuthorizationMenuItem.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                AddAssetMenuItem.Visibility = Visibility.Collapsed;
+                AddNewBinMenuItem.Visibility = Visibility.Collapsed;
+                AuthorizationMenuItem.Visibility = Visibility.Collapsed;
+            }
+            if (GlobalClass.Instance.CurrentUser.UserRight.Edit)
+            {
+                UpdateMenuItem.Visibility = Visibility.Visible;
+                CutMenuItem.Visibility = Visibility.Visible;
+                CopyMenuItem.Visibility = Visibility.Visible;
+                PasteMenuItem.Visibility = Visibility.Visible;
+                RenameMenuItem.Visibility = Visibility.Visible;
 
+
+            }
+            else
+            {
+                UpdateMenuItem.Visibility = Visibility.Collapsed;
+                CutMenuItem.Visibility = Visibility.Collapsed;
+                CopyMenuItem.Visibility = Visibility.Collapsed;
+                PasteMenuItem.Visibility = Visibility.Collapsed;
+                RenameMenuItem.Visibility = Visibility.Collapsed;
+
+            }
+            if (GlobalClass.Instance.CurrentUser.UserRight.Delete)
+            {
+                DeleteMenuItem.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                DeleteMenuItem.Visibility = Visibility.Collapsed;
+            }
+            if (GlobalClass.Instance.CurrentUser.UserRight.OrgDownload)
+            {
+                OriginalMenuItem.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                OriginalMenuItem.Visibility = Visibility.Collapsed;
+            }
+            if (GlobalClass.Instance.CurrentUser.UserRight.PrxDownload)
+            {
+                ProxyMenuItem.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ProxyMenuItem.Visibility = Visibility.Collapsed;
+            }
+            if (GlobalClass.Instance.CurrentUser.UserRight.Archive)
+            {
+                ArchiveMenuItem.Visibility = Visibility.Visible;
+                UnarchiveItem.Visibility = Visibility.Visible;
+
+            }
+            else
+            {
+                ArchiveMenuItem.Visibility = Visibility.Collapsed;
+                UnarchiveItem.Visibility = Visibility.Collapsed;
+
+            }
         }
 
         private async void UnarchiveItem_Click(object sender, RoutedEventArgs e)
@@ -1508,7 +1610,7 @@ namespace MAM.Views.MediaBinViews
                         {"archive_path",string.Empty }
                     };
 
-                    int res =await dataAccess.UpdateRecord("Asset", "asset_id", viewModel.MediaObj.MediaId, propsList);
+                    int res = await dataAccess.UpdateRecord("Asset", "asset_id", viewModel.MediaObj.MediaId, propsList);
                     if (res > 0)
                     {
                         viewModel.MediaObj.IsArchived = false;

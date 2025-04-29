@@ -26,7 +26,7 @@
                     <PasswordBox x:Name="PwdBox" Password="{Binding Password,Mode=TwoWay}" Width="200"  
                              PasswordChanged="PwdBox_PasswordChanged" KeyDown="PwdBox_KeyDown" />
 
-                    <CheckBox Content="Keep me signed in" HorizontalAlignment="Right"/>
+                    <CheckBox Content="Keep me signed in" HorizontalAlignment="Right" Checked="KeepSignedInCheckBox_Checked" IsChecked="{Binding KeepSignedIn,Mode=TwoWay}"/>
                     <StackPanel Grid.Row="3" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
                         <Button x:Name="BtnLogin" Click="LoginButton_Click" >
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

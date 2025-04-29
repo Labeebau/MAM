@@ -14,7 +14,6 @@ namespace MAM.Views
     /// </summary>
     public sealed partial class MainProjectPage : Page
     {
-        public bool IsAdmin { get; set; }
         public MainProjectPage()
         {
             this.InitializeComponent();
@@ -82,9 +81,9 @@ namespace MAM.Views
         private void NavView_Loaded(object sender, RoutedEventArgs e)
         {
 
-            if (!IsAdmin)
+            if (!GlobalClass.Instance.IsAdmin)
             {
-                //AdminPanelItem.Visibility = Visibility.Collapsed;
+                AdminPanelItem.Visibility = Visibility.Collapsed;
             }
             ////	// Add handler for ContentFrame navigation.
             //ContentFrame.Navigated += On_Navigated;

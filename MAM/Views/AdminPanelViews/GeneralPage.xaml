@@ -31,20 +31,20 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="Server IP" />
-        <TextBox Grid.Row="1"  x:Name="txtServerIp" PlaceholderText="Enter Server IP"  />
+            <TextBox Grid.Row="1"  x:Name="txtServerIp" Text="{Binding ServerIP,Mode=TwoWay}" PlaceholderText="Enter Server IP"  />
 
         <TextBlock Grid.Row="2"  Text="Name" />
-        <TextBox Grid.Row="3"  x:Name="txtName" PlaceholderText="Enter Name" />
+            <TextBox Grid.Row="3"  x:Name="txtName" Text="{Binding ServerName,Mode=TwoWay}" PlaceholderText="Enter Name" />
 
         <TextBlock Grid.Row="4"  Text="DB Name"/>
-        <TextBox Grid.Row="5"  x:Name="txtDBName" PlaceholderText="Enter Database Name" />
+            <TextBox Grid.Row="5"  x:Name="txtDBName" Text="{Binding DBName,Mode=TwoWay}" PlaceholderText="Enter Database Name" />
 
         <TextBlock Grid.Row="6"  Text="DB User Name" />
-        <TextBox Grid.Row="7"  x:Name="txtDBUserName" PlaceholderText="Enter Database User Name"/>
+            <TextBox Grid.Row="7"  x:Name="txtDBUserName" Text="{Binding DBUserName,Mode=TwoWay}"  PlaceholderText="Enter Database User Name"/>
 
         <TextBlock Grid.Row="8"  Text="DB Password" />
         <StackPanel Grid.Row="9" Orientation="Vertical" Width="auto" >
-            <PasswordBox  Name="passworBoxWithRevealmode" Width="300"  Margin="0,4,0,0"
+                <PasswordBox  Name="passworBoxWithRevealmode" Password="{Binding DBPassword,Mode=TwoWay}" Width="300"  Margin="0,4,0,0"
     PasswordRevealMode="Hidden" AutomationProperties.Name="Sample password box" PlaceholderText="Enter your password"  FontSize="12"/>
             <CheckBox x:Name="revealModeCheckBox" Content="Show password" IsChecked="False" FontSize="13" Foreground="{StaticResource ThemeForegroundColor}" HorizontalAlignment="Right" 
                       VerticalAlignment="Top" Checked="RevealModeCheckbox_Changed" Unchecked="RevealModeCheckbox_Changed"/>
@@ -62,8 +62,6 @@
                     <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
-            <FontIcon Glyph="&#xE9F3;" FontFamily="Segoe MDL2 Assets" FontSize="24"/>
-
         </StackPanel>
         
     </Grid>
