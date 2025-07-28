@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.MediaBinPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:local1="using:MAM"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid >
+        <NavigationView x:Name="navMediaBin" 
+                 PaneDisplayMode="Top"
+                 IsBackEnabled="True"
+                 IsSettingsVisible="False"
+                 SelectionChanged="navMediaBin_SelectionChanged"
+                 Loaded="navMediaBin_Loaded"
+                 ItemInvoked="navMediaBin_ItemInvoked"
+                 BackRequested="navMediaBin_BackRequested">
+            <NavigationView.MenuItems>
+                <NavigationViewItem  Content="Media Library" Tag="MediaLibraryPage" />
+                <NavigationViewItem  Content="Archive" Tag="ArchivePage" />
+               
+            </NavigationView.MenuItems>
+            <ScrollViewer>
+                <Frame x:Name="ContentFrame" IsTabStop="True">
+                </Frame>
+            </ScrollViewer>
+        </NavigationView>
+
+    </Grid>
+
+
+
+    <!--<GridView x:Name="mediaPlayerGridView"
+                  ItemsSource="{x:Bind MediaPlayerItems}"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Top"
+                  Margin="10">
+            --><!-- Template for each media player item --><!--
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="local:MediaPlayerItem">
+                    --><!--<Border BorderBrush="Silver" BorderThickness="1" Margin="5">-->
+                        <!-- Custom Media Player Control --><!--
+                        <local1:CustomMedia x:Name="customMediaPlayer" Loaded="CustomMediaPlayer_Loaded"/>
+                    --><!--</Border>--><!--
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>-->
+
+        
+</Page>

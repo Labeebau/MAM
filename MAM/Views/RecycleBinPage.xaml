@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.RecycleBinPage"
+    x:Name="RootPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local1="using:MAM.UserControls"
+    xmlns:local2="using:MAM.Views.MediaBinViews"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Enabled">
+
+
+    <Grid x:Name="MainGrid"  CornerRadius="10" Padding="10" HorizontalAlignment="Left" >
+        <StackPanel Orientation="Vertical" >
+            <TextBlock Text="Recycle Bin" VerticalAlignment="Bottom" Padding="10,0,0,10" FontWeight="SemiBold"/>
+
+            <StackPanel x:Name="GridviewPanel"  Orientation="Vertical" 
+                    Padding="10"
+                    Spacing="2"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
+            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Top">
+                <TextBox Width="500"/>
+                <Button Style="{StaticResource SmallIconButton}"   Click="SearchButton_Click" VerticalAlignment="Center" Margin="0,2,0,0" >
+                    <FontIcon Glyph="&#xf002;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="14" />
+                </Button>
+            </StackPanel>
+            <GridView x:Name="MediaBinGridView" 
+                      Grid.Row="1"
+                      Background="{StaticResource ThemePrimaryBackgroundColor}"
+                      ItemsSource="{x:Bind ViewModel.PagedRecycleBinMediaPlayerItems,Mode=TwoWay}"
+                      Height="770"
+                      Width="1800"
+                      SelectionMode="Single"
+                      SelectionChanged="MediaBinGridView_SelectionChanged"
+                      PointerPressed="MediaBinGridView_PointerPressed"
+                      DoubleTapped="MediaBinGridView_DoubleTapped"
+                      RightTapped="MediaBinGridView_RightTapped"
+                      Margin="0,10,0,0"        >
+
+
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="local:RecycleBinMediaPlayerItem">
+                        <Border>
+                                <local1:CustomRecycleBinMedia  MediaItem="{Binding}"  
+                                                               DeleteCommand="{Binding DataContext.DeleteMediaCommand, ElementName=RootPage}"
+    RestoreCommand="{Binding DataContext.RestoreMediaCommand, ElementName=RootPage}" />
+                            </Border>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+            <StackPanel x:Name="PageNumberPanel" Orientation="Horizontal" HorizontalAlignment="Center"
+             Margin="0,10,0,0"
+             Spacing="2">
+                <!-- Previous Button -->
+                <Button Style="{StaticResource SmallIconButton}" 
+             Visibility="{Binding IsPrevVisible,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityConverter}}"
+             Command="{Binding GoToPreviousPageCommand}" VerticalAlignment="Center" >
+                    <FontIcon  Glyph="&#xf100;" FontSize="12"  />
+                </Button>
+                <!-- Page Numbers -->
+                <StackPanel x:Name="PageButtonsPanel"
+                 Orientation="Horizontal"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 Spacing="2" />
+                <!-- Next Button -->
+                <Button Style="{StaticResource SmallIconButton}"   
+             Visibility="{Binding IsNextVisible,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityConverter}}"
+             Command="{Binding GoToNextPageCommand}" 
+             VerticalAlignment="Center" >
+                    <FontIcon  Glyph="&#xf101;" FontSize="12" />
+                </Button>
+            </StackPanel>
+        </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>

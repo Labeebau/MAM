@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="MAM.Windows.SendToTargetWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    mc:Ignorable="d"
+    Title="Send To Target">
+
+    <Grid Height="auto" Width="auto" Background="{StaticResource ThemePrimaryBackgroundColor}" Padding="20" VerticalAlignment="Center" >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="6*"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="2*"/>
+
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="Content to be archived" Margin="0,10,0,10" />
+        <Border Grid.Row="1" CornerRadius="15">
+            <controls:DataGrid x:Name="DgvContent" 
+       Height="200" 
+       AutoGenerateColumns="False"
+      Background="{StaticResource ThemeSecondaryBackgroundColor}"
+       >
+                <controls:DataGrid.Columns>
+                    <controls:DataGridTemplateColumn Header="Name" Width="200" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate >
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind  }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Active" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate >
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
+                                    <CheckBox x:Name="ChbActive" Checked="ChbActive_Checked" ></CheckBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+                </controls:DataGrid.Columns>
+            </controls:DataGrid>
+        </Border>
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0,10,0,10">
+            <TextBlock Grid.Row="1" Text="Source" />
+            <DropDownButton Margin="5,0,0,0" Width="350">
+            </DropDownButton>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="3" Margin="0,10,0,10">
+            <TextBlock Grid.Row="1" Text="Target" />
+            <DropDownButton Margin="5,0,0,0" Width="350">
+            </DropDownButton>
+        </StackPanel>
+        <StackPanel Grid.Row="4" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
+            <Button Click="SendButton_Click">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xf14d;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20" Margin="0,0,5,0"/>
+                    <TextBlock Text="Send" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button  Margin="6,0,0,0" Click="CancelButton_Click">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xf00d;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20"  Margin="0,0,5,0"/>
+                    <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

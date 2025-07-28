@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.AdminPanelViews.MetadataPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.AdminPanelViews"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ThemeSecondaryBackgroundColor}">
+
+    <Grid CornerRadius="10" 
+         Margin="20" Background="#111111"  Height="auto" Width="1300">
+        <NavigationView x:Name="navMetadata" 
+                  PaneDisplayMode="Top"
+                  IsBackButtonVisible="Visible"
+                        IsBackEnabled="True"
+                  IsSettingsVisible="False"
+                  Loaded="navMetadata_Loaded"
+                  SelectionChanged="navMetadata_SelectionChanged"
+                  ItemInvoked="navMetadata_ItemInvoked"
+                  BackRequested="navMetadata_BackRequested">
+            <NavigationView.MenuItems>
+                <NavigationViewItem  Content="Metadata" Tag="Metadata" />
+                <!--<NavigationViewItem  Content="Metadata Groups" Tag="MetadataGroups" />-->
+                <NavigationViewItem  Content="Categories" Tag="Categories" />
+                <NavigationViewItem  Content="Supported Formats" Tag="SupportedFormats" />
+            </NavigationView.MenuItems>
+            <ScrollViewer>
+                <Frame x:Name="ContentFrame" IsTabStop="True">
+                </Frame>
+            </ScrollViewer>
+        </NavigationView>
+
+    </Grid>
+</Page>

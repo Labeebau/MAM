@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="MAM.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:local="using:MAM"
+    xmlns:local1="using:MAM.Utilities.Converters"
+    xmlns:controls1="using:Microsoft.UI.Xaml.Controls"
+    RequestedTheme="Dark">
+    <Application.Resources>
+        <ResourceDictionary>
+            <FontFamily x:Key="FontAwesome">ms-appx:///Assets/Fonts/Font Awesome 6 Free-Solid-900.otf#Font Awesome 6 Free</FontFamily>
+
+            <!--<FontFamily x:Key="FontAwesome">ms-appx:///Assets/Fonts/Font Awesome 6 Free-Solid-900.otf#Font Awesome 6 Free Solid</FontFamily>-->
+            <local1:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <local1:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+            <local1:BooleanNegationConverter x:Key="NullToVisibilityConverter"/>
+            <local1:IntToVisibilityConverter x:Key="IntToVisibilityConverter" />
+            <local1:InverseIntToVisibilityConverter x:Key="InverseIntToVisibilityConverter" />
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources  xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <ResourceDictionary Source="Resources/Resources.xaml"/>
+                <controls1:XamlControlsResources />
+                <!--<ResourceDictionary Source="ms-appx:///Microsoft.UI.Xaml/DensityStyles/Compact.xaml"/>-->
+                <!-- Other merged dictionaries here -->
+            </ResourceDictionary.MergedDictionaries>
+            <!-- Other app resources here -->
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

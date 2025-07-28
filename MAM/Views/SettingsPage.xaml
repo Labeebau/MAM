@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <NavigationView x:Name="navSettings" 
+                PaneDisplayMode="Top"
+                IsBackButtonVisible="Collapsed"
+                IsBackEnabled="False"
+                IsSettingsVisible="False"
+                SelectionChanged="navSettings_SelectionChanged"
+                Loaded="navSettings_Loaded"
+                ItemInvoked="navSettings_ItemInvoked"
+                BackRequested="navSettings_BackRequested">
+            <NavigationView.MenuItems>
+                <NavigationViewItem  Content="General Settings" Tag="GeneralSettings" />
+                <NavigationViewItem  Content="Database Settings" Tag="DatabaseSettings" />
+                <NavigationViewItem  Content="Social Settings" Tag="SocialSettings" />
+            </NavigationView.MenuItems>
+            <ScrollViewer>
+                <Frame x:Name="ContentFrame" IsTabStop="True">
+                </Frame>
+            </ScrollViewer>
+        </NavigationView>
+    </Grid>
+</Page>

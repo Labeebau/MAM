@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.AdminPanelViews.Metadata.Metadata"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.AdminPanelViews.Metadata"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.DataContext>
+        <local:MetadataClass/>
+    </Page.DataContext>
+    <Grid x:Name="MainGrid" Background="{StaticResource PageBackgroundColor}" CornerRadius="10" 
+     HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="48" Margin="20" >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Vertical" x:Name="LeftPanel" Grid.Column="0" >
+
+            <Grid>
+                <TextBlock Grid.Row="1" Text="Metadata" FontWeight="SemiBold"  VerticalAlignment="Center" HorizontalAlignment="Left" ></TextBlock>
+                <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right"  >
+                    <Button x:Name="BtnRefreshGroup" Style="{StaticResource SmallIconButton}" 
+              VerticalAlignment="Center"  Click="Refresh_Click" ToolTipService.ToolTip="Refresh Metadata">
+                        <FontIcon  Glyph="&#xf2f9;" />
+                    </Button>
+                    <Button x:Name="BtnAdd" Style="{StaticResource SmallIconButton}" 
+             VerticalAlignment="Center"  Click="Add_Click" ToolTipService.ToolTip="Add Metadata">
+                        <FontIcon  Glyph="&#x2b;" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+            <Border CornerRadius="15">
+                <controls:DataGrid x:Name="DgvMetedata" 
+                                    Height="400" 
+                                    AutoGenerateColumns="False"
+                                    Background="{StaticResource ThemeSecondaryBackgroundColor}"
+                                    VerticalScrollBarVisibility="Visible"
+                                    ItemsSource="{Binding MetadataList}">
+
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTemplateColumn Header="Metadata Name">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Metadata}" Margin="10,0,0,0"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="Metadata Type">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding MetadataType}"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+                        
+                        <controls:DataGridTemplateColumn Width="auto">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="local:MetadataClass">
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                                        <Button Click="EditMetadata_Click" Tag="{x:Bind}" Background="Transparent" BorderThickness="0">
+                                            <FontIcon Glyph="&#xf303;" FontSize="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Width="auto">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="local:MetadataClass">
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Button Click="DeleteMetadata_Click" Tag="{x:Bind}" Background="Transparent" BorderThickness="0">
+                                            <FontIcon  Glyph="&#xf2ed;" FontSize="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+            </Border>
+        </StackPanel>
+        <StackPanel Orientation="Vertical" x:Name="RightPanel" Grid.Column="1" HorizontalAlignment="Right" 
+                    Margin="100,0,0,0" Visibility="Collapsed"  >
+            <TextBlock x:Name="AddOrEditTextBlock"  Text="Add Metadata" FontWeight="Bold" VerticalAlignment="Top" Margin="0,10,0,0" />
+            <StackPanel Orientation="Vertical" Spacing="10" BorderBrush="Gray" BorderThickness="1" Padding="20" CornerRadius="5" Height="300">
+                <TextBlock Text="Metadata" VerticalAlignment="Bottom" Margin="0,30,0,0" />
+                <TextBox   x:Name="txtMetaData"  Text="{x:Bind ViewModel.Metadata.Metadata,Mode=TwoWay}" PlaceholderText="Enter metadata"  />
+                <TextBlock  Text="Metadata Type" VerticalAlignment="Bottom" />
+                <DropDownButton x:Name="MetadataTypeCombo"  Content="Select DataType" Width="150"  >
+                    <DropDownButton.Flyout >
+                        <Flyout x:Name="MetadataTypeFlyOut" Placement="LeftEdgeAlignedTop"   >
+                            <ListView x:Name="testListView" ItemsSource="{x:Bind MetadataTypes, Mode=OneWay}" 
+                      SelectionMode="Single" SelectedItem="{x:Bind ViewModel.Metadata.MetadataType, Mode=TwoWay}"
+                      SelectionChanged="OnSelectionChanged" >
+                                <!--<ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:MetadataClass">
+                                    <TextBlock Text="{x:Bind MetadataType }"></TextBlock>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>-->
+                            </ListView>
+                        </Flyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+
+                <StackPanel  Orientation="Horizontal" Height="auto" HorizontalAlignment="Right" Margin="0,5,0,0" >
+                    <Button   Click="SaveButton_Click" >
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xf0c7;" Foreground="{StaticResource ThemeHighlightColor}"  Margin="0,0,5,0"/>
+                            <TextBlock Text="Save" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button  Margin="8,0,0,0" Click="CancelButton_Click">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xf00d;" Foreground="{StaticResource ThemeHighlightColor}"   Margin="0,0,5,0"/>
+                            <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+
+</Page>

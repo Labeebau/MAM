@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.AdminPanelPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Enabled">
+
+    <Grid >
+        <NavigationView x:Name="navAdmin" 
+                        PaneDisplayMode="Top"
+                        IsBackEnabled="True"
+                        IsSettingsVisible="False"
+                        SelectionChanged="navAdmin_SelectionChanged"
+                        Loaded="navAdmin_Loaded"
+                        ItemInvoked="navAdmin_ItemInvoked"
+                        BackRequested="navAdmin_BackRequested">
+            <NavigationView.MenuItems>
+                <NavigationViewItem  Content="General" Tag="GeneralPage" />
+                <NavigationViewItem  Content="Mail Settings" Tag="MailSettingsPage" />
+                <NavigationViewItem  Content="User Groups" Tag="UserGroupsPage" />
+                <NavigationViewItem  Content="Users" Tag="UsersPage" />
+                <NavigationViewItem  Content="Authorization Settings" Tag="AuthorizationSettingsPage" />
+                <NavigationViewItem  Content="MetaData" Tag="MetaDataPage" />
+                <NavigationViewItem  Content="Process Server" Tag="ProcessServerPage" />
+                <NavigationViewItem  Content="File Server" Tag="FileServerPage" />
+                <NavigationViewItem  Content="Archive Server" Tag="ArchiveServerPage" />
+                <NavigationViewItem  Content="Target Locations" Tag="TargetLocationsPage" />
+                <NavigationViewItem  Content="RSS List" Tag="RSSListPage" />
+            </NavigationView.MenuItems>
+            <ScrollViewer>
+                <Frame x:Name="ContentFrame" IsTabStop="True">
+
+                </Frame>
+            </ScrollViewer>
+        </NavigationView>
+    </Grid>
+</Page>

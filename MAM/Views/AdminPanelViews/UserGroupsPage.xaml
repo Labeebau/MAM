@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.AdminPanelViews.UserGroupsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.AdminPanelViews"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls" 
+    d:DataContext="{d:DesignInstance Type=local:UserGroup}"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+
+    </Page.Resources>
+    <Grid x:Name="MainGrid" Background="{StaticResource PageBackgroundColor}" CornerRadius="10" 
+        HorizontalAlignment="Center"   Height="570" Width="auto" Padding="48" >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid x:Name="LeftGrid" Grid.Column="0" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="8*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid  Grid.Row="0" >
+                <TextBlock Grid.Row="1" Text="Groups" FontWeight="SemiBold"  VerticalAlignment="Center"></TextBlock>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+
+                    <Button x:Name="BtnRefreshGroup" Style="{StaticResource SmallIconButton}" 
+                          VerticalAlignment="Center" Click="RefreshGroups_Click"
+                            ToolTipService.ToolTip="Refresh User Group">
+                        <FontIcon  Glyph="&#xf2f9;" />
+                    </Button>
+                    <Button x:Name="BtnAdd" Style="{StaticResource SmallIconButton}" 
+                        Margin="0,0,0,0" VerticalAlignment="Center" Click="AddUserGroup_Click" 
+                            ToolTipService.ToolTip="Add User Group">
+                        <FontIcon  Glyph="&#x2b;" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+            <Border Grid.Row="1" CornerRadius="15">
+                <controls:DataGrid x:Name="DgvGroups" 
+                                   Height="auto" 
+                                   Width="auto"    
+                                   AutoGenerateColumns="False"
+                                   Background="{StaticResource ThemeSecondaryBackgroundColor}"
+                                   ItemsSource="{x:Bind UserGroupsList ,Mode=TwoWay}"
+                                   CurrentCellChanged="DgvGroup_CurrentCellChanged"
+                                   SelectionChanged="DgvGroups_SelectionChanged"
+                                   IsReadOnly="False">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTemplateColumn Header="Group Name">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding GroupName}" Padding="5"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                            <controls:DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding GroupName,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly,Mode=TwoWay}" Padding="5,0,0,5"  />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellEditingTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="A.D Group">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
+                                        <CheckBox IsChecked="{Binding IsAdGroup,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}"  />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="Active">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
+                                        <CheckBox IsChecked="{Binding IsActive,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}"  />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Width="auto">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate >
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                                        <Button Click="DeleteUserGroup_Click" Tag="{Binding}" Background="Transparent" BorderThickness="0">
+                                            <FontIcon FontFamily="{StaticResource FontAwesome}" Glyph="&#xf2ed;" FontSize="12"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                    </controls:DataGrid.Columns>
+                    <!-- other columns below -->
+                </controls:DataGrid>
+            </Border>
+            <StackPanel Grid.Row="2" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
+                <Button Click="SaveButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf0c7;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20" Margin="0,0,5,0"/>
+                        <TextBlock Text="Save" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button  Margin="6,0,0,0" Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf00d;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20"  Margin="0,0,5,0"/>
+                        <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+        <Grid x:Name="RightGrid" Grid.Column="1" Margin="50,0,0,0" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="8*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0"  Text="User Groups" FontWeight="SemiBold"  VerticalAlignment="Center"></TextBlock>
+            <Button x:Name="BtnRefreshUserGroup" Grid.Row="0" Grid.Column="2"   Style="{StaticResource SmallIconButton}" 
+                        HorizontalAlignment="Right" VerticalAlignment="Center" Click="RefreshGroupedUsers_Click">
+                <FontIcon  Glyph="&#xf2f9;" />
+            </Button>
+
+            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" CornerRadius="15" 
+                        Background="{StaticResource ThemeSecondaryBackgroundColor}" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30" />
+                    <RowDefinition Height="*" />
+                    <!-- Makes scrollable content take remaining space -->
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Height="30" Background="Black"/>
+                <ScrollViewer Grid.Row="1" Padding="20" VerticalScrollBarVisibility="Auto" >
+                    <ItemsControl ItemsSource="{x:Bind GroupedUsersList, Mode=OneWay}"  >
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:UserGroupForGrouping">
+                                <StackPanel Margin="0,10">
+                                    <!-- Group Name -->
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Group :" FontSize="14" FontWeight="Bold"/>
+                                        <TextBlock Text="{x:Bind Group.GroupName}" FontSize="14" FontWeight="Bold" Margin="10,0" />
+                                    </StackPanel>
+                                    <!-- User List -->
+                                    <ItemsControl ItemsSource="{x:Bind Users}"
+                                                  Visibility="{x:Bind UserCount, Converter={StaticResource IntToVisibilityConverter}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="local:UserForGrouping">
+                                                <StackPanel Orientation="Horizontal" Margin="10,5,0,0" Spacing="5">
+                                                    <TextBlock Text="{x:Bind User.UserName}" VerticalAlignment="Center" />
+                                                    <Button Click="DeleteUserFromUserGroup_Click"
+                                                            Tag="{Binding Self,  Mode=OneWay}" 
+                                                            Background="Transparent" BorderThickness="0"  
+                                                            Width="20" Height="20" VerticalAlignment="Center"
+                                                            ToolTipService.ToolTip="Delete user from user group"
+                                                            Visibility="{x:Bind User, Converter={StaticResource NullToVisibilityConverter}}"
+                                                            Padding="2" >
+                                                            <TextBlock Text="X" FontSize="10" FontWeight="Bold" />
+                                                        <!--<FontIcon FontFamily="{StaticResource FontAwesome}" Glyph="&#xf2ed;" FontSize="10"/>-->
+                                                    </Button>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate> 
+                                    </ItemsControl>
+                                    <!-- Placeholder Message (Visible if Users.Count == 0) -->
+                                    <TextBlock Text="No users in this group"
+                                               FontStyle="Italic"
+                                               Foreground="Gray"
+                                               Margin="10,5,0,0"
+                                               Visibility="{x:Bind UserCount, Converter={StaticResource InverseIntToVisibilityConverter}}" />  
+
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="10"
+                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                <ComboBox  Width="200"
+                      ItemsSource="{Binding UserGroupsList}"
+                  DisplayMemberPath="GroupName"
+                  SelectedItem="{Binding SelectedUserGroup, Mode=TwoWay}"
+                      SelectionChanged="UserGroupComboBox_SelectionChanged"
+                  PlaceholderText="Select a user group"/>
+                <ComboBox  Width="200"
+          ItemsSource="{Binding UserList,Mode=TwoWay}"
+      DisplayMemberPath="UserName"
+      SelectedItem="{Binding SelectedUser, Mode=TwoWay}"
+      PlaceholderText="Select a user "/>
+
+                <Button x:Name="BtnAddUser" Style="{StaticResource SmallIconButton}" ToolTipService.ToolTip="Add user to user group"
+                       HorizontalAlignment="Right" VerticalAlignment="Center" Click="AddUSerToGroup_Click">
+                    <FontIcon  Glyph="&#x2b;" />
+                </Button>
+            </StackPanel>
+            <!--</StackPanel>-->
+            <!--</Grid>-->
+        </Grid>
+    </Grid>
+</Page>

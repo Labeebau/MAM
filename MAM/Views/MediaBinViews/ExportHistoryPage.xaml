@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.MediaBinViews.ExportHistoryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.MediaBinViews"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Height="380" Width="auto" >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" CornerRadius="15" Margin="0,10,0,0" >
+            <controls:DataGrid x:Name="DgvProcessServer" 
+            
+           AutoGenerateColumns="False"
+          Background="{StaticResource ThemePrimaryBackgroundColor}">
+                <!--ItemsSource="{x:Bind  }">-->
+                <controls:DataGrid.Columns>
+                    <controls:DataGridTemplateColumn Header="Asset" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate >
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind  }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="File Name" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind  }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Start Time"  Width="auto">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock  Padding="12,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Center"  Text="{x:Bind  }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Completion Time" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate >
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind  }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Progress" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate >
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{x:Bind }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Status" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                                    <TextBlock  Padding="12,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Center"  Text="{x:Bind }" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                  
+
+                </controls:DataGrid.Columns>
+            </controls:DataGrid>
+        </Border>
+    </Grid>
+</Page>

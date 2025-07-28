@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="MAM.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Windows"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local1="using:MAM" xmlns:local2="using:MAM.UserControls"
+    mc:Ignorable="d"
+    >
+
+    <Grid x:Name="MainAppWindow" Background="{StaticResource ThemePrimaryBackgroundColor}">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="20"/>
+
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <!--  Title bar  -->
+
+        <Grid
+     x:Name="AppTitleBar"
+     Grid.Row="0"
+     Background="{StaticResource ThemeSecondaryBackgroundColor}">
+            <Image
+         Width="16"
+         Height="32"
+         Margin="8,0"
+         HorizontalAlignment="Left"
+         Source="Assets/WindowIcon.png" />
+            <TextBlock
+         x:Name="AppTitleTextBlock"
+         Foreground="{StaticResource ThemeHighlightColor}"
+         Margin="28,0,0,0"
+         VerticalAlignment="Center"
+         Style="{StaticResource CaptionTextBlockStyle}"
+         Text="MAM"
+         TextWrapping="NoWrap" />
+            <!--<StackPanel Orientation="Horizontal" Background="Red" HorizontalAlignment="Right" VerticalAlignment="Center" Height="25" Width="150">
+            <Button></Button>
+        </StackPanel>-->
+        </Grid>
+        <RelativePanel x:Name="MenuPanel"  Grid.Row="1" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="10,0,0,0"
+                      Width="{Binding ElementName=MainAppWindow, Path=ActualWidth}"  >
+            <MenuBar RequestedTheme="Dark" RelativePanel.AlignLeftWithPanel="True" >
+                <MenuBarItem Title="File"  Foreground="White"  >
+                    <MenuFlyoutSubItem Text="New">
+                        <MenuFlyoutItem Text="Plain Text Document" />
+                        <MenuFlyoutItem Text="Rich Text Document"/>
+                        <MenuFlyoutItem Text="Other Formats..."/>
+                    </MenuFlyoutSubItem>
+                    <MenuFlyoutItem Text="Open..."/>
+                    <MenuFlyoutItem Text="Save"/>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="Exit"/>
+                </MenuBarItem>
+
+                <MenuBarItem Title="Settings" Foreground="White">
+                </MenuBarItem>
+
+                <MenuBarItem Title="View" Foreground="White">
+                </MenuBarItem>
+
+                <MenuBarItem Title="Help" Foreground="White">
+                    <MenuFlyoutItem Text="How To Use"/>
+                    <MenuFlyoutItem Text="Player Shortcut"/>
+                    <MenuFlyoutItem Text="About"/>
+                </MenuBarItem>
+            </MenuBar>
+            <Button x:Name="BtnLogout" Background="Transparent" BorderThickness="0" RelativePanel.AlignVerticalCenterWithPanel="True"  RelativePanel.AlignRightWithPanel="True" Click="BtnLogOut_Click"/>
+        </RelativePanel>
+       
+        <Frame Grid.Row="2" x:Name="MainFrame" />
+        <local2:StatusBarControl Grid.Row="3" x:Name="AppStatusBar"
+                                   VerticalAlignment="Bottom"
+                                   Visibility="Visible"/>
+    </Grid>
+</Window>

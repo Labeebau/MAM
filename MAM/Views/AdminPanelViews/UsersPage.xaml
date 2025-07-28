@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="MAM.Views.AdminPanelViews.UsersPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MAM.Views.AdminPanelViews"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:converter="using:MAM.Utilities.Converters"
+    
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <converter:BooleanNegationConverter x:Key="BooleanNegationConverter"/>
+    </Page.Resources>
+    <Grid x:Name="MainGrid" Background="{StaticResource PageBackgroundColor}" CornerRadius="5" 
+          HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" >
+        <StackPanel Orientation="Vertical" Spacing="10" >
+            <CheckBox  x:Name="ChbAllowADUsers" FontSize="13" HorizontalAlignment="Left"  >
+                Allow Active Directory Users
+            </CheckBox>
+            <TextBlock Text="A.D Domain" FontWeight="Normal" FontSize="14" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+
+            <TextBox x:Name="TxtActiveDirectory" PlaceholderText="Active Directory Domain" Width="400" HorizontalAlignment="Left"></TextBox>
+           
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button x:Name="BtnAddUser" Style="{StaticResource SmallIconButton}" 
+                        VerticalAlignment="Center" Click="BtnAddUser_Click" ToolTipService.ToolTip="Add USer">
+                    <FontIcon  Glyph="&#x2b;" />
+                </Button>
+                <Button x:Name="BtnAddToAD" Style="{StaticResource SmallIconButton}" 
+                    VerticalAlignment="Center" Click="BtnAddUser_Click" ToolTipService.ToolTip="Add User To Active Directory" >
+                    <FontIcon  Glyph="&#xf1c0;" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="TxtUserName" VerticalAlignment="Center" Width="400" Margin="4,0,0,0" PlaceholderText="User Name" TextChanged="OnSearchTextChanged" ></TextBox>
+                <Button x:Name="BtnSearch" Style="{StaticResource SmallIconButton}" 
+        VerticalAlignment="Center" Click="BtnSearch_Click" >
+                    <FontIcon  Glyph="&#xf002;" />
+                </Button>
+            </StackPanel>
+
+            <Border  CornerRadius="15" Margin="0,10,0,10">
+                <controls:DataGrid x:Name="DgvUser" 
+                                   BeginningEdit="dg_Editing" CellEditEnding="dg_CellEditEnding" RowEditEnding="dg_RowEditEnding"
+                                    RowEditEnded="DgvUser_RowEditEnded" SelectionChanged="DgvUser_SelectionChanged"
+                                   Height="380" 
+                    Background="{StaticResource ThemeSecondaryBackgroundColor}"
+                     ItemsSource="{x:Bind FilteredUserList,Mode=TwoWay}"
+                                   CurrentCellChanged="DgvUSer_CurrentCellChanged"
+                                   Padding="10"
+                     AutoGenerateColumns="False"
+        IsReadOnly="False">
+                    <controls:DataGrid.Columns  >
+
+                        <controls:DataGridTemplateColumn Header="First Name" Width="200">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding FirstName}" Padding="10,0,10,0"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                            <controls:DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding FirstName,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellEditingTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="Last Name" Width="200">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding LastName}" Padding="10,0,10,0"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                            <controls:DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding LastName,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellEditingTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="Email" Width="200" >
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Email}" Padding="10,0,10,0"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                            <controls:DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding Email,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}" Padding="10,0,10,0" />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellEditingTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="User Name" Width="200" >
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding UserName}" Padding="10,0,10,0"/>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                            <controls:DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding UserName,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly,Mode=TwoWay}" Padding="10,0,10,0" />
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellEditingTemplate>
+                        </controls:DataGridTemplateColumn>
+                        
+                        <controls:DataGridTemplateColumn Header="Password" Width="150"  >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="200">
+                                        <PasswordBox Password="{Binding Password,Mode=TwoWay }"  Background="Transparent" BorderThickness="0"  IsEnabled="{Binding IsEnabled,Mode=TwoWay}" Padding="10,0,10,0"/>
+                                    </StackPanel>
+                                    </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="A.D User" Width="100" >
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
+                                        <CheckBox IsChecked="{Binding IsADUser,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}"   Padding="10,0,10,0"  />
+                                   </StackPanel>
+                                    </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="Admin" Width="100">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
+
+                                        <CheckBox IsChecked="{Binding IsAdmin,Mode=TwoWay}"  IsEnabled="{Binding IsEnabled,Mode=TwoWay}" Padding="10,0,10,0" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <controls:DataGridTemplateColumn Header="Active" Width="100">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
+                                        <CheckBox IsChecked="{Binding IsActive,Mode=TwoWay}" IsEnabled="{Binding IsEnabled,Mode=TwoWay}" Padding="10,0,10,0" />
+                                        </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+
+                        <!--<controls:DataGridCheckBoxColumn Header="A.D User" Width="95" Binding="{Binding IsADUSer,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}" />
+                        <controls:DataGridCheckBoxColumn Header="Admin" Width="80" Binding="{Binding IsAdmin,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"/>
+                        <controls:DataGridCheckBoxColumn Header="Active" Width="80" Binding="{Binding IsActive,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"/>-->
+                        <controls:DataGridTemplateColumn Width="80">
+                            <controls:DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate >
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                                            <Button Click="EditButton_Click" Tag="{Binding}"  >
+                                                <FontIcon Glyph="&#xf303;" FontSize="12"/>
+                                            </Button>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" >
+                                            <Button x:Name="DeleteButton" Tag="{Binding}" Click="DeleteButton_Click"   Background="Transparent" BorderThickness="0" >
+                                                <FontIcon FontFamily="{StaticResource FontAwesome}" Glyph="&#xf2ed;" FontSize="12"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </controls:DataGridTemplateColumn.CellTemplate>
+                        </controls:DataGridTemplateColumn>
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+            </Border>
+            <StackPanel x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
+                <Button Click="SaveButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf0c7;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20" Margin="0,0,5,0"/>
+                        <TextBlock Text="Save" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button  Margin="6,0,0,0" Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xf00d;" Foreground="{StaticResource ThemeHighlightColor}" FontSize="20"  Margin="0,0,5,0"/>
+                        <TextBlock Text="Cancel" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>
