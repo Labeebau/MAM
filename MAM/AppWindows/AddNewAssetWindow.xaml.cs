@@ -1,13 +1,13 @@
 ﻿using MAM.Data;
 using MAM.Utilities;
 using MAM.Views.MediaBinViews;
-using MAM.Views.ProcessesViews;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel.DataTransfer;
@@ -217,30 +217,39 @@ namespace MAM.Windows
             //    Win32Interop.EnableWindow(parentHandle, true);
             //};
         }
-        private void OKButton_Click(object sender, RoutedEventArgs e)
+        private async void OKButton_Click(object sender, RoutedEventArgs e)
         {
             var assetsCopy = AssetList.ToList(); // Make a copy if AssetList is used in UI after window closes
-
-            // Fire and forget
-            _ = Task.Run(() => ProcessAfterCloseAsync(assetsCopy));
+            var xamlRoot = (App.MainAppWindow.Content as FrameworkElement)?.XamlRoot;            // Fire and forget
+            _ = Task.Run(() => ProcessAfterCloseAsync(assetsCopy, xamlRoot));
 
             this.Close(); // Immediately close the window
         }
 
         private List<Asset> assetstoRemove = new List<Asset>();
-        private async Task ProcessAfterCloseAsync(List<Asset> assetList)
+
+        private async Task ProcessAfterCloseAsync(List<Asset> assetList, XamlRoot xamlRoot)
         {
             try
             {
                 var folder = await StorageFolder.GetFolderFromPathAsync(viewModel.MediaLibraryObj.BinName);
                 var files = await folder.GetFilesAsync();
-                //if (!Directory.Exists(viewModel.MediaLibraryObj.ProxyFolder))
-                //    Directory.CreateDirectory(viewModel.MediaLibraryObj.ProxyFolder);
                 List<MediaPlayerItem> newMediaItems = new();
                 var semaphore = new SemaphoreSlim(3); // Limit to 3 concurrent tasks
                 var tasks = assetList.Select(async asset =>
                 {
                     await semaphore.WaitAsync();
+                    var copyProcess = await ProcessManager.CreateProcessAsync(asset.Media.MediaId, asset.Media.MediaSource.LocalPath, ProcessType.FileCopying);
+                    var thumbnailProcess = await ProcessManager.CreateProcessAsync(asset.Media.MediaId, asset.Media.MediaSource.LocalPath, ProcessType.ThumbnailGeneration);
+                    var proxyProcess = await ProcessManager.CreateProcessAsync(asset.Media.MediaId, asset.Media.MediaSource.LocalPath, ProcessType.ProxyGeneration);
+                   
+                    await UIThreadHelper.RunOnUIThreadAsync(() =>
+                    {
+                        TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(copyProcess);
+                        TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(thumbnailProcess);
+                        TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(proxyProcess);
+                    });
+                   
                     try
                     {
                         var newFile = asset.Media.MediaSource.LocalPath;
@@ -251,7 +260,7 @@ namespace MAM.Windows
                             var oldFileList = new List<string> { match.Path };
                             // ✅ Await the dialog on UI thread with global dialog lock inside
                             result = await UIThreadHelper.RunOnUIThreadAsync(() =>
-                               ShowMessageBox(asset, oldFileList, App.MainAppWindow.Content.XamlRoot));
+                               ShowMessageBox(asset, oldFileList, xamlRoot));
                             if (!result.confirmed)
                                 return;
                             newFile = result.updatedFile;
@@ -260,15 +269,20 @@ namespace MAM.Windows
                         {
                             App.MainAppWindow.StatusBar.ShowStatus($"Copying {asset.Media.OriginalPath} to {asset.Media.MediaSource.LocalPath}...", true);
                         });
-                        // 10s timeout, or use CancellationToken.None for no timeout
-                        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-                        await CopyFileWithProgressAsync(asset.Media.OriginalPath, newFile, cts.Token);
+                        try
+                        {
+                            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                            await CopyFileWithProgressAsync(asset.Media.OriginalPath, newFile, copyProcess, cts.Token);
+                        }
+                        catch (Exception ex)
+                        {
+                            await ProcessManager.FailProcessAsync(copyProcess, ex.Message, "File Copy");
+                            return;
+                        }
                         await UIThreadHelper.RunOnUIThreadAsync(() =>
                         {
                             App.MainAppWindow.StatusBar.ShowStatus($"{asset.Media.OriginalPath} copied to {asset.Media.MediaSource.LocalPath}...");
                         });
-                        //if (!result.reWritten)//
-                        //{
                         int newId = 0;
                         if (File.Exists(newFile))
                         {
@@ -279,30 +293,55 @@ namespace MAM.Windows
                             string thumbnailMediaPath = Path.Combine(viewModel.MediaLibraryObj.ThumbnailFolder, relativePath);
                             if (!Directory.Exists(thumbnailMediaPath))
                                 Directory.CreateDirectory(thumbnailMediaPath);
-                            var thumbnailFolder = await StorageFolder.GetFolderFromPathAsync(thumbnailMediaPath);
-                            var thumbnailFile = await thumbnailFolder.CreateFileAsync($"{Path.GetFileNameWithoutExtension(newFile)}_Thumbnail.JPG", CreationCollisionOption.ReplaceExisting);
                             var originalFile = await StorageFile.GetFileFromPathAsync(asset.Media.OriginalPath);
-
                             var proxyFolder = Path.Combine(viewModel.MediaLibraryObj.ProxyFolder, relativePath);
                             if (!Directory.Exists(proxyFolder))
                                 Directory.CreateDirectory(proxyFolder);
                             var proxyPath = Path.Combine(proxyFolder, Path.GetFileNameWithoutExtension(asset.Media.Title) + "_Proxy.MP4");
+                            var thumbnailPath = Path.Combine(thumbnailMediaPath, Path.GetFileNameWithoutExtension(asset.Media.Title) + "_Thumbnail.JPG");
+                            if (result.reWritten)
+                            {
+                                if (await DeleteAssetAsync(asset.Media.Title, asset.Media.MediaPath, xamlRoot) > 0)
+                                {
+                                    if (File.Exists(proxyPath))
+                                        File.Delete(proxyPath);
+                                    if (File.Exists(thumbnailPath))
+                                        File.Delete(thumbnailPath);
+                                }
+                            }
+                            var thumbnailFolder = await StorageFolder.GetFolderFromPathAsync(thumbnailMediaPath);
+                            var thumbnailFile = await thumbnailFolder.CreateFileAsync(Path.GetFileNameWithoutExtension(asset.Media.Title) + "_Thumbnail.JPG", CreationCollisionOption.ReplaceExisting);
                             asset.Media.ProxyPath = proxyPath;
                             asset.Media.ThumbnailPath = thumbnailFile.Path;
-                            newId = await InsertAsset(asset);
+                            newId = await InsertAsset(asset, xamlRoot);
                             if (newId > 0)
                             {
-                                await GenerateThumbnailAsync(originalFile, thumbnailFile);
-
-                                await ProcessAssetAsync(asset, proxyPath);
-                                var process = ProcessManager.AllProcesses.FirstOrDefault(p =>
-                                    p.FilePath == asset.Media.MediaPath && p.ProcessType == ProcessType.ProxyGeneration);
-
-                                if (process != null)
+                                // Assume this is after CopyFileWithProgressAsync already succeeded
+                                try
+                                {
+                                    await GenerateThumbnailAsync(originalFile, thumbnailFile, thumbnailProcess);
+                                }
+                                catch (Exception ex)
+                                {
+                                    await ProcessManager.FailProcessAsync(thumbnailProcess, ex.Message, "Thumbnail");
+                                    return;
+                                }
+                                try
+                                {
+                                    
+                                    await ProcessAssetAsync(asset, proxyPath, proxyProcess);
+                                }
+                                catch (Exception ex)
+                                {
+                                    await ProcessManager.FailProcessAsync(proxyProcess, ex.Message, "Proxy Generation");
+                                    return;
+                                }
+                                await ProcessManager.CompleteProcessAsync(proxyProcess);
+                                if (proxyProcess != null)
                                 {
                                     // Wait for the process to reach 100%
                                     var timeout = Task.Delay(TimeSpan.FromMinutes(5));
-                                    while (process.Progress < 100)
+                                    while (proxyProcess.Progress < 100)
                                     {
                                         if (timeout.IsCompleted)
                                             break;
@@ -330,7 +369,6 @@ namespace MAM.Windows
                                         viewModel.MediaLibraryObj.FileCount = viewModel.MediaPlayerItems.Count;
                                     });
                                 }
-                                   
                             }
                         }
                     }
@@ -355,17 +393,32 @@ namespace MAM.Windows
                 File.AppendAllText("log.txt", "Unhandled Error: " + ex.ToString() + "\n");
             }
         }
-
+        private async Task<int> DeleteAssetAsync(string assetName, string assetPath, XamlRoot xamlRoot)
+        {
+            List<MySqlParameter> parameters = new();
+            parameters.Add(new MySqlParameter("@Asset_path", assetPath));
+            parameters.Add(new MySqlParameter("@Asset_name", assetName));
+            int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and asset_path = @Asset_path;", parameters);
+            parameters.Add(new MySqlParameter("@Asset_id", id));
+            var (affectedRows, newId, errorMessage) = await dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters);
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                await GlobalClass.Instance.ShowDialogAsync("Deletion Failed.An unknown error occurred while trying to delete asset.", xamlRoot);
+                return -1;
+            }
+            else
+            {
+                await GlobalClass.Instance.AddtoHistoryAsync("Delete from Library", $"Deleted '{assetPath}\\{assetName}' from library .");
+                return affectedRows;
+            }
+        }
         private bool IsAssetReady(string copyPath, string thumbnailPath, string proxyPath)
         {
             return File.Exists(copyPath) && File.Exists(thumbnailPath) && File.Exists(proxyPath);
         }
 
-        public static async Task CopyFileWithProgressAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken = default)
+        public static async Task CopyFileWithProgressAsync(string sourcePath, string destinationPath, Process process, CancellationToken cancellationToken = default)
         {
-
-            var process = await ProcessManager.CreateProcessAsync(sourcePath, ProcessType.FileCopying, "Copying File");
-
             UIThreadHelper.RunOnUIThread(() =>
             {
                 TransactionHistoryPage.TransactionHistoryStatic.InitializeWithParameter("UploadHistory");
@@ -376,33 +429,27 @@ namespace MAM.Windows
                 byte[] buffer = new byte[bufferSize];
                 long totalBytesRead = 0;
                 long totalBytes = new FileInfo(sourcePath).Length;
-
                 using FileStream sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync: true);
                 using FileStream destStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true);
-
                 int lastReportedProgress = 0;
-
                 int bytesRead;
                 while ((bytesRead = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
                 {
                     await destStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                     totalBytesRead += bytesRead;
-
                     int currentProgress = (int)((totalBytesRead * 100) / totalBytes);
                     if (currentProgress > lastReportedProgress)
                     {
                         lastReportedProgress = currentProgress;
-
-                        // Update process status (thread-safe)
+                        // Update the process progress on the UI thread
                         UIThreadHelper.RunOnUIThread(() =>
                         {
                             process.Progress = currentProgress;
+                            process.CopyProgress= currentProgress;
                             process.Status = $"Copying... {currentProgress}%";
                         });
-                        // await ProcessManager.UpdateProcessStatusInDatabaseAsync(process);
                     }
                 }
-
                 // Finalize
                 UIThreadHelper.RunOnUIThread(() =>
                 {
@@ -416,7 +463,6 @@ namespace MAM.Windows
                 {
                     await ProcessManager.CompleteProcessAsync(process);
                 });
-
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -436,7 +482,6 @@ namespace MAM.Windows
             {
                 await ProcessManager.FailProcessAsync(process, $"Error: {ex.Message}");
             }
-
         }
 
 
@@ -485,82 +530,79 @@ namespace MAM.Windows
         //    if (matchFiltered != null)
         //        ProcessStatusPage.Instance.FilteredProcesses.Remove(matchFiltered);
         //}
-
-        private async Task ProcessAssetAsync(Asset asset, string proxyPath)
+        private async Task ProcessAssetAsync(Asset asset, string proxyPath, Process proxyProcess)
         {
+           
             var filePath = asset.Media.MediaSource.LocalPath;
-            var proxyProcess = ProcessManager.AllProcesses.FirstOrDefault(p => p.FilePath == filePath && p.ProcessType == ProcessType.ProxyGeneration) ?? await ProcessManager.CreateProcessAsync(filePath, ProcessType.ProxyGeneration, "Generating Proxy");
-            try
-            {
-                UIThreadHelper.RunOnUIThread(() => App.MainAppWindow.StatusBar.ShowStatus("Generating proxy...", true));
-                TimeSpan? totalDuration = null;
-                UIThreadHelper.RunOnUIThread(async () =>
-                {
-                    TransactionHistoryPage.TransactionHistoryStatic.LoadHistory("UploadHistory");
-                });
+            TimeSpan? totalDuration = null;
 
-                var progress = new Progress<string>(data =>
+            var ffmpegProgress = new Progress<string>(data =>
+            {
+                try
                 {
-                    if (data.Contains(" Duration:"))
+                    if (data.Contains("Duration:"))
                     {
-                        var durationString = data.Split(new[] { " Duration: ", "," }, StringSplitOptions.RemoveEmptyEntries)[1];
-                        if (TimeSpan.TryParse(durationString, out var duration))
+                        var match = Regex.Match(data, @"Duration:\s(\d{2}:\d{2}:\d{2}\.\d{2})");
+                        if (match.Success && TimeSpan.TryParse(match.Groups[1].Value, out var duration))
                             totalDuration = duration;
                     }
+
                     if (data.Contains("time=") && totalDuration.HasValue)
                     {
                         var match = Regex.Match(data, @"time=(\d{2}:\d{2}:\d{2}\.\d{2})");
                         if (match.Success && TimeSpan.TryParse(match.Groups[1].Value, out var currentTime))
                         {
-                            var progressPercentage = (currentTime.TotalSeconds / totalDuration.Value.TotalSeconds) * 100;
+                            var progressPercent = (int)((currentTime.TotalSeconds / totalDuration.Value.TotalSeconds) * 100);
                             App.UIDispatcherQueue.TryEnqueue(() =>
                             {
-                                var process = ProcessManager.AllProcesses.FirstOrDefault(p => p.ProcessId == proxyProcess.ProcessId);
-                                if (process != null)
-                                    process.Progress = (int)progressPercentage;
+                                proxyProcess.Progress = progressPercent;
+                                proxyProcess.ProxyProgress = progressPercent;
+                                proxyProcess.Status = "Generating Proxy";
                             });
                         }
                     }
-                });
-
-                //string outputFile = Path.Combine(viewModel.MediaLibraryObj.ProxyFolder, $"Proxy_{Path.GetFileNameWithoutExtension(asset.Media.Title)}.mp4");
-                string outputFile = proxyPath;
-                string arguments = $"-i \"{asset.Media.OriginalPath}\" -vf scale=640:-1 -c:v libx264 -b:v 200k -c:a aac -b:a 128k \"{outputFile}\"";
-
-                await RunFFmpegProcessWithProgress(arguments, progress);
-
-                App.UIDispatcherQueue.TryEnqueue(async () =>
+                }
+                catch (Exception ex)
                 {
-                    var process = ProcessManager.AllProcesses.FirstOrDefault(p => p.ProcessId == proxyProcess.ProcessId);
-                    if (process != null)
-                    {
-                        Debug.WriteLine(process.Result);
-                        ProcessStatusPage.Instance?.FilterData();
-                        await ProcessManager.CompleteProcessAsync(process, "Proxy generation finished");
-                        await GlobalClass.Instance.AddtoHistoryAsync("Add asset to library", $"Added '{filePath}' to library.");
-                        UIThreadHelper.RunOnUIThread(() =>
-                        {
-                            App.MainAppWindow.StatusBar.ShowStatus("Generated proxy.", false);
-                            App.MainAppWindow.StatusBar.HideStatus();
-                        });
-                    }
+                    File.AppendAllText("log.txt", $"[ParseError] {ex}\n");
+                }
+            });
+
+            try
+            {
+                string arguments = $"-i \"{asset.Media.OriginalPath}\" -vf scale=640:-1 -c:v libx264 -b:v 200k -c:a aac -b:a 128k \"{proxyPath}\"";
+                await RunFFmpegProcessWithProgress(arguments, ffmpegProgress, proxyProcess);
+
+                await App.UIDispatcherQueue.EnqueueAsync(async () =>
+                {
+                    proxyProcess.Status = "Proxy generation finished";
+                    await ProcessManager.CompleteProcessAsync(proxyProcess, "Proxy generation finished");
+                    App.MainAppWindow.StatusBar.ShowStatus("Proxy generation finished");
                 });
             }
             catch (Exception ex)
             {
                 await ProcessManager.FailProcessAsync(proxyProcess, "Proxy Generation Failed");
-                UIThreadHelper.RunOnUIThread(() => App.MainAppWindow.StatusBar.ShowStatus("Proxy generation failed ..."));
-                Debug.WriteLine($"Error: {ex.Message}");
-                File.AppendAllText("log.txt", "Error: " + ex + "\n");
+                App.MainAppWindow.StatusBar.ShowStatus("Proxy generation failed ...");
+                File.AppendAllText("log.txt", $"[{DateTime.Now}] Proxy Generation Error: {ex}\n");
             }
         }
 
 
-        private async Task RunFFmpegProcessWithProgress(string arguments, IProgress<string> progress)
+       
+
+        private async Task RunFFmpegProcessWithProgress(string arguments, IProgress<string> progress, Process proc)
         {
             File.AppendAllText("log.txt", "Trying to start FFMPEG\n");
 
-            using var process = new System.Diagnostics.Process
+            if (!File.Exists(GlobalClass.Instance.ffmpegPath))
+            {
+                await ProcessManager.FailProcessAsync(proc, "FFmpeg not found");
+                Debug.WriteLine("FFmpeg executable missing at: " + GlobalClass.Instance.ffmpegPath);
+                return;
+            }
+
+            var ffmpegProcess = new System.Diagnostics.Process
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -570,65 +612,155 @@ namespace MAM.Windows
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     CreateNoWindow = true
-                }
+                },
+                EnableRaisingEvents = true
             };
 
             var outputCompletion = new TaskCompletionSource();
             var errorCompletion = new TaskCompletionSource();
             var exitCompletion = new TaskCompletionSource();
 
-            process.OutputDataReceived += (s, e) =>
+            ffmpegProcess.OutputDataReceived += (s, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
+                {
                     progress.Report(e.Data);
+                }
                 else
+                {
                     outputCompletion.TrySetResult();
+                }
             };
 
-            process.ErrorDataReceived += (s, e) =>
+            ffmpegProcess.ErrorDataReceived += (s, e) =>
             {
                 if (!string.IsNullOrEmpty(e.Data))
+                {
                     progress.Report(e.Data);
+                }
                 else
+                {
                     errorCompletion.TrySetResult();
+                }
+            };
+
+            ffmpegProcess.Exited += (s, e) =>
+            {
+                exitCompletion.TrySetResult();
             };
 
             try
             {
-                process.Start();
+                ffmpegProcess.Start();
                 File.AppendAllText("log.txt", "FFMPEG started\n");
+
+                ffmpegProcess.BeginOutputReadLine();
+                ffmpegProcess.BeginErrorReadLine();
+
+                var timeoutTask = Task.Delay(TimeSpan.FromMinutes(5));
+                var processTasks = Task.WhenAll(outputCompletion.Task, errorCompletion.Task, exitCompletion.Task);
+                var completed = await Task.WhenAny(processTasks, timeoutTask);
+
+                if (completed == timeoutTask)
+                {
+                    File.AppendAllText("log.txt", "FFmpeg process timed out.\n");
+                    if (!ffmpegProcess.HasExited)
+                        ffmpegProcess.Kill(true);
+                }
+                else
+                {
+                    File.AppendAllText("log.txt", "FFmpeg process completed successfully.\n");
+                }
             }
             catch (Exception ex)
             {
-                File.AppendAllText("log.txt", "Error: " + ex + "\n");
-                throw new InvalidOperationException("Failed to start the FFmpeg process.", ex);
+                File.AppendAllText("log.txt", "FFmpeg process failed to start or run.\nException: " + ex + "\n");
+                await ProcessManager.FailProcessAsync(proc, ex.Message, "FFmpeg");
             }
-
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-
-            _ = Task.Run(async () =>
+            finally
             {
-                await process.WaitForExitAsync();
-                exitCompletion.TrySetResult();
-                outputCompletion.TrySetResult();
-                errorCompletion.TrySetResult();
-            });
-
-            var timeout = Task.Delay(TimeSpan.FromMinutes(2));
-            var completed = await Task.WhenAny(Task.WhenAll(outputCompletion.Task, errorCompletion.Task, exitCompletion.Task), timeout);
-
-            if (completed == timeout)
-                File.AppendAllText("log.txt", "FFmpeg process timed out.\n");
-            else
-                File.AppendAllText("log.txt", "FFmpeg process completed successfully.\n");
+                ffmpegProcess.Dispose();
+            }
         }
 
+        //private async Task RunFFmpegProcessWithProgress(string arguments, IProgress<string> progress,Process proc)
+        //{
+        //    File.AppendAllText("log.txt", "Trying to start FFMPEG\n");
+        //    if (!File.Exists(GlobalClass.Instance.ffmpegPath))
+        //    {
+        //        await ProcessManager.FailProcessAsync(proc, "FFmpeg not found");
+        //        Debug.WriteLine("FFmpeg executable missing at: " + GlobalClass.Instance.ffmpegPath);
+        //        return;
+        //    }
+        //    using var process = new System.Diagnostics.Process
+        //    {
+        //        StartInfo = new ProcessStartInfo
+        //        {
+        //            FileName = GlobalClass.Instance.ffmpegPath,
+        //            Arguments = arguments,
+        //            UseShellExecute = false,
+        //            RedirectStandardOutput = true,
+        //            RedirectStandardError = true,
+        //            CreateNoWindow = true
+        //        }
+        //    };
+
+        //    var outputCompletion = new TaskCompletionSource();
+        //    var errorCompletion = new TaskCompletionSource();
+        //    var exitCompletion = new TaskCompletionSource();
+
+        //    process.OutputDataReceived += (s, e) =>
+        //    {
+        //        if (!string.IsNullOrEmpty(e.Data))
+        //            progress.Report(e.Data);
+        //        else
+        //            outputCompletion.TrySetResult();
+        //    };
+
+        //    process.ErrorDataReceived += (s, e) =>
+        //    {
+        //        if (!string.IsNullOrEmpty(e.Data))
+        //            progress.Report(e.Data);
+        //        else
+        //            errorCompletion.TrySetResult();
+        //    };
+
+        //    try
+        //    {
+        //        process.Start();
+        //        File.AppendAllText("log.txt", "FFMPEG started\n");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        File.AppendAllText("log.txt", "Error: " + ex + "\n");
+        //        throw new InvalidOperationException("Failed to start the FFmpeg process.", ex);
+        //    }
+
+        //    process.BeginOutputReadLine();
+        //    process.BeginErrorReadLine();
+
+        //    _ = Task.Run(async () =>
+        //    {
+        //        await process.WaitForExitAsync();
+        //        exitCompletion.TrySetResult();
+        //        outputCompletion.TrySetResult();
+        //        errorCompletion.TrySetResult();
+        //    });
+
+        //    var timeout = Task.Delay(TimeSpan.FromMinutes(2));
+        //    var completed = await Task.WhenAny(Task.WhenAll(outputCompletion.Task, errorCompletion.Task, exitCompletion.Task), timeout);
+
+        //    if (completed == timeout)
+        //        File.AppendAllText("log.txt", "FFmpeg process timed out.\n");
+        //    else
+        //        File.AppendAllText("log.txt", "FFmpeg process completed successfully.\n");
+        //}
 
 
-        private async Task GenerateThumbnailAsync(StorageFile videoFile, StorageFile thumbnailFile)
+
+        private async Task GenerateThumbnailAsync(StorageFile videoFile, StorageFile thumbnailFile, Process process)
         {
-            var process = await ProcessManager.CreateProcessAsync(videoFile.Path, ProcessType.ThumbnailGeneration, "Generating Thumbnail");
+            //var process = await ProcessManager.CreateProcessAsync(videoFile.Path, ProcessType.ThumbnailGeneration, "Generating Thumbnail");
             UIThreadHelper.RunOnUIThread(() => { App.MainAppWindow.StatusBar.ShowStatus("Generating thumbnail...", true); });
 
             try
@@ -642,6 +774,13 @@ namespace MAM.Windows
                     // Copy the thumbnail's stream to the output file
                     await RandomAccessStream.CopyAsync(thumbnail, outputStream);
                     Debug.WriteLine(process.Result);
+                    UIThreadHelper.RunOnUIThread(() =>
+                    {
+                        process.Progress = 100; 
+                        process.ThumbnailProgress = 100;
+                        process.Status = "Thumbnail Generated";
+                        process.Result = "Finished";
+                    });
                     await ProcessManager.CompleteProcessAsync(process, "Thumbnail generation finished");
                     UIThreadHelper.RunOnUIThread(() => { App.MainAppWindow.StatusBar.ShowStatus("Thumbnail Generated."); });
                     File.AppendAllText("log.txt", "Thumbnail Generated.\n");
@@ -663,11 +802,9 @@ namespace MAM.Windows
             }
         }
         private static readonly SemaphoreSlim DialogSemaphore = new(1, 1);
-
-        private async Task<(bool, bool, string)> ShowMessageBox(Asset asset, List<string> oldFileList, XamlRoot xamlRoot)
+        private async Task<(bool confirmed, bool reWritten, string updatedFile)> ShowMessageBox(Asset asset, List<string> oldFileList, XamlRoot xamlRoot)
         {
             await DialogSemaphore.WaitAsync(); // Lock the dialog queue
-            var tcs = new TaskCompletionSource<(bool, bool, string)>();
 
             try
             {
@@ -685,10 +822,10 @@ namespace MAM.Windows
                 {
                     new TextBlock
                     {
-                        Text = $"' {asset.Media.Title} ' already exists!",
+                        Text = $"'{asset.Media.Title}' already exists!",
                         TextWrapping = TextWrapping.Wrap,
                         FontSize = 15,
-                    },
+                    }
                 }
                     },
                     Content = new StackPanel
@@ -706,7 +843,7 @@ namespace MAM.Windows
                         Text = "Please select an action to create new asset",
                         TextWrapping = TextWrapping.Wrap,
                         FontSize = 16,
-                    },
+                    }
                 }
                     },
                     PrimaryButtonText = "Create New Asset",
@@ -731,6 +868,7 @@ namespace MAM.Windows
 
                     if (result1 == ContentDialogResult.Primary)
                     {
+                        // KEEP FILE, GENERATE NEW NAME
                         try
                         {
                             string sourceFile = asset.Media.OriginalPath;
@@ -753,52 +891,179 @@ namespace MAM.Windows
 
                             asset.Media.Title = Path.GetFileName(destinationFile);
                             asset.Media.MediaSource = new Uri(destinationFile);
-                            // await CopyFileWithProgressAsync(sourceFile, destinationFile);
 
-                            // File.Copy(sourceFile, destinationFile);
-                            tcs.SetResult((true, false, destinationFile));
+                            return (true, false, destinationFile);
                         }
                         catch (Exception ex)
                         {
                             Console.WriteLine($"Error copying file: {ex.Message}");
-                            tcs.SetResult((false, false, string.Empty));
+                            return (false, false, string.Empty);
                         }
                     }
                     else if (result1 == ContentDialogResult.Secondary)
                     {
-                        //try
-                        //{
-                        //    File.Copy(asset.Media.OriginalPath, asset.Media.MediaSource.LocalPath, overwrite: true);
-                        //}
-                        //catch (IOException)
-                        //{
-                        //    CopyFileWithRetry(asset.Media.OriginalPath, asset.Media.MediaSource.LocalPath);
-                        //}
-
-                        tcs.SetResult((true, true, asset.Media.MediaSource.LocalPath));
+                        // DELETE EXISTING FILE (overwrite)
+                        return (true, true, asset.Media.MediaSource.LocalPath);
                     }
                     else
                     {
-                        tcs.SetResult((true, false, string.Empty)); // Cancel case
+                        // Cancel pressed
+                        return (true, false, string.Empty);
                     }
                 }
                 else
                 {
+                    // Cancel from the first dialog
                     assetstoRemove.Add(asset);
-                    tcs.SetResult((false, false, string.Empty));
+                    return (false, false, string.Empty);
                 }
             }
             catch (Exception ex)
             {
-                tcs.SetException(ex);
+                Console.WriteLine($"Exception in ShowMessageBox: {ex.Message}");
+                return (false, false, string.Empty);
             }
             finally
             {
                 DialogSemaphore.Release(); // Always release lock
             }
-
-            return await tcs.Task;
         }
+
+        //private async Task<(bool, bool, string)> ShowMessageBox(Asset asset, List<string> oldFileList, XamlRoot xamlRoot)
+        //{
+        //    await DialogSemaphore.WaitAsync(); // Lock the dialog queue
+        //    var tcs = new TaskCompletionSource<(bool, bool, string)>();
+
+        //    try
+        //    {
+        //        var listBox = new ListBox
+        //        {
+        //            ItemsSource = oldFileList,
+        //            IsEnabled = false
+        //        };
+
+        //        var dialog = new ContentDialog
+        //        {
+        //            Title = new StackPanel
+        //            {
+        //                Children =
+        //        {
+        //            new TextBlock
+        //            {
+        //                Text = $"' {asset.Media.Title} ' already exists!",
+        //                TextWrapping = TextWrapping.Wrap,
+        //                FontSize = 15,
+        //            },
+        //        }
+        //            },
+        //            Content = new StackPanel
+        //            {
+        //                Children =
+        //        {
+        //            new TextBlock
+        //            {
+        //                Text = "Old Files",
+        //                Margin = new Thickness(0, 0, 0, 10)
+        //            },
+        //            listBox,
+        //            new TextBlock
+        //            {
+        //                Text = "Please select an action to create new asset",
+        //                TextWrapping = TextWrapping.Wrap,
+        //                FontSize = 16,
+        //            },
+        //        }
+        //            },
+        //            PrimaryButtonText = "Create New Asset",
+        //            CloseButtonText = "Cancel",
+        //            XamlRoot = xamlRoot
+        //        };
+
+        //        var result = await dialog.ShowAsync();
+
+        //        if (result == ContentDialogResult.Primary)
+        //        {
+        //            var resultDialog = new ContentDialog
+        //            {
+        //                Content = "Keep or delete existing file?",
+        //                PrimaryButtonText = "Keep Existing File",
+        //                SecondaryButtonText = "Delete Existing File",
+        //                CloseButtonText = "Cancel",
+        //                XamlRoot = xamlRoot
+        //            };
+
+        //            var result1 = await resultDialog.ShowAsync();
+
+        //            if (result1 == ContentDialogResult.Primary)
+        //            {
+        //                try
+        //                {
+        //                    string sourceFile = asset.Media.OriginalPath;
+        //                    string destinationFolder = asset.Media.MediaPath;
+        //                    string fileName = asset.Media.Title;
+        //                    string destinationFile = Path.Combine(destinationFolder, fileName);
+
+        //                    if (File.Exists(destinationFile))
+        //                    {
+        //                        string ext = Path.GetExtension(fileName);
+        //                        string name = Path.GetFileNameWithoutExtension(fileName);
+        //                        int counter = 1;
+
+        //                        do
+        //                        {
+        //                            destinationFile = Path.Combine(destinationFolder, $"{name} ({counter}){ext}");
+        //                            counter++;
+        //                        } while (File.Exists(destinationFile));
+        //                    }
+
+        //                    asset.Media.Title = Path.GetFileName(destinationFile);
+        //                    asset.Media.MediaSource = new Uri(destinationFile);
+        //                    // await CopyFileWithProgressAsync(sourceFile, destinationFile);
+
+        //                    // File.Copy(sourceFile, destinationFile);
+        //                    tcs.SetResult((true, false, destinationFile));
+        //                }
+        //                catch (Exception ex)
+        //                {
+        //                    Console.WriteLine($"Error copying file: {ex.Message}");
+        //                    tcs.SetResult((false, false, string.Empty));
+        //                }
+        //            }
+        //            else if (result1 == ContentDialogResult.Secondary)
+        //            {
+        //                //try
+        //                //{
+        //                //    File.Copy(asset.Media.OriginalPath, asset.Media.MediaSource.LocalPath, overwrite: true);
+        //                //}
+        //                //catch (IOException)
+        //                //{
+        //                //    CopyFileWithRetry(asset.Media.OriginalPath, asset.Media.MediaSource.LocalPath);
+        //                //}
+
+        //                tcs.SetResult((true, true, asset.Media.MediaSource.LocalPath));
+        //            }
+        //            else
+        //            {
+        //                tcs.SetResult((true, false, string.Empty)); // Cancel case
+        //            }
+        //        }
+        //        else
+        //        {
+        //            assetstoRemove.Add(asset);
+        //            tcs.SetResult((false, false, string.Empty));
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        tcs.SetException(ex);
+        //    }
+        //    finally
+        //    {
+        //        DialogSemaphore.Release(); // Always release lock
+        //    }
+
+        //    return await tcs.Task;
+        //}
 
 
         public void CopyFileWithRetry(string sourceFile, string destinationFile)
@@ -833,7 +1098,7 @@ namespace MAM.Windows
 
             Console.WriteLine("Max retries reached, file could not be copied.");
         }
-        private async Task<int> InsertAsset(Asset asset)
+        private async Task<int> InsertAsset(Asset asset, XamlRoot xamlRoot)
         {
             UIThreadHelper.RunOnUIThread(() => { App.MainAppWindow.StatusBar.ShowStatus("Copying to db...", true); });
 
@@ -878,14 +1143,15 @@ namespace MAM.Windows
             try
             {
                 var (affectedRows, newAssetId, errorCode) = await dataAccess.ExecuteNonQuery(query, parameters);
+
                 if (newAssetId == 0)
                 {
-                    await GlobalClass.Instance.ShowDialogAsync("Asset already exists.", this.Content.XamlRoot);
+                    await GlobalClass.Instance.ShowDialogAsync("Asset already exists.", xamlRoot);
                     return 0;
                 }
                 else if (newAssetId <= 0)
                 {
-                    await GlobalClass.Instance.ShowDialogAsync("Unable to save asset", this.Content.XamlRoot);
+                    await GlobalClass.Instance.ShowDialogAsync("Unable to save asset", xamlRoot);
                     return -1;
                 }
                 else
@@ -896,23 +1162,11 @@ namespace MAM.Windows
             }
             catch (Exception ex)
             {
-                await GlobalClass.Instance.ShowDialogAsync($"An error occurred: {ex.Message}", this.Content.XamlRoot);
+                await GlobalClass.Instance.ShowDialogAsync($"An error occurred: {ex.Message}", xamlRoot);
                 return -1;
             }
         }
-        //private async Task ShowContentDialogAsync(string message)
-        //{
-        //    if (this.Content != null) // Ensure window is still open
-        //    {
-        //        var dialog = new ContentDialog
-        //        {
-        //            Content = message,
-        //            CloseButtonText = "OK",
-        //            XamlRoot = this.Content.XamlRoot
-        //        };
-        //        await dialog.ShowAsync();
-        //    }
-        //}
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             LoadDataGrid();
