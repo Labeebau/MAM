@@ -902,6 +902,7 @@ namespace MAM.Views.MediaBinViews
                     }
                     else
                     {
+                        
                         File.Move(item.ProxyPath, recycleBinProxyPath);
                     }
                 }

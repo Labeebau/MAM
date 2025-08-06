@@ -64,7 +64,7 @@ namespace MAM.Views.ProcessesViews
                     ScheduleStart = Convert.ToDateTime(row["schedule_start"]),
                     ScheduleEnd = Convert.ToDateTime(row["schedule_end"]),
                     StartTime = Convert.ToDateTime(row["start_time"]),
-                    CompletionTime = Convert.ToDateTime(row["end_time"]),
+                    EndTime = Convert.ToDateTime(row["end_time"]),
                     Status = row["status"].ToString(),
                     Result = row["result"].ToString(),
 
@@ -89,7 +89,7 @@ namespace MAM.Views.ProcessesViews
                     ScheduleStart = Convert.ToDateTime(row["schedule_start"]),
                     ScheduleEnd = Convert.ToDateTime(row["schedule_end"]),
                     StartTime = Convert.ToDateTime(row["start_time"]),
-                    CompletionTime = Convert.ToDateTime(row["end_time"]),
+                    EndTime = Convert.ToDateTime(row["end_time"]),
                     Status = row["status"].ToString(),
                     Result = row["result"].ToString(),
 
@@ -112,7 +112,7 @@ namespace MAM.Views.ProcessesViews
                     existing.ScheduleStart = dbProcess.ScheduleStart;
                     existing.ScheduleEnd = dbProcess.ScheduleEnd;
                     existing.StartTime = dbProcess.StartTime;
-                    existing.CompletionTime = dbProcess.CompletionTime;
+                    existing.EndTime = dbProcess.EndTime;
                     existing.Result = dbProcess.Result;
                     existing.Progress = dbProcess.Progress;
 

@@ -245,9 +245,9 @@ namespace MAM.Windows
                    
                     await UIThreadHelper.RunOnUIThreadAsync(() =>
                     {
-                        TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(copyProcess);
-                        TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(thumbnailProcess);
-                        TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(proxyProcess);
+                        //TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(copyProcess);
+                        //TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(thumbnailProcess);
+                        //TransactionHistoryPage.TransactionHistoryStatic.MergedProcesses.Add(proxyProcess);
                     });
                    
                     try
@@ -453,10 +453,10 @@ namespace MAM.Windows
                 // Finalize
                 UIThreadHelper.RunOnUIThread(() =>
                 {
+                    process.EndTime = DateTime.Now;
                     process.Progress = 100;
                     process.Status = "File copying finished";
                     process.Result = "Finished";
-                    process.CompletionTime = DateTime.Now;
                     // TransactionHistoryPage.TransactionHistoryStatic.ProcessList.Remove(process);
                 });
                 UIThreadHelper.RunOnUIThread(async () =>
@@ -557,7 +557,7 @@ namespace MAM.Windows
                             {
                                 proxyProcess.Progress = progressPercent;
                                 proxyProcess.ProxyProgress = progressPercent;
-                                proxyProcess.Status = "Generating Proxy";
+                                proxyProcess.Status = $"Generating Proxy...{progressPercent}%";
                             });
                         }
                     }
@@ -572,10 +572,12 @@ namespace MAM.Windows
             {
                 string arguments = $"-i \"{asset.Media.OriginalPath}\" -vf scale=640:-1 -c:v libx264 -b:v 200k -c:a aac -b:a 128k \"{proxyPath}\"";
                 await RunFFmpegProcessWithProgress(arguments, ffmpegProgress, proxyProcess);
-
+              
                 await App.UIDispatcherQueue.EnqueueAsync(async () =>
                 {
+                    proxyProcess.EndTime = DateTime.Now;
                     proxyProcess.Status = "Proxy generation finished";
+                    proxyProcess.Result = "Finished";
                     await ProcessManager.CompleteProcessAsync(proxyProcess, "Proxy generation finished");
                     App.MainAppWindow.StatusBar.ShowStatus("Proxy generation finished");
                 });
@@ -776,6 +778,7 @@ namespace MAM.Windows
                     Debug.WriteLine(process.Result);
                     UIThreadHelper.RunOnUIThread(() =>
                     {
+                        process.EndTime = DateTime.Now;
                         process.Progress = 100; 
                         process.ThumbnailProgress = 100;
                         process.Status = "Thumbnail Generated";

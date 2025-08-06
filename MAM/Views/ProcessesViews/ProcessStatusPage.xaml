@@ -101,7 +101,7 @@ ItemsSource="{x:Bind FilteredProcesses, Mode=OneWay}">
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="local1:Process">
                                     <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                                        <TextBlock  Padding="2,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{Binding CompletionTime}" FontWeight="Light" FontSize="14"/>
+                                        <TextBlock  Padding="2,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{Binding EndTime}" FontWeight="Light" FontSize="14"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>

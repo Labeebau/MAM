@@ -60,7 +60,7 @@ namespace MAM
         {
             await UIThreadHelper.RunOnUIThreadAsync(() =>
             {
-                process.CompletionTime = DateTime.Now;
+                process.EndTime = DateTime.Now;
                 process.Status = status;
                 process.Progress = 100;
                 process.Result = result;
@@ -73,7 +73,7 @@ namespace MAM
 
             await UIThreadHelper.RunOnUIThreadAsync(() =>
             {
-                process.CompletionTime = DateTime.Now;
+                process.EndTime = DateTime.Now;
                 process.Status = $"Failed{failedStep}: {errorMessage}";
                 process.Result = "Failed";
                 // Optional: You may want to NOT reset progress to 0
@@ -97,7 +97,7 @@ namespace MAM
         {
             Dictionary<string, object> propsList = new Dictionary<string, object>();
             propsList.Add("start_time", process.StartTime);
-            propsList.Add("end_time", process.CompletionTime);
+            propsList.Add("end_time", process.EndTime);
             propsList.Add("status", process.Status);
             propsList.Add("result", process.Result);
             int result = await dataAccess.UpdateRecord("process", "process_id", process.ProcessId, propsList);

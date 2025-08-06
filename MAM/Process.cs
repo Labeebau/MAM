@@ -13,7 +13,7 @@ namespace MAM
         private DateTime scheduleStart;
         private DateTime scheduleEnd;
         private DateTime startTime = DateTime.ParseExact("01:01:2000", "dd:MM:yyyy", CultureInfo.InvariantCulture);
-        private DateTime completionTime;
+        private DateTime endTime;
         private string result = string.Empty;
         private string status = string.Empty;
         private int progress;
@@ -64,10 +64,10 @@ namespace MAM
             get => startTime;
             set => SetProperty(ref startTime, value);
         }
-        public DateTime CompletionTime
+        public DateTime EndTime
         {
-            get => completionTime;
-            set => SetProperty(ref completionTime, value);
+            get => endTime;
+            set => SetProperty(ref endTime, value);
         }
         public string Status
         {

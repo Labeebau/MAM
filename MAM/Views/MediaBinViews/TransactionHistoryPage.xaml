@@ -10,10 +10,7 @@
     xmlns:local1="using:MAM.Windows"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-    <Page.Resources>
-        <local:ProgressToPercentageConverter x:Key="ProgressToPercentageConverter"/>
-    </Page.Resources>
-
+  
     <Grid Height="1000" Width="auto" >
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -28,7 +25,7 @@
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate >
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{Binding FilePath,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{Binding CopyProcess.FilePath,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -37,17 +34,17 @@
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate >
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                                    <TextBlock  Padding="12,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{Binding StartTime,Mode=OneWay }" FontWeight="Light" FontSize="14"/>
+                                    <TextBlock  Padding="12,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{Binding CurrentStartTime,Mode=OneWay }" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
                     </controls:DataGridTemplateColumn>
 
-                    <controls:DataGridTemplateColumn Header="Completion Time" Width="auto" >
+                    <controls:DataGridTemplateColumn Header="End Time" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate >
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{Binding CompletionTime,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
+                                    <TextBlock  Padding="12,0,10,0" VerticalAlignment="Center"  Text="{Binding CurrentEndTime,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
@@ -77,7 +74,7 @@
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" Padding="5" >
-                                    <TextBlock  Padding="12,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{Binding Status,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
+                                    <TextBlock  Padding="12,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{Binding CurrentStatus,Mode=OneWay}" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
