@@ -14,7 +14,7 @@ namespace MAM.Data
     {
         //private readonly string _connectionString = "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
         public static string ConnectionString { get; set; }//= "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
-
+        public static List<string> ConnectionStringList { get; set; }
         public DataAccess()
         {
         }
@@ -32,7 +32,7 @@ namespace MAM.Data
             {
                 connection.Open();
             }
-            catch (Exception ex)//29.52
+            catch (Exception ex)
             { 
                // GlobalClass.Instance.ShowErrorDialogAsync($"Failed to connect to the database: {ex.Message}");
                 Debug.WriteLine($"Failed to connect to the database: {ex.Message}");

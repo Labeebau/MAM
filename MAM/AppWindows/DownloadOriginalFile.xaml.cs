@@ -84,7 +84,7 @@ namespace MAM.Windows
 
         private async Task CopyFileWithProgressAsync(string sourcePath)
         {
-            var DownloadOriginal = await ProcessManager.CreateProcessAsync(sourcePath, ProcessType.DownloadOriginalFile, "Downloading File");
+            var DownloadOriginal = await ProcessManager.CreateProcessAsync(Asset.MediaId, sourcePath, ProcessType.DownloadOriginalFile, "Downloading File");
 
             try
             {

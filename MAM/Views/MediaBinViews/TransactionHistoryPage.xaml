@@ -10,14 +10,17 @@
     xmlns:local1="using:MAM.Windows"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-   
+    <Page.Resources>
+        <local:ProgressToPercentageConverter x:Key="ProgressToPercentageConverter"/>
+    </Page.Resources>
+
     <Grid Height="1000" Width="auto" >
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Border Grid.Row="0" CornerRadius="15" Margin="0,10,0,0" >
-            <controls:DataGrid x:Name="DgvDownloadHistory" 
-         ItemsSource="{Binding ProcessList,Mode=OneWay}"
+            <controls:DataGrid x:Name="DgvDownloadHistory_internal" 
+         ItemsSource="{Binding MergedProcesses}"
         AutoGenerateColumns="False"
        Background="{StaticResource ThemePrimaryBackgroundColor}">
                 <controls:DataGrid.Columns>
@@ -53,8 +56,18 @@
                     <controls:DataGridTemplateColumn Header="Progress" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate >
-                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Padding="10" >
-                                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding Progress,Mode=OneWay}" Height="20" Width="100"/>
+                                <!--<StackPanel Orientation="Vertical">
+                                    <TextBlock Text="Copy" FontSize="10" />
+                                    <ProgressBar Value="{Binding CopyProgress}" Height="10" Margin="0,0,0,5"/>
+
+                                    <TextBlock Text="Thumbnail" FontSize="10"/>
+                                    <ProgressBar Value="{Binding ThumbnailProgress}" Height="10" Margin="0,0,0,5"/>
+
+                                    <TextBlock Text="Proxy" FontSize="10"/>
+                                    <ProgressBar Value="{Binding ProxyProgress}" Height="10"/>
+                                </StackPanel>-->
+                                <StackPanel VerticalAlignment="Center">
+                                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding CombinedProgress,Mode=OneWay}"  Height="20" Width="100"/>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>

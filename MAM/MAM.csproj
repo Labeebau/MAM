@@ -32,6 +32,8 @@
     <Compile Remove="Views\ProjectPage.xaml.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Remove="Assets\ffmpeg\ffmpeg.exe" />
+    <Content Remove="Assets\ffmpeg\ffprobe.exe" />
     <Content Remove="Assets\Fonts\Dillon Francis - Candy ft. Snappy Jit.mp4" />
     <Content Remove="Assets\Fonts\version-control.png" />
     <Content Remove="Assets\Fonts\version.png" />
@@ -138,12 +140,6 @@
     <Content Update="Assets\4k.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Update="Assets\ffmpeg\ffmpeg.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Update="Assets\ffmpeg\ffprobe.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Update="Assets\Fonts\Font Awesome 6 Free-Solid-900.otf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -200,9 +196,16 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Assets\ffmpeg\" />
     <Folder Include="Libraries\" />
     <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Assets\ffmpeg\ffmpeg.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\ffmpeg\ffprobe.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Page Update="UserControls\CustomRecycleBinMedia.xaml">

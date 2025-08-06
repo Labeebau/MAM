@@ -1765,8 +1765,10 @@ namespace MAM.Views.MediaBinViews
                     string relativeNewPath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder), newPath);  // "Songs\Hindi"
                     string proxyNewPath = Path.Combine(ViewModel.MediaLibraryObj.ProxyFolder, relativeNewPath);
                     string thumbnailNewPath = Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, relativeNewPath);
-                    Directory.Move(thumbnailOldPath, thumbnailNewPath);
-                    Directory.Move(proxyOldPath, proxyNewPath);
+                    if(Directory.Exists(thumbnailOldPath))
+                        Directory.Move(thumbnailOldPath, thumbnailNewPath);
+                    if (Directory.Exists(proxyOldPath))
+                        Directory.Move(proxyOldPath, proxyNewPath);
                     await UpdateBinNameAsync(oldPath, newPath);
                 }
             }

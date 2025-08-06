@@ -1,35 +1,38 @@
 ﻿using MAM.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MAM
 {
-   
+
     public class Process : ObservableObject
     {
         private int processId;
         private string server = string.Empty;
-        private ProcessType processType ;
+        private ProcessType processType;
         private string filePath = string.Empty;
         private DateTime scheduleStart;
         private DateTime scheduleEnd;
-        private DateTime startTime=DateTime.ParseExact("01:01:2000", "dd:MM:yyyy", CultureInfo.InvariantCulture);
+        private DateTime startTime = DateTime.ParseExact("01:01:2000", "dd:MM:yyyy", CultureInfo.InvariantCulture);
         private DateTime completionTime;
         private string result = string.Empty;
         private string status = string.Empty;
         private int progress;
         private bool isVisible = true;
+        private int copyProgress = 0;
+        private int thumbnailProgress = 0;
+        private int proxyProgress = 0;
+        private int assetId;
+        private int combinedProgress;
 
         public int ProcessId
         {
             get => processId;
             set => SetProperty(ref processId, value);
+        }
+        public int AssetId
+        {
+            get => assetId;
+            set => SetProperty(ref assetId, value);
         }
         public string Server
         {
@@ -82,16 +85,45 @@ namespace MAM
             set
             {
                 SetProperty(ref result, value);
-                if(value=="Finished")
+                if (value == "Finished")
                 {
                     Progress = 100;
                 }
             }
         }
+        public int CopyProgress
+        {
+            get => copyProgress;
+            set { SetProperty(ref copyProgress, value); 
+            }
+        }
+        public int ThumbnailProgress
+        {
+            get => thumbnailProgress;
+            set => SetProperty(ref thumbnailProgress, value); 
+               
+        }
+        public int ProxyProgress
+        {
+            get => proxyProgress;
+            set { SetProperty(ref proxyProgress, value); 
+            }
+        }
+        public int CombinedProgress
+        {
+            get => combinedProgress;
+            set => SetProperty(ref combinedProgress, value);
+        }
+        public Process[] Tag { get;  set; }
+
+        //public int CombinedProgress => (CopyProgress + ThumbnailProgress + ProxyProgress) / 3;
+
+
         public Process(string filePath)
         {
             FilePath = filePath;
         }
+
         public Process()
         {
         }

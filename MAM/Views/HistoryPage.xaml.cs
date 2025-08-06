@@ -178,29 +178,36 @@ namespace MAM.Views
             {
                 string description = item.Description;
 
-                int lineCount = EstimateLineCount(description, font, descriptionWidth, gfx);
-                double lineHeight = gfx.MeasureString("A", font).Height + 2;
-                double blockHeight = lineCount * lineHeight;
+                // Estimate line count from the longest text field (Description here)
+                double blockHeight = EstimateBlockHeight(description, font, descriptionWidth, gfx);
 
+
+                // Page break if needed
                 if (y + blockHeight > page.Height.Point - margin)
                 {
                     page = document.AddPage();
                     gfx = XGraphics.FromPdfPage(page);
                     y = margin;
-                    DrawHeader(); // Redraw header on new page
+                    DrawHeader();
                 }
 
-                gfx.DrawString(item.UserName, font, XBrushes.Black, new XRect(margin, y, userWidth, blockHeight), XStringFormats.TopLeft);
-                gfx.DrawString(item.Action, font, XBrushes.Black, new XRect(margin + userWidth, y, actionWidth, blockHeight), XStringFormats.TopLeft);
+                // Define column rectangles
+                var userRect = new XRect(margin, y, userWidth, blockHeight);
+                var actionRect = new XRect(margin + userWidth, y, actionWidth, blockHeight);
+                var descriptionRect = new XRect(margin + userWidth + actionWidth, y, descriptionWidth, blockHeight);
+                var dateRect = new XRect(margin + userWidth + actionWidth + descriptionWidth, y, dateWidth, blockHeight);
 
+                // Draw using text formatter for all columns to keep alignment consistent
                 var tf = new XTextFormatter(gfx);
-                tf.DrawString(description, font, XBrushes.Black, new XRect(margin + userWidth + actionWidth, y, descriptionWidth, blockHeight), XStringFormats.TopLeft);
+                tf.DrawString(item.UserName, font, XBrushes.Black, userRect, XStringFormats.TopLeft);
+                tf.DrawString(item.Action, font, XBrushes.Black, actionRect, XStringFormats.TopLeft);
+                tf.DrawString(description, font, XBrushes.Black, descriptionRect, XStringFormats.TopLeft);
+                tf.DrawString(item.Date.ToString("yyyy-MM-dd HH:mm"), font, XBrushes.Black, dateRect, XStringFormats.TopLeft);
 
-                gfx.DrawString(item.Date.ToString("yyyy-MM-dd HH:mm"), font, XBrushes.Black, new XRect(margin + userWidth + actionWidth + descriptionWidth, y, dateWidth, blockHeight), XStringFormats.TopLeft);
-
+                // Draw light horizontal separator
                 y += blockHeight + 5;
+                gfx.DrawLine(XPens.LightGray, margin, y, margin + tableWidth, y);
             }
-
 
 
             // Save using a stream from StorageFile
@@ -211,13 +218,31 @@ namespace MAM.Views
 
             }
         }
-        int EstimateLineCount(string text, XFont font, double columnWidth, XGraphics gfx)
+        double EstimateBlockHeight(string text, XFont font, double width, XGraphics gfx)
         {
-            double avgCharWidth = gfx.MeasureString("X", font).Width; // average character width
-            int charsPerLine = (int)(columnWidth / avgCharWidth);
-            int totalLines = (int)Math.Ceiling((double)text.Length / charsPerLine);
-            return totalLines;
+            var words = text.Split(' ');
+            var line = "";
+            int lines = 1;
+
+            foreach (var word in words)
+            {
+                var testLine = line.Length == 0 ? word : line + " " + word;
+                var size = gfx.MeasureString(testLine, font);
+                if (size.Width > width)
+                {
+                    lines++;
+                    line = word;
+                }
+                else
+                {
+                    line = testLine;
+                }
+            }
+
+            double lineHeight = gfx.MeasureString("A", font).Height + 2;
+            return lines * lineHeight;
         }
+
 
         //private async Task ExportToPdfAsync(ObservableCollection<History> historyList)
         //{

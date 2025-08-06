@@ -15,15 +15,40 @@ namespace MAM
     {
         private static DataAccess dataAccess=new DataAccess();
         public static ObservableCollection<Process> AllProcesses { get; set; } = new ObservableCollection<Process>();
-        public static async Task<Process> CreateProcessAsync(string filePath, ProcessType processType, string status = "Initializing", string result = "Waiting")
+        public static async Task<Process> CreateProcessAsync(int assetId,string filePath, ProcessType processType, string status = "Initializing", string result = "Waiting")
         {
             var process = new Process(filePath)
             {
+                AssetId=assetId,
                 ProcessType = processType,
                 StartTime = DateTime.Now,
                 Status = status,
                 Progress = 0,
                 Result = result
+            };
+
+            process.ProcessId = await InsertProcessInDatabaseAsync(process);
+            AllProcesses.Add(process);
+            return process;
+        }
+        public static async Task<Process> GetOrCreateUnifiedProcessAsync(string filePath)
+        {
+            // Check if a unified process already exists (reuse FileCopying or define new enum)
+            var existing = AllProcesses.FirstOrDefault(p =>
+                p.FilePath == filePath &&
+                p.ProcessType == ProcessType.FileCopying); // use AssetProcessing if added
+
+            if (existing != null)
+                return existing;
+
+            // Create new unified process
+            var process = new Process(filePath)
+            {
+                ProcessType = ProcessType.FileCopying, // or AssetProcessing if you created a new enum value
+                StartTime = DateTime.Now,
+                Status = "Initializing",
+                Progress = 0,
+                Result = "Waiting"
             };
 
             process.ProcessId = await InsertProcessInDatabaseAsync(process);
@@ -36,24 +61,38 @@ namespace MAM
             await UIThreadHelper.RunOnUIThreadAsync(() =>
             {
                 process.CompletionTime = DateTime.Now;
-                process.Status = "Finished";
+                process.Status = status;
                 process.Progress = 100;
                 process.Result = result;
             });
             await UpdateProcessStatusInDatabaseAsync(process);
         }
-
-        public static async Task FailProcessAsync(Process process, string errorMessage)
+        public static async Task FailProcessAsync(Process process, string errorMessage, string? phase = null)
         {
+            string failedStep = phase != null ? $" ({phase})" : "";
+
             await UIThreadHelper.RunOnUIThreadAsync(() =>
             {
                 process.CompletionTime = DateTime.Now;
-                process.Status = $"Error: {errorMessage}";
+                process.Status = $"Failed{failedStep}: {errorMessage}";
                 process.Result = "Failed";
-                process.Progress = 0;
+                // Optional: You may want to NOT reset progress to 0
             });
+
             await UpdateProcessStatusInDatabaseAsync(process);
         }
+
+        //public static async Task FailProcessAsync(Process process, string errorMessage)
+        //{
+        //    await UIThreadHelper.RunOnUIThreadAsync(() =>
+        //    {
+        //        process.CompletionTime = DateTime.Now;
+        //        process.Status = $"Error: {errorMessage}";
+        //        process.Result = "Failed";
+        //        process.Progress = 0;
+        //    });
+        //    await UpdateProcessStatusInDatabaseAsync(process);
+        //}
         public static async Task UpdateProcessStatusInDatabaseAsync(Process process)
         {
             Dictionary<string, object> propsList = new Dictionary<string, object>();

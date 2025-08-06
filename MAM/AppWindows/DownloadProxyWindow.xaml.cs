@@ -106,7 +106,7 @@ namespace MAM.Windows
         private async Task CopyFileWithProgressAsync(string sourcePath)
         {
             //Process DownloadProxy = ProcessManager.AllProcesses.FirstOrDefault(p => p.FilePath == Asset.MediaSource.LocalPath);
-            var DownloadProxy = await ProcessManager.CreateProcessAsync(sourcePath, ProcessType.DownloadProxy, "Downloading Proxy File");
+            var DownloadProxy = await ProcessManager.CreateProcessAsync(Asset.MediaId, sourcePath, ProcessType.DownloadProxy, "Downloading Proxy File");
 
             try
             {
