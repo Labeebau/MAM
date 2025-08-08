@@ -71,9 +71,9 @@ namespace MAM.Views.MediaBinViews
                     continue;
 
                 // Provide defaults if any process is missing
-                copy ??= new Process { FilePath = group.Key, ProcessType = ProcessType.FileCopying, Result = "Completed", Status = "N/A" };
-                thumb ??= new Process { FilePath = group.Key, ProcessType = ProcessType.ThumbnailGeneration, Result = "Completed", Status = "N/A" };
-                proxy ??= new Process { FilePath = group.Key, ProcessType = ProcessType.ProxyGeneration, Result = "Completed", Status = "N/A" };
+                copy ??= new Process { FilePath = group.Key, ProcessType = ProcessType.FileCopying, Result = "Finished", Status = "Finished" };
+                thumb ??= new Process { FilePath = group.Key, ProcessType = ProcessType.ThumbnailGeneration, Result = "Finished", Status = "Finished" };
+                proxy ??= new Process { FilePath = group.Key, ProcessType = ProcessType.ProxyGeneration, Result = "Finished", Status = "Finished" };
 
                 var merged = new MergedProcessViewModel(copy, thumb, proxy);
                 MergedProcesses.Add(merged);

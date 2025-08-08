@@ -34,8 +34,9 @@ namespace MAM.Windows
         private static MediaLibraryViewModel viewModel;
         //public static UploadHistoryPage uploadHistory { get; set; }
         public ObservableCollection<Asset> AssetList { get; set; } = new ObservableCollection<Asset>();
+        private readonly Action _onAssetAdded;
 
-        public AddNewAssetWindow(MediaLibraryViewModel mediaLibrary)
+        public AddNewAssetWindow(MediaLibraryViewModel mediaLibrary, Action onAssetAdded)
         {
             this.InitializeComponent();
             ExtendsContentIntoTitleBar = true;
@@ -51,6 +52,7 @@ namespace MAM.Windows
             DgvFiles.DataContext = this;
             viewModel = mediaLibrary;
             DgvFiles.DragStarting += DgvFiles_DragStarting;
+            _onAssetAdded = onAssetAdded;
         }
         private void SetWindowSizeAndPosition(int width, int height)
         {
@@ -81,11 +83,11 @@ namespace MAM.Windows
             }
         }
         // Method to get the instance of the window or create it if it doesn't exist
-        public static void ShowWindow(MediaLibraryViewModel mediaLibrary)
+        public static void ShowWindow(MediaLibraryViewModel mediaLibrary,Action onAssetAdded)
         {
             if (_instance == null)
             {
-                _instance = new AddNewAssetWindow(mediaLibrary);
+                _instance = new AddNewAssetWindow(mediaLibrary, onAssetAdded);
                 _instance.Activate(); // Show the window
             }
             else
@@ -363,10 +365,13 @@ namespace MAM.Windows
                                     };
                                     await DispatcherQueue.EnqueueAsync(() =>
                                     {
-                                        if (!viewModel.MediaPlayerItems.Contains(mediaItem))
-                                            viewModel.MediaPlayerItems.Add(mediaItem);
-                                        viewModel.ApplyFilter();
-                                        viewModel.MediaLibraryObj.FileCount = viewModel.MediaPlayerItems.Count;
+                                        _onAssetAdded?.Invoke(); // Notify caller (MediaLibraryPage)
+
+                                        //viewModel.MediaLibraryObj.BinName = viewModel.MediaLibraryObj.BinName;
+                                        //if (!viewModel.MediaPlayerItems.Contains(mediaItem))
+                                        //    viewModel.MediaPlayerItems.Add(mediaItem);
+                                        //viewModel.ApplyFilter();
+                                        //viewModel.MediaLibraryObj.FileCount = viewModel.MediaPlayerItems.Count;
                                     });
                                 }
                             }
@@ -419,68 +424,91 @@ namespace MAM.Windows
 
         public static async Task CopyFileWithProgressAsync(string sourcePath, string destinationPath, Process process, CancellationToken cancellationToken = default)
         {
+            const int maxRetries = 3;
+            const int bufferSize = 1024 * 1024; // 1 MB
+            int attempt = 0;
+
             UIThreadHelper.RunOnUIThread(() =>
             {
                 TransactionHistoryPage.TransactionHistoryStatic.InitializeWithParameter("UploadHistory");
             });
-            try
+            while (attempt < maxRetries)
             {
-                const int bufferSize = 1024 * 1024; // 1 MB buffer for large files
-                byte[] buffer = new byte[bufferSize];
-                long totalBytesRead = 0;
-                long totalBytes = new FileInfo(sourcePath).Length;
-                using FileStream sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync: true);
-                using FileStream destStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true);
-                int lastReportedProgress = 0;
-                int bytesRead;
-                while ((bytesRead = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+                try
                 {
-                    await destStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                    totalBytesRead += bytesRead;
-                    int currentProgress = (int)((totalBytesRead * 100) / totalBytes);
-                    if (currentProgress > lastReportedProgress)
+                    byte[] buffer = new byte[bufferSize];
+                    long totalBytesRead = 0;
+                    long totalBytes = new FileInfo(sourcePath).Length;
+                    // Delete partially copied file if retrying
+                    if (File.Exists(destinationPath))
+                        File.Delete(destinationPath);
+                    using FileStream sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync: true);
+                    using FileStream destStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true);
+                    int lastReportedProgress = 0;
+                    int bytesRead;
+                    while ((bytesRead = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
                     {
-                        lastReportedProgress = currentProgress;
-                        // Update the process progress on the UI thread
-                        UIThreadHelper.RunOnUIThread(() =>
+                        await destStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                        totalBytesRead += bytesRead;
+                        int currentProgress = (int)((totalBytesRead * 100) / totalBytes);
+                        if (currentProgress > lastReportedProgress)
                         {
-                            process.Progress = currentProgress;
-                            process.CopyProgress= currentProgress;
-                            process.Status = $"Copying... {currentProgress}%";
-                        });
+                            lastReportedProgress = currentProgress;
+                            // Update the process progress on the UI thread
+                            UIThreadHelper.RunOnUIThread(() =>
+                            {
+                                process.Progress = currentProgress;
+                                process.CopyProgress = currentProgress;
+                                process.Status = $"Copying... {currentProgress}%";
+                            });
+                        }
                     }
+                    // Finalize
+                    UIThreadHelper.RunOnUIThread(() =>
+                    {
+                        process.EndTime = DateTime.Now;
+                        process.Progress = 100;
+                        process.Status = "File copying finished";
+                        process.Result = "Finished";
+                    });
+                    UIThreadHelper.RunOnUIThread(async () =>
+                    {
+                        await ProcessManager.CompleteProcessAsync(process);
+                    });
+                    return;
                 }
-                // Finalize
-                UIThreadHelper.RunOnUIThread(() =>
-                {
-                    process.EndTime = DateTime.Now;
-                    process.Progress = 100;
-                    process.Status = "File copying finished";
-                    process.Result = "Finished";
-                    // TransactionHistoryPage.TransactionHistoryStatic.ProcessList.Remove(process);
-                });
-                UIThreadHelper.RunOnUIThread(async () =>
-                {
-                    await ProcessManager.CompleteProcessAsync(process);
-                });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                await UIThreadHelper.RunOnUIThreadAsync(() =>
-                {
-                    App.MainAppWindow.StatusBar.ShowStatus($"{ex.Message}");
-                });
-                await ProcessManager.FailProcessAsync(process, "Access denied");
+                //catch (UnauthorizedAccessException ex)
+                //{
+                //    await UIThreadHelper.RunOnUIThreadAsync(() =>
+                //    {
+                //        App.MainAppWindow.StatusBar.ShowStatus($"{ex.Message}");
+                //    });
+                //    await ProcessManager.FailProcessAsync(process, "Access denied");
 
-                //throw new IOException($"Access denied to source file: {sourcePath}. Check if it's locked or restricted.", ex);
-            }
-            catch (OperationCanceledException)
-            {
-                await ProcessManager.FailProcessAsync(process, "Copy operation canceled");
-            }
-            catch (Exception ex)
-            {
-                await ProcessManager.FailProcessAsync(process, $"Error: {ex.Message}");
+                //    //throw new IOException($"Access denied to source file: {sourcePath}. Check if it's locked or restricted.", ex);
+                //}
+                //catch (OperationCanceledException)
+                //{
+                //    await ProcessManager.FailProcessAsync(process, "Copy operation canceled");
+                //}
+                catch (Exception ex)
+                {
+                    attempt++;
+                    if (attempt >= maxRetries)
+                    {
+                        await ProcessManager.FailProcessAsync(process, $"Error after {maxRetries} attempts: {ex.Message}");
+                        return;
+                    }
+
+                    await UIThreadHelper.RunOnUIThreadAsync(() =>
+                    {
+                        App.MainAppWindow.StatusBar.ShowStatus($"Retry {attempt}/{maxRetries} due to error: {ex.Message}");
+                        process.Status = $"Retrying... Attempt {attempt}/{maxRetries}";
+                    });
+
+                    // Optional: Wait before retrying
+                    await Task.Delay(1000);
+                }
             }
         }
 

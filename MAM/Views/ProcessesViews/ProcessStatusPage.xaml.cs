@@ -140,29 +140,31 @@ namespace MAM.Views.ProcessesViews
 
         public void FilterData()
         {
-            var baseList = OpenedTab == "WaitingProcesses" ? ProcessManager.AllProcesses.Where(p => p.Result == "Waiting") : ProcessManager.AllProcesses.Where(p => p.Result == "Finished");
+            var baseList = OpenedTab == "WaitingProcesses" ? 
+                                        ProcessManager.AllProcesses.Where(p => p.Result == "Waiting") :
+                                        ProcessManager.AllProcesses.Where(p => p.Result == "Finished");
             string ServerFilter = ServerSearchBox.Text?.ToLower();
             string TypeFilter = TypeSearchBox.Text?.ToLower();
-            DateTime? FromDateFilter = Convert.ToDateTime(FromDateSearchBox.Date?.DateTime);
-            DateTime? ToDateFilter = Convert.ToDateTime(ToDateSearchBox.Date?.DateTime);
+            DateTime? FromDateFilter = FromDateSearchBox.Date != null ? FromDateSearchBox.Date.Value.Date : (DateTime?)null;
+            DateTime? ToDateFilter = ToDateSearchBox.Date != null ? ToDateSearchBox.Date.Value.Date.AddDays(1).AddTicks(-1) : (DateTime?)null;
+
+            //DateTime? FromDateFilter = Convert.ToDateTime(FromDateSearchBox.Date?.DateTime);
+            //DateTime? ToDateFilter = ToDateSearchBox.Date?.DateTime?.Date.AddDays(1).AddTicks(-1); // include entire day
             //Filter the master list and add matching items to FilteredProcesss
             var filtered = baseList.Where(p =>
                             (string.IsNullOrEmpty(ServerFilter) || p.Server.Contains(ServerFilter, StringComparison.CurrentCultureIgnoreCase)) &&
                 (string.IsNullOrEmpty(TypeFilter) || p.ProcessType.ToString().Contains(TypeFilter, StringComparison.CurrentCultureIgnoreCase)) &&
                 (!FromDateFilter.HasValue || p.StartTime >= FromDateFilter.Value) &&
                 (!ToDateFilter.HasValue || p.StartTime <= ToDateFilter.Value)); // include whole day
-                                                                                // Clear previous filtered results
-            FilteredProcesses.Clear();
+            FilteredProcesses.Clear();// Clear previous filtered results
             foreach (var Process in filtered)
             {
                 FilteredProcesses.Add(Process);
             }
         }
-
         private void DateSearchBox_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
         {
             FilterData();
         }
     }
-
 }

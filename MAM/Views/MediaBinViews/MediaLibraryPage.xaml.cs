@@ -51,13 +51,14 @@ namespace MAM.Views.MediaBinViews
             ViewModel.PageSize = SettingsService.Get(SettingKeys.DefaultPageSize, 8);
             ViewModel.SelectedPageIndex = 0;
             UpdatePageButtons();
-            ViewModel.PropertyChanged += (s, e) =>
+            ViewModel.PropertyChanged += async (s, e) =>
             {
                 if (e.PropertyName == nameof(ViewModel.SelectedPageIndex) ||
                     e.PropertyName == nameof(ViewModel.TotalPages))
                 {
                     UpdatePageButtons();
                 }
+               
             };
             ViewModel.PaginationUpdated += UpdatePageButtons;
             DataContext = ViewModel;
@@ -696,12 +697,12 @@ namespace MAM.Views.MediaBinViews
 
         private async void TreeView_SelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
         {
-            FileSystemItem selectedNode = (FileSystemItem)args.AddedItems.FirstOrDefault();
-            if (selectedNode != null && !selectedNode.IsEditing)
-            {
+            //FileSystemItem selectedNode = (FileSystemItem)args.AddedItems.FirstOrDefault();
+            //if (selectedNode != null && !selectedNode.IsEditing)
+            //{
                 await LoadAssetsAsync();
                 ViewModel.Path = ViewModel.MediaLibraryObj.BinName;
-            }
+            //}
         }
         private void TreeViewItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
@@ -713,18 +714,25 @@ namespace MAM.Views.MediaBinViews
 
         private async Task LoadAssetsAsync()
         {
-            string dirName = new DirectoryInfo(((FileSystemItem)FileTreeView.SelectedNode.Content).Path).Name;
+            if (FileTreeView.SelectedNode != null)
+            {
+                FileSystemItem selectedNode = (FileSystemItem)FileTreeView.SelectedNode.Content;
+                if (selectedNode!= null && !selectedNode.IsEditing )
+                {
+                    string dirName = new DirectoryInfo(selectedNode.Path).Name;
 
-            if (dirName == ((FileSystemItem)FileTreeView.SelectedNode.Content).Name)
-                ViewModel.MediaLibraryObj.BinName = ((FileSystemItem)FileTreeView.SelectedNode.Content).Path;
-            else
-                ViewModel.MediaLibraryObj.BinName = Path.Combine(((FileSystemItem)FileTreeView.SelectedNode.Content).Path, ((FileSystemItem)FileTreeView.SelectedNode.Content).Name);
+                    if (dirName == selectedNode.Name)
+                        ViewModel.MediaLibraryObj.BinName = selectedNode.Path;
+                    else
+                        ViewModel.MediaLibraryObj.BinName = Path.Combine(selectedNode.Path, selectedNode.Name);
 
-            ViewModel.MediaPlayerItems.Clear();
-            await GetAllAssetsAsync(ViewModel.MediaLibraryObj.BinName);
-            ViewModel.MediaLibraryObj.FileCount = ViewModel.MediaPlayerItems.Count;
-            ViewModel.MediaLibraryObj = ViewModel.MediaLibraryObj;
-            ViewModel.ApplyFilter();
+                    ViewModel.MediaPlayerItems.Clear();
+                    await GetAllAssetsAsync(ViewModel.MediaLibraryObj.BinName);
+                    ViewModel.MediaLibraryObj.FileCount = ViewModel.MediaPlayerItems.Count;
+                    ViewModel.MediaLibraryObj = ViewModel.MediaLibraryObj;
+                    ViewModel.ApplyFilter();
+                }
+            }
         }
         private string GetFullPath(TreeViewNode selectedNode)
         {
@@ -1042,7 +1050,7 @@ namespace MAM.Views.MediaBinViews
                 ViewModel.MediaLibraryObj.BinName = Path.Combine(((FileSystemItem)FileTreeView.SelectedNode.Content).Path, ((FileSystemItem)FileTreeView.SelectedNode.Content).Name);
             if (!string.IsNullOrEmpty(ViewModel.MediaLibraryObj.BinName))
             {
-                AddNewAssetWindow.ShowWindow(ViewModel);
+                AddNewAssetWindow.ShowWindow(ViewModel, async () => await LoadAssetsAsync());
             }
             else
             {
@@ -1375,11 +1383,7 @@ namespace MAM.Views.MediaBinViews
 
         private async void RefreshMediaLibrary_Click(object sender, RoutedEventArgs e)
         {
-            if (FileTreeView.SelectedNode != null)
-                if (((FileSystemItem)FileTreeView.SelectedNode.Content) != null)
-                {
-                    await LoadAssetsAsync();
-                }
+               await LoadAssetsAsync();
 
         }
 
