@@ -52,9 +52,110 @@
             <MenuFlyoutItem x:Name="MakeQCMenuItem" Text="Make QC" Icon="Favorite" Click="MakeQC_Click" IsEnabled="False"  />
         </MenuFlyout>
 
+        <!-- Grid View Template -->
+        <DataTemplate x:Key="GridViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Background="Transparent" Padding="1"  >
+                <local1:CustomBinMedia MediaItem="{Binding}" />
+            </Border>
+        </DataTemplate>
+
+
+        <!-- List View Template -->
+        <DataTemplate x:Key="ListViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Padding="1" HorizontalAlignment="Stretch" Background="Transparent">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Thumbnail -->
+                    <Image Source="{x:Bind ThumbnailPath}"
+                   Width="100" Height="60"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Left" />
+
+                    <!-- Text Content -->
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left">
+                        <TextBlock Text="{x:Bind Title}"
+                           FontSize="14"
+                           TextWrapping="WrapWholeWords"
+                           TextAlignment="Left"
+                           HorizontalAlignment="Left"
+                           Width="300"/>
+                        <!-- Add more info if needed -->
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <!-- Tile View Template -->
+        <DataTemplate x:Key="TileViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Padding="10" HorizontalAlignment="Stretch" Background="Transparent">
+                <StackPanel Width="200" Height="150" Padding="10">
+                    <Image Source="{x:Bind ThumbnailPath}" Stretch="UniformToFill" Height="100"/>
+                    <TextBlock Text="{x:Bind Title}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- Details View Template -->
+        <DataTemplate x:Key="DetailsViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Padding="1" HorizontalAlignment="Stretch" Background="Transparent">
+
+                <Grid Padding="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="50" />
+                        <ColumnDefinition Width="500"/>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Grid.Column="0" Source="{x:Bind ThumbnailPath}" Width="40" Height="40" />
+                    <TextBlock Grid.Column="1" 
+                           Text="{x:Bind Title}" 
+                           FontSize="14"
+                           VerticalAlignment="Center" 
+                           Padding="5,0,5,0" 
+                           TextWrapping="Wrap"
+                           TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" 
+                           Text="{x:Bind MediaPath}" 
+                           VerticalAlignment="Center" 
+                           FontStyle="Italic" 
+                           Padding="5,0,5,0"
+                           TextWrapping="Wrap"
+                           TextTrimming="CharacterEllipsis"/>
+                    <DropDownButton Grid.Column="3" 
+                                x:Name="TagsDropDown"
+                                Width="150" 
+                                HorizontalContentAlignment="Left"
+                                Background="Transparent"
+                                BorderThickness="1"
+                                BorderBrush="#221100"
+                                Content="{x:Bind Tags[0], Mode=OneWay}">
+                        <DropDownButton.Flyout >
+                            <Flyout x:Name="TagsFlyOut" 
+                                Placement="BottomEdgeAlignedLeft" 
+                                Opening="TagsFlyout_Opening"  >
+                                <ListView x:Name="TagsListView" 
+                                      ItemsSource="{x:Bind Tags}"
+                                      HorizontalContentAlignment="Left">
+                                </ListView>
+                            </Flyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <local:MediaTemplateSelector x:Key="MediaTemplateSelector"
+                                 GridViewTemplate="{StaticResource GridViewTemplate}"
+                                 ListViewTemplate="{StaticResource ListViewTemplate}"
+                                 TileViewTemplate="{StaticResource TileViewTemplate}"
+                                 DetailsViewTemplate="{StaticResource DetailsViewTemplate}" />
     </Page.Resources>
 
-  
+
     <Grid x:Name="MainGrid" Background="{StaticResource ThemePrimaryBackgroundColor}" Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="LeftColumn" Width="300"/>
@@ -169,6 +270,7 @@
             <Grid x:Name="CenterGrid"  Width="auto" VerticalAlignment="Top" >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="50"/>
+                    <RowDefinition Height="20"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="20"/>
@@ -198,13 +300,28 @@
               SelectedIndex="{x:Bind ViewModel.SelectedPageIndex, Mode=TwoWay}">
                     <FlipView.ItemTemplate>
                         <DataTemplate x:DataType="local:MediaLibraryViewModel">-->
+                <Grid Grid.Row="1" x:Name="DetailsHeader"  Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80" />
+                        <ColumnDefinition Width="500"/>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <GridView x:Name="MediaBinGridView"  Grid.Row="1"
+                    <TextBlock Grid.Column="0" Text="" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="Title" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text=" Path" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="Tags" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                </Grid>
+
+
+                <GridView x:Name="MediaBinGridView"  Grid.Row="2" 
                             ItemsSource="{x:Bind ViewModel.PagedMediaPlayerItems,Mode=TwoWay}"
+                            ItemTemplateSelector="{StaticResource MediaTemplateSelector}"
                             Height="560"
                             Width="1200"
                             ContextFlyout="{StaticResource AssetMenuFlyout}"
-                            SelectionMode="Single"
+                            SelectionMode="Extended"
                             SelectionChanged="MediaBinGridView_SelectionChanged"
                             PointerPressed="MediaBinGridView_PointerPressed"
                             DoubleTapped="MediaBinGridView_DoubleTapped"
@@ -212,16 +329,103 @@
                             AllowDrop="True"
                             DragOver="DgvFiles_DragOver"
                             Drop="DgvFiles_Drop">
+                    <GridView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsWrapGrid Orientation="Horizontal"
+                                           MaximumRowsOrColumns="0" />
+                        </ItemsPanelTemplate>
+                    </GridView.ItemsPanel>
+                    <GridView.ItemContainerStyle>
+                        <Style TargetType="GridViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="GridViewItem">
+                                        <Border x:Name="RootBorder"
+                                                Background="Transparent"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="4">
 
-                    <GridView.ItemTemplate>
-                        <DataTemplate x:DataType="local:MediaPlayerItem">
-                            <Border>
-                                <local1:CustomBinMedia x:Name="customMediaPlayer" MediaItem="{Binding}" Loaded="CustomMediaPlayer_Loaded"  />
-                            </Border>
-                        </DataTemplate>
-                    </GridView.ItemTemplate>
+                                            <ContentPresenter />
+
+                                            <!-- 👇 VisualStates now inside the Border -->
+                                            <VisualStateManager.VisualStateGroups>
+                                                <VisualStateGroup x:Name="CommonStates">
+                                                    <VisualState x:Name="Normal"/>
+
+                                                    <VisualState x:Name="PointerOver">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="RootBorder.Background" Value="DarkGray"/>
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+
+                                                    <VisualState x:Name="Pressed">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="RootBorder.Background" Value="DarkGray"/>
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+
+                                                    <VisualState x:Name="Selected">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="RootBorder.Background" Value="DeepSkyBlue" />
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+
+                                                    <VisualState x:Name="PointerOverSelected">
+                                                        <VisualState.Setters>
+                                                            <Setter Target="RootBorder.Background" Value="DodgerBlue"/>
+                                                        </VisualState.Setters>
+                                                    </VisualState>
+                                                </VisualStateGroup>
+
+                                            </VisualStateManager.VisualStateGroups>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="UseSystemFocusVisuals" Value="False"/>
+
+                        </Style>
+                    </GridView.ItemContainerStyle>
+
+
                 </GridView>
-                <StackPanel x:Name="PageNumberPanel" Grid.Row="2" Orientation="Horizontal"
+                <ComboBox x:Name="ViewModeComboBox" Grid.Row="3"
+          Width="50"
+          SelectionChanged="ViewModeComboBox_SelectionChanged"
+          HorizontalAlignment="Right">
+
+                    <ComboBoxItem Tag="Grid" IsSelected="True" >
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf009;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Grid "/>
+                        </StackPanel>
+                    </ComboBoxItem>
+                    <ComboBoxItem Tag="Tile"  >
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf00a;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Tile "/>
+                        </StackPanel>
+                    </ComboBoxItem>
+                    <ComboBoxItem Tag="List">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf03a;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="List "/>
+                        </StackPanel>
+                    </ComboBoxItem>
+
+                    <ComboBoxItem Tag="Details">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf022;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Details "/>
+                        </StackPanel>
+                    </ComboBoxItem>
+                </ComboBox>
+
+
+
+                <StackPanel x:Name="PageNumberPanel" Grid.Row="3" Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             Margin="0,10,0,0"
                             Spacing="2">
@@ -377,36 +581,7 @@
                                     <FontIcon Glyph="&#xf002;" FontSize="12" />
                                 </Button>
                             </StackPanel>
-                            <!--<TextBlock Text="Keywords" HorizontalAlignment="Left"/>
-                            <StackPanel Orientation="Horizontal" Spacing="5"  Margin="0,-15,0,0">
-                                <TextBox x:Name="KeywordsFilterTextbox"  Text="{Binding FilterKeyword, Mode=TwoWay}" 
-                                                 Width="180" PlaceholderText="Search by Keywords" 
-                                                 KeyDown="KeywordsFilterTextbox_KeyDown"/>
-                                <Button Style="{StaticResource SmallIconButton}"  Click="KeywordButton_Click" Margin="0,4,0,0"
-                                                VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Search by Keywords">
-                                    <FontIcon Glyph="&#xf002;" FontSize="12" />
-                                </Button>
-                            </StackPanel>
-                            <TextBlock Text="Description" HorizontalAlignment="Left"/>
-                            <StackPanel Orientation="Horizontal" Spacing="5"  Margin="0,-15,0,0">
-                                <TextBox x:Name="DescriptionFilterTextbox" Text="{Binding FilterDescription,Mode=TwoWay}" Width="180" PlaceholderText="Search by description" 
-                                         KeyDown="DescriptionFilterTextbox_KeyDown"/>
-                                <Button Style="{StaticResource SmallIconButton}"  Click="DescriptionButton_Click" Margin="0,4,0,0"
-                                            VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Search by description">
-                                    <FontIcon Glyph="&#xf002;" FontSize="12" />
-                                </Button>
-                            </StackPanel>
-                            <TextBlock Text="Rating" HorizontalAlignment="Left"/>
-                            <StackPanel Orientation="Horizontal" Spacing="5"  Margin="0,-15,0,0">
-                                <RatingControl  AutomationProperties.Name="Simple RatingControl" IsClearEnabled="True" Width="200"  FontSize="20"
-                                                       ValueChanged="RatingControl_ValueChanged"/>
-                                <TextBlock Text="{Binding RatingCaption}" FontSize="14" FontWeight="Light" VerticalAlignment="Top" Margin="10,5,0,0" Width="50" />
 
-                                <Button Style="{StaticResource SmallIconButton}"  Click="RatingButton_Click" 
-                                            VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Search by rating">
-                                    <FontIcon Glyph="&#xf002;" FontSize="12" />
-                                </Button>
-                            </StackPanel>-->
                             <ListView ItemsSource="{Binding MetadataList}" SelectionMode="None" Margin="-2,-15,0,0" Padding="-15,0,-15,0" >
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="local:AssetsMetadata">

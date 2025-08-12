@@ -3,6 +3,7 @@ using MAM.UserControls;
 using MAM.Utilities;
 using MAM.Views.AdminPanelViews;
 using MAM.Views.AdminPanelViews.Metadata;
+using MAM.Views.MediaBinViews.AssetMetadata;
 using MAM.Windows;
 using Microsoft.UI;
 using Microsoft.UI.Input;
@@ -24,6 +25,7 @@ using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.System;
+using WinRT;
 using Path = System.IO.Path;
 using Type = System.Type;
 // To learn more about WinUI, the WinUI project structure,
@@ -222,6 +224,31 @@ namespace MAM.Views.MediaBinViews
                 };
             }
         }
+        private void ViewModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ViewModeComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                string viewMode = selectedItem.Tag as string;
+
+                if (Resources["MediaTemplateSelector"] is MediaTemplateSelector selector)
+                {
+                    selector.CurrentViewMode = viewMode;
+                    MediaBinGridView.ItemTemplateSelector = null; // Force refresh
+                    MediaBinGridView.ItemTemplateSelector = selector;
+                }
+                // Show/hide header depending on view mode
+                if (viewMode == "Details")
+                {
+                    DetailsHeader.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    DetailsHeader.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        
 
         private bool _isDraggingLeftVertical;
         private bool _isDraggingRightVertical;
@@ -1214,6 +1241,21 @@ namespace MAM.Views.MediaBinViews
                 ViewModel.TagsList.Add(row[1].ToString());
             }
         }
+        //private void GetAssetTags()
+        //{
+        //    DataTable dt = new DataTable();
+        //    dt = dataAccess.GetData($"select t.tag_id,t.tag_name from tag t inner join asset_tag a on t.tag_id=a.tag_id where a.asset_id={Asset.Media.MediaId}");
+        //    ViewModel.AssetTags.Clear();
+        //    foreach (DataRow row in dt.Rows)
+        //    {
+        //        ViewModel.AssetTags.Add(new Tag
+        //        {
+        //            TagId = Convert.ToInt32(row[0]),
+        //            TagName = row[1].ToString(),
+        //        });
+        //        ViewModel.HasTags = ViewModel.AssetTags.Any();
+        //    }
+        //}
 
 
         private void TagAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -2019,6 +2061,21 @@ namespace MAM.Views.MediaBinViews
             }
             return null;
         }
+
+        private void TagsFlyout_Opening(object sender, object e)
+        {
+            if (sender is Flyout flyout && flyout.Content is ListView listView)
+            {
+                bool hasValidTags = listView.Items.Count > 0 &&
+                                    listView.Items.Cast<object>()
+                                                   .Any(item => !string.IsNullOrWhiteSpace(item?.ToString()));
+
+                if (!hasValidTags)
+                {
+                    (sender as Flyout)?.Hide();
+                }
+            }
+        }
     }
     public class MediaPlayerItem : ObservableObject, IEquatable<MediaPlayerItem>
     {
@@ -2043,6 +2100,7 @@ namespace MAM.Views.MediaBinViews
         private List<string> keywords;
         private double rating = 0;
         private bool isArchived = false;
+
         public int MediaId
         {
             get => mediaId;
@@ -2287,6 +2345,13 @@ namespace MAM.Views.MediaBinViews
         private MediaPlayerItem selectedItem;
         private List<MediaPlayerItem> _filteredItems = new();
         private ObservableCollection<MediaPlayerItem> _pagedMediaPlayerItems = new();
+        private MediaViewMode _currentViewMode = MediaViewMode.Grid;
+        public MediaViewMode CurrentViewMode
+        {
+            get => _currentViewMode;
+            set => SetProperty(ref _currentViewMode, value); // Assuming ObservableObject
+        }
+
         public MediaPlayerItem SelectedItem
         {
             get => selectedItem;
@@ -2594,6 +2659,34 @@ namespace MAM.Views.MediaBinViews
             throw new NotImplementedException(); // One-way binding only
         }
     }
+    public enum MediaViewMode
+    {
+        Grid,
+        List,
+        Details
+    }
+    public class MediaTemplateSelector : DataTemplateSelector
+    {
+        public DataTemplate GridViewTemplate { get; set; }
+        public DataTemplate ListViewTemplate { get; set; }
+        public DataTemplate TileViewTemplate { get; set; }
+        public DataTemplate DetailsViewTemplate { get; set; }
+
+        public string CurrentViewMode { get; set; } = "Grid"; // Default
+
+        protected override DataTemplate SelectTemplateCore(object item)
+        {
+            return CurrentViewMode switch
+            {
+                "Grid" => GridViewTemplate,
+                "List" => ListViewTemplate,
+                "Tile" => TileViewTemplate,
+                "Details" => DetailsViewTemplate,
+                _ => GridViewTemplate,
+            };
+        }
+    }
+
 
 
 }
