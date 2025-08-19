@@ -48,8 +48,6 @@ namespace MAM.Windows
         private bool isSeeking;// To prevent conflicts between playback and seeking
 
         public MediaPlayerViewModel ViewModel { get; }
-        // public static Uri MediaPath { get; private set; }
-        //  public static MediaPlayerItem MediaItem { get; private set; }
         private bool _isDraggingLeft = false;
         private bool _isDraggingRight = false;
         private double _startX;
@@ -133,19 +131,9 @@ namespace MAM.Windows
             mediaPlayer.PlaybackSession.PlaybackStateChanged += MediaPlayer_PlaybackStateChanged;
             mediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
             mediaPlayer.VolumeChanged += MediaPlayer_VolumeChanged;
-            //Canvas.SetZIndex(TxtClipName, -1);
-          
-            // GetAllMetadata();
-            //mediaPlayer.MediaEnded += (s, e) =>
-            //{
-            //    DispatcherQueue.TryEnqueue(() =>
-            //    {
-            //        AudioWaveGif.Visibility = Visibility.Collapsed;
-            //    });
-            //};
+           
             TxtClipName.TextWrapping = TextWrapping.Wrap;
             this.Activated += AssetWindow_Activated;
-            // this.Closed += AssetWindow_Closed;
             this.Closed += (s, e) =>
             {
                 Debug.WriteLine("🚪 AssetWindow.Closed fired");
@@ -394,16 +382,10 @@ namespace MAM.Windows
 
         public static void ShowWindow(MediaPlayerItem mediaPlayerItem, ObservableCollection<MediaPlayerItem> mediaPlayerItemList, Action onMetadataUpdated = null)
         {
-            //_instance.Closed += (s, e) =>
-            //{
-            //    _instance.DisposeResources(); // ✅ Ensures audio is stopped
-            //    _instance = null;             // ✅ Ensures clean reuse next time
-            //};
+           
             if (_instance == null)
             {
                 _instance = new AssetWindow(mediaPlayerItem, mediaPlayerItemList);
-                _instance.ViewModel.MetadataUpdatedCallback = onMetadataUpdated;
-               
                 _instance.Activate();
 
                 IntPtr hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_instance);
@@ -418,7 +400,6 @@ namespace MAM.Windows
             }
             else
             {
-                _instance.ViewModel.MetadataUpdatedCallback = onMetadataUpdated;
              
                 _instance.Activate();
 
@@ -432,9 +413,11 @@ namespace MAM.Windows
                 //SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
                 //SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             }
+            _instance.ViewModel.MetadataUpdatedCallback = onMetadataUpdated;
+
         }
 
-      
+
         private void Window_Closed(object sender, WindowEventArgs args)
         {
             ////isClosing = true;

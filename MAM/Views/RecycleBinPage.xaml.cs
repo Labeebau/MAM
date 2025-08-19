@@ -25,6 +25,9 @@ using System.Data;
 using Microsoft.UI.Xaml.Shapes;
 using Path = System.IO.Path;
 using MySql.Data.MySqlClient;
+using Microsoft.UI.Input;
+using Windows.System;
+using Windows.UI.Core;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -282,14 +285,56 @@ namespace MAM.Views
 
         private void MediaBinGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            var gridView = sender as GridView;
+            ViewModel.SelectedItems = new ObservableCollection<RecycleBinMediaPlayerItem>();
+            foreach (var item in gridView.SelectedItems)
+            {
+                RecycleBinMediaPlayerItem mediaPlayerItem = item as RecycleBinMediaPlayerItem;
+                ViewModel.SelectedItems.Add(mediaPlayerItem);
+            }
         }
 
         private void MediaBinGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            MediaBinGridView.Focus(FocusState.Programmatic);
+            var gridView = sender as GridView;
+            if (gridView == null) return;
+            // Get the clicked point relative to the GridView
+            var point = e.GetCurrentPoint(gridView).Position;
+            // Access the items panel (for layout information)
+            var itemsPanel = gridView.ItemsPanelRoot as Panel;
+            if (itemsPanel != null)
+            {
+                foreach (var item in gridView.Items)
+                {
+                    var container = gridView.ContainerFromItem(item) as GridViewItem;
+                    if (container != null)
+                    {
+                        var transform = container.TransformToVisual(gridView);
+                        var containerBounds = transform.TransformBounds(new Rect(0, 0, container.ActualWidth, container.ActualHeight));
 
+                        if (containerBounds.Contains(point))
+                        {
+                            return; // Click was on an item, do not clear selection
+                        }
+                    }
+                }
+
+                // Click was not on any item — clear selection
+                gridView.SelectedItem = null;
+            }
         }
+        //private void MediaBinGridView_KeyDown(object sender, KeyRoutedEventArgs e)
+        //{
+        //    var ctrlState = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
+        //    bool isCtrlDown = ctrlState.HasFlag(CoreVirtualKeyStates.Down);
 
+        //    if (e.Key == VirtualKey.A && isCtrlDown)
+        //    {
+        //        MediaBinGridView.SelectAll();
+        //        e.Handled = true;
+        //    }
+        //}
         private void MediaBinGridView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
 
@@ -297,6 +342,19 @@ namespace MAM.Views
 
         private void MediaBinGridView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
+            if (ViewModel.SelectedItems != null)
+            {
+                if (ViewModel.SelectedItems.Count > 0)
+                {
+                    DeleteMenuItem.IsEnabled = true;
+                    RestoreMenuItem.IsEnabled = true;
+                }
+                else
+                {
+                    DeleteMenuItem.IsEnabled = false;
+                    RestoreMenuItem.IsEnabled = false;
+                }
+            }
 
         }
 
@@ -323,8 +381,6 @@ namespace MAM.Views
                 string recycleBinFolder = ViewModel.MediaLibraryObj.RecycleBinFolder;
                 if (Directory.Exists(recycleBinFolder))
                 {
-
-                    
                     string mediaLibraryPath = Path.GetDirectoryName(mediaItem.MediaLibraryPath);
                     if (!Directory.Exists(mediaLibraryPath))
                         Directory.CreateDirectory(mediaLibraryPath);
@@ -346,7 +402,7 @@ namespace MAM.Views
 
                     int res = await dataAccess.UpdateRecord("Asset", "asset_id", mediaItem.MediaId, propsList);
                     ViewModel.RecycleBinMediaPlayerItems.Remove(mediaItem);
-                    ViewModel.ApplyFilter();
+                    //ViewModel.ApplyFilter();
                     await GlobalClass.Instance.AddtoHistoryAsync("Restore", $"Restored asset '{mediaItem.Title}' .");
                 }
                 else
@@ -381,7 +437,7 @@ namespace MAM.Views
             if (ViewModel.RecycleBinMediaPlayerItems.Contains(item))
             {
                 ViewModel.RecycleBinMediaPlayerItems.Remove(item);
-                ViewModel.ApplyFilter();
+                //ViewModel.ApplyFilter();
                 try
                 {
                     File.Delete(item.RecycleBinPath);
@@ -418,13 +474,34 @@ namespace MAM.Views
                 return affectedRows;
             }
         }
+
+        private async void Restore_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var mediaItem in ViewModel.SelectedItems)
+            {
+                await RestoreMediaItemAsync(mediaItem);
+            }
+            ViewModel.ApplyFilter();
+        }
+
+        private async void Delete_Click(object sender, RoutedEventArgs e)
+        {
+            var result = await GlobalClass.Instance.ShowDialogAsync($"Are you sure that you want to permanently delete the selected items ? ", this.XamlRoot, "Delete", "Cancel", "Delete Confirmation");
+            if (result == ContentDialogResult.Primary)
+            {
+                foreach (var mediaItem in ViewModel.SelectedItems)
+                {
+                    await DeleteFileAsync(mediaItem);
+                }
+            }
+            ViewModel.ApplyFilter();
+        }
     }
     public class RecycleBinMediaPlayerItem : ObservableObject
     {
         private string recycleBinPath;
         private string thumbnailPath;
         private string recyclebinThumbnailPath;
-
         private string title;
         private int mediaId;
         private string mediaLibraryPath;
@@ -485,13 +562,13 @@ namespace MAM.Views
         private int pageSize;
         private int _currentPageIndex;
         private int _selectedPageIndex;
-        private RecycleBinMediaPlayerItem selectedItem;
+        private ObservableCollection<RecycleBinMediaPlayerItem> selectedItems;
         private List<RecycleBinMediaPlayerItem> _filteredItems = new();
         private ObservableCollection<RecycleBinMediaPlayerItem> _pagedRecycleBinRecycleBinMediaPlayerItems = new();
-        public RecycleBinMediaPlayerItem SelectedItem
+        public ObservableCollection<RecycleBinMediaPlayerItem> SelectedItems
         {
-            get => selectedItem;
-            set { SetProperty(ref selectedItem, value); }
+            get => selectedItems;
+            set { SetProperty(ref selectedItems, value); }
         }
         public string Path
         {

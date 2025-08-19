@@ -6,10 +6,8 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Shapes;
 using System.Collections.ObjectModel;
 using System.Data;
-using Windows.Graphics;
 using Path = System.IO.Path;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -23,13 +21,13 @@ namespace MAM.Windows
     public sealed partial class SendToArchiveWindow : Window
     {
         private static SendToArchiveWindow _instance;
-        public SendToArchiveViewModel ViewModel { get; set; }
-        public ObservableCollection<SendToArchiveViewModel> ArchiveList { get; set; } = new();
-        private DataAccess dataAccess { get; } = new DataAccess();
-        public MediaPlayerItem Asset { get; set; }
-        public ArchiveServer ArchiveServer { get; set; }
 
-        public SendToArchiveWindow(MediaPlayerItem media)
+        private DataAccess dataAccess { get; } = new DataAccess();
+        // public ObservableCollection< MediaPlayerItem> ArchiveList { get; set; }
+        public ArchiveServer ArchiveServer { get; set; }
+        public SendToArchiveViewModel ViewModel { get; }
+
+        public SendToArchiveWindow(ObservableCollection<MediaPlayerItem> medias)
         {
             this.InitializeComponent();
             var titleBar = AppWindow.TitleBar;
@@ -39,76 +37,85 @@ namespace MAM.Windows
             // Set the foreground colors (text/icons) for active and inactive states
             titleBar.ForegroundColor = Colors.White;
             titleBar.InactiveForegroundColor = Colors.Gray;
-
             GlobalClass.Instance.DisableMaximizeButton(this);
-            GlobalClass.Instance.SetWindowSizeAndPosition(600, 400,this);
-            this.Activated += SendToArchiveWindow_Activated; ;
+            GlobalClass.Instance.SetWindowSizeAndPosition(600, 600, this);
+            this.Activated += SendToArchiveWindow_Activated;
+            // Convert the incoming MediaPlayerItem list to MediaPlayerArchiveViewModel list
+            var archiveViewModels = new ObservableCollection<MediaPlayerArchiveViewModel>(
+                medias.Select(item => new MediaPlayerArchiveViewModel(item))
+            );
 
-            Asset = media;
-            ViewModel = new SendToArchiveViewModel
-            {
-                MediaPath = media.MediaSource.LocalPath,
-                ArchivePath = GlobalClass.Instance.ArchivePath,
-                AssetId = media.MediaId
-            };
+            ViewModel = new SendToArchiveViewModel(archiveViewModels);
 
-            ViewModel.ArchiveList.Add(ViewModel);
             MainGrid.DataContext = ViewModel;
         }
 
-        private  void SendToArchiveWindow_Activated(object sender, WindowActivatedEventArgs args)
+        private void SendToArchiveWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
-            if(args.WindowActivationState==WindowActivationState.Deactivated) return;
+            if (args.WindowActivationState == WindowActivationState.Deactivated) return;
             //ArchiveServer =await GlobalClass.Instance.GetArchiveServer(this.Content.XamlRoot);
             //GlobalClass.Instance.ArchivePath=Path.Combine(ArchiveServer.ServerName, ArchiveServer.ArchivePath);
-            if(!File.Exists(GlobalClass.Instance.ArchivePath))
-            ArchiveDropDown.Content = GlobalClass.Instance.ArchivePath;
+            if (!File.Exists(GlobalClass.Instance.ArchivePath))
+                ArchiveDropDown.Content = GlobalClass.Instance.ArchivePath;
         }
 
-        public static void ShowWindow(MediaPlayerItem media)
+        public static void ShowWindow(ObservableCollection<MediaPlayerItem> medias, Action onAarchived)
         {
-          
-            _instance = new SendToArchiveWindow(media);
+
+            _instance = new SendToArchiveWindow(medias);
             _instance.Activate(); // Show the window
+            _instance.ViewModel.ArchiveUpdatedCallback = onAarchived;
+
         }
-       
+
         private void Window_Closed(object sender, WindowEventArgs args)
         {
             _instance = null;
         }
-       
+
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            //GlobalClass.Instance.ArchivePath = Path.Combine(Asset.ArchivePath..FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder);
             try
             {
-                if (File.Exists(ViewModel.MediaPath))
+                var checkedItems = ViewModel.ArchiveList.Where(item => item.IsChecked).ToList();
+                foreach (var media in checkedItems)
                 {
-                    string title = Path.GetFileName(ViewModel.MediaPath);
-                    string archiveDirectory = Path.Combine(GlobalClass.Instance.ArchivePath, DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss"));
-                    Directory.CreateDirectory(archiveDirectory);
-                    string destinationPath =Path.Combine(archiveDirectory,title);
-                    Dictionary<string, object> propsList = new Dictionary<string, object>
+                    App.MainAppWindow.StatusBar.ShowStatus($"Archiving {media}...");
+                    if (File.Exists(media.Model.MediaSource.LocalPath))
                     {
-                        {"is_archived", true },
-                        {"archive_path",destinationPath }
-                    };
-                    File.Copy(ViewModel.MediaPath, destinationPath, false);
-                    File.Delete(ViewModel.MediaPath);
-                    
+                        if (!media.Model.IsArchived)
+                        {
+                            string title = media.Model.Title;
+                            string archiveDirectory = Path.Combine(GlobalClass.Instance.ArchivePath, DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss"));
+                            Directory.CreateDirectory(archiveDirectory);
+                            string destinationPath = Path.Combine(archiveDirectory, title);
+                            string destinationProxyPath = Path.Combine(archiveDirectory, Path.GetFileName(media.Model.ProxyPath));
 
-                    await dataAccess.UpdateRecord("Asset", "asset_id", ViewModel.AssetId, propsList);
-                    Asset.IsArchived = true;
-                    Asset.ArchivePath = destinationPath;
-                    await GlobalClass.Instance.AddtoHistoryAsync("Send to archive", $"Send asset '{ViewModel.MediaPath}' to archive .");
-                }
-                else
-                {
-                   await GlobalClass.Instance.ShowDialogAsync("The file does not exist.", this.Content.XamlRoot);
-                }
-                this.Close();
+                            File.Move(media.Model.MediaSource.LocalPath, destinationPath, false);
+                            File.Move(media.Model.ProxyPath, destinationProxyPath, false);
 
-            }
+                            Dictionary<string, object> propsList = new Dictionary<string, object>
+                            {
+                                {"proxy_path",archiveDirectory },
+                                {"is_archived", true },
+                                {"archive_path",archiveDirectory }
+                            };
+                            await dataAccess.UpdateRecord("Asset", "asset_id", media.Model.MediaId, propsList);
+                            // ViewModel.ArchiveUpdatedCallback?.Invoke(); // Call back to MediaLibraryPage
+                            media.Model.ProxyPath = destinationProxyPath;
+                            media.Model.IsArchived = true;
+                            media.Model.ArchivePath = destinationPath;
+                            await GlobalClass.Instance.AddtoHistoryAsync("Send to archive", $"Send asset '{media.Model.MediaPath}' to archive .");
+                        }
+                    }
+                    else
+                    {
+                        await GlobalClass.Instance.ShowDialogAsync($"The file{media.Model.MediaSource.LocalPath} does not exist.", this.Content.XamlRoot);
+                    }
+                }
+                    App.MainAppWindow.StatusBar.HideStatus();
+                    this.Close();
+                }
             catch (IOException ioEx)
             {
                 await GlobalClass.Instance.ShowDialogAsync($"File operation failed: {ioEx.Message}", this.Content.XamlRoot);
@@ -141,32 +148,46 @@ namespace MAM.Windows
             }
         }
     }
+    public class MediaPlayerArchiveViewModel : ObservableObject
+    {
+        private MediaPlayerItem model;
+        private bool isChecked = true;
+        public MediaPlayerItem Model
+        {
+            get => model;
+            set => SetProperty(ref model, value);
+        }
+        public bool IsChecked
+        {
+            get => isChecked;
+            set => SetProperty(ref isChecked, value);
+        }
+        public MediaPlayerArchiveViewModel(MediaPlayerItem model)
+        {
+            Model = model;
+        }
+
+    }
+
     public class SendToArchiveViewModel : ObservableObject
     {
-        private string mediaPath;
-        private string archivePath;
-        private int assetId;
-        private ObservableCollection<SendToArchiveViewModel> archiveList=new();
+        private bool isChecked;
+        private ObservableCollection<MediaPlayerArchiveViewModel> archiveList = new();
 
-        public int AssetId
-        {
-            get => assetId;
-            set => SetProperty(ref assetId, value);
-        }
-        public string MediaPath
-        {
-            get => mediaPath;
-            set => SetProperty(ref mediaPath, value);
-        }
-        public string ArchivePath
-        {
-            get => archivePath;
-            set => SetProperty(ref archivePath, value);
-        }
-        public ObservableCollection<SendToArchiveViewModel> ArchiveList
+        public ObservableCollection<MediaPlayerArchiveViewModel> ArchiveList
         {
             get => archiveList;
             set => SetProperty(ref archiveList, value);
         }
+        public SendToArchiveViewModel(ObservableCollection<MediaPlayerArchiveViewModel> mediaPlayerItems)
+        {
+            foreach (var item in mediaPlayerItems)
+            {
+                ArchiveList.Add(item);
+            }
+
+        }
+        public Action ArchiveUpdatedCallback { get; set; }
+
     }
 }

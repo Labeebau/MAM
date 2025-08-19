@@ -29,7 +29,7 @@
                               Glyph="&#xF187;"
                               Foreground="Red"
                               VerticalAlignment="Center"
-                              Visibility="{Binding MediaItem.IsArchived, Converter={StaticResource BooleanToVisibilityConverter}, Mode=OneWay}"
+                              Visibility="{x:Bind MediaItem.IsArchived, Converter={StaticResource BooleanToVisibilityConverter}}"
                               ToolTipService.ToolTip="Archived"/>
 
                     <TextBlock Text="{x:Bind viewModel.MediaObj.Duration, Mode=OneWay}"

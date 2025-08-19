@@ -3,7 +3,6 @@ using MAM.UserControls;
 using MAM.Utilities;
 using MAM.Views.AdminPanelViews;
 using MAM.Views.AdminPanelViews.Metadata;
-using MAM.Views.MediaBinViews.AssetMetadata;
 using MAM.Windows;
 using Microsoft.UI;
 using Microsoft.UI.Input;
@@ -25,7 +24,6 @@ using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.System;
-using WinRT;
 using Path = System.IO.Path;
 using Type = System.Type;
 // To learn more about WinUI, the WinUI project structure,
@@ -60,7 +58,7 @@ namespace MAM.Views.MediaBinViews
                 {
                     UpdatePageButtons();
                 }
-               
+
             };
             ViewModel.PaginationUpdated += UpdatePageButtons;
             DataContext = ViewModel;
@@ -248,7 +246,7 @@ namespace MAM.Views.MediaBinViews
             }
         }
 
-        
+
 
         private bool _isDraggingLeftVertical;
         private bool _isDraggingRightVertical;
@@ -509,6 +507,9 @@ namespace MAM.Views.MediaBinViews
                         DateTime updated_at = DateTime.MinValue;
                         string source = Path.Combine(row["asset_path"].ToString(), row["asset_name"].ToString());
                         bool isArchived = Convert.ToBoolean(row["is_archived"]);
+                        string archivePath = string.Empty;
+                        if (isArchived)
+                            archivePath = Path.Combine(row["archive_path"].ToString(), Path.GetFileName(file));
                         if (!File.Exists(source))
                         {
                             if ((File.Exists(proxyPath)) && !isArchived)
@@ -563,7 +564,7 @@ namespace MAM.Views.MediaBinViews
                             Rating = string.IsNullOrEmpty(rating) ? 0 : Convert.ToDouble(rating),
                             AssetMetadataList = metadataList,
                             IsArchived = isArchived,
-                            ArchivePath = row["archive_path"].ToString()
+                            ArchivePath = archivePath
                         });
 
                         // ViewModel.AllMediaPlayerItems.Add(ViewModel.MediaPlayerItems[ViewModel.MediaPlayerItems.Count - 1]);
@@ -612,7 +613,7 @@ namespace MAM.Views.MediaBinViews
                        $" left join tag t on t.tag_id=ta.tag_id" +
                        $" left join asset_metadata am on a.asset_id = am.asset_id" +
                        $" left join metadata m ON am.metadata_id = m.metadata_id" +
-                       $" WHERE a.asset_path = @Asset_path and a.asset_name=@Asset_name AND a.is_archived =false AND a.is_deleted=false" +
+                       $" WHERE a.asset_path = @Asset_path and a.asset_name=@Asset_name  AND a.is_deleted=false" +
                        " GROUP BY " +
                        " a.asset_id," +
                        " a.asset_name," +
@@ -630,7 +631,7 @@ namespace MAM.Views.MediaBinViews
                       " a.updated_at," +
                       " a.is_archived," +
                       " a.archive_path;";
-                //}
+                //AND a.is_archived =false
                 dt = dataAccess.GetData(query, parameters);
                 if (dt.Rows.Count > 0)
                 {
@@ -645,8 +646,6 @@ namespace MAM.Views.MediaBinViews
                     string proxyPath = Path.Combine(dt.Rows[0]["proxy_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Proxy.MP4");
                     string thumbnailPath = Path.Combine(dt.Rows[0]["thumbnail_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG");
 
-                    //string proxyPath = dt.Rows[0]["proxy_path"].ToString();
-                    //string thumbnailPath = dt.Rows[0]["thumbnail_path"].ToString();
                     TimeSpan duration = (TimeSpan)(dt.Rows[0]["duration"]);
                     string description = string.Empty;
                     string updated_user = string.Empty;
@@ -727,8 +726,8 @@ namespace MAM.Views.MediaBinViews
             //FileSystemItem selectedNode = (FileSystemItem)args.AddedItems.FirstOrDefault();
             //if (selectedNode != null && !selectedNode.IsEditing)
             //{
-                await LoadAssetsAsync();
-                ViewModel.Path = ViewModel.MediaLibraryObj.BinName;
+            await LoadAssetsAsync();
+            ViewModel.Path = ViewModel.MediaLibraryObj.BinName;
             //}
         }
         private void TreeViewItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
@@ -744,7 +743,7 @@ namespace MAM.Views.MediaBinViews
             if (FileTreeView.SelectedNode != null)
             {
                 FileSystemItem selectedNode = (FileSystemItem)FileTreeView.SelectedNode.Content;
-                if (selectedNode!= null && !selectedNode.IsEditing )
+                if (selectedNode != null && !selectedNode.IsEditing)
                 {
                     string dirName = new DirectoryInfo(selectedNode.Path).Name;
 
@@ -872,22 +871,28 @@ namespace MAM.Views.MediaBinViews
         }
         public async Task DeleteMediaItemAsync(MediaPlayerItem item)
         {
+            ContentDialogResult result = ContentDialogResult.None;
             if (SettingsService.Get<bool>(SettingKeys.MoveToRecycleBin, true))
             {
-                var result = await GlobalClass.Instance.ShowDialogAsync($"Do you want to delete \n\n '{item.Title}' ?", this.XamlRoot, "Delete", "Cancel", "Delete Confirmation");
+                result = await GlobalClass.Instance.ShowDialogAsync($"Do you want to delete \n\n '{item.Title}' ?", this.XamlRoot, "Delete", "Cancel", "Delete Confirmation");
                 if (result == ContentDialogResult.Primary)
                 {
                     await MoveItemToRecycleBinAsync(item);
                 }
+                else
+                    return;
             }
             else
             {
-                var result = await GlobalClass.Instance.ShowDialogAsync($"Are you sure that you want to permanently delete this file ? \n\n '{item.Title}' ?", this.XamlRoot, "Delete", "Cancel", "Delete Confirmation");
+                result = await GlobalClass.Instance.ShowDialogAsync($"Are you sure that you want to permanently delete this file ? \n\n '{item.Title}' ?", this.XamlRoot, "Delete", "Cancel", "Delete Confirmation");
                 if (result == ContentDialogResult.Primary)
                 {
                     await DeleteFilePermenantly(item);
                 }
+                else
+                    return;
             }
+            ViewModel.ApplyFilter();
         }
         private async Task MoveItemToRecycleBinAsync(MediaPlayerItem item)
         {
@@ -937,13 +942,13 @@ namespace MAM.Views.MediaBinViews
                     }
                     else
                     {
-                        
+
                         File.Move(item.ProxyPath, recycleBinProxyPath);
                     }
                 }
             }
             ViewModel.MediaPlayerItems.Remove(item);
-            ViewModel.ApplyFilter();
+            //ViewModel.ApplyFilter();
             Dictionary<string, object> propsList = new Dictionary<string, object>
                     {
                         {"is_deleted", true },
@@ -964,7 +969,7 @@ namespace MAM.Views.MediaBinViews
             if (ViewModel.MediaPlayerItems.Contains(item))
             {
                 ViewModel.MediaPlayerItems.Remove(item);
-                ViewModel.ApplyFilter();
+                //ViewModel.ApplyFilter();
                 try
                 {
                     File.Delete(Path.Combine(item.MediaPath, item.Title));
@@ -1006,14 +1011,22 @@ namespace MAM.Views.MediaBinViews
         {
 
         }
-        private void Delete_Click(object sender, RoutedEventArgs e)
+        private async void Delete_Click(object sender, RoutedEventArgs e)
         {
-
+            var result = await GlobalClass.Instance.ShowDialogAsync($"Do you want to delete selected items ?", this.XamlRoot, "Delete", "Cancel", "Delete Confirmation");
+            if (result == ContentDialogResult.Primary)
+            {
+                foreach (var item in ViewModel.SelectedItems)
+                {
+                    await MoveItemToRecycleBinAsync(item);
+                }
+            }
+            ViewModel.ApplyFilter();
         }
         private void DownloadProxy_Click(object sender, RoutedEventArgs e)
         {
             var gridView = sender as GridView;
-            MediaPlayerItem mediaPlayerItem = ViewModel.SelectedItem;//  (MediaPlayerItem)gridView.SelectedItem;
+            MediaPlayerItem mediaPlayerItem = ViewModel.SelectedItems[0];//  (MediaPlayerItem)gridView.SelectedItem;
             if (mediaPlayerItem != null)
             {
                 DownloadProxyWindow.ShowWindow(mediaPlayerItem);
@@ -1024,7 +1037,7 @@ namespace MAM.Views.MediaBinViews
         private void DownloadOriginalFile_Click(object sender, RoutedEventArgs e)
         {
             var gridView = sender as GridView;
-            MediaPlayerItem mediaPlayerItem = ViewModel.SelectedItem;// (MediaPlayerItem)gridView.SelectedItem;
+            MediaPlayerItem mediaPlayerItem = ViewModel.SelectedItems[0];// (MediaPlayerItem)gridView.SelectedItem;
             if (mediaPlayerItem != null)
             {
                 DownloadOriginalFile.ShowWindow(mediaPlayerItem);
@@ -1038,9 +1051,16 @@ namespace MAM.Views.MediaBinViews
         }
         private void SendToArchive_Click(object sender, RoutedEventArgs e)
         {
-            MediaPlayerItem mediaPlayerItem = ViewModel.SelectedItem;
-            if (mediaPlayerItem != null)
-                SendToArchiveWindow.ShowWindow(mediaPlayerItem);
+            ObservableCollection<MediaPlayerItem> mediaPlayerItems = ViewModel.SelectedItems;
+            if (mediaPlayerItems != null && mediaPlayerItems.Count > 0)
+                SendToArchiveWindow.ShowWindow(mediaPlayerItems, async () =>
+                {
+                    await LoadAssetsAsync();
+                });
+            //AssetWindow.ShowWindow(mediaPlayerItem, ViewModel.MediaPlayerItems, async () =>
+            //{
+            //    await GetAllAssetsAsync(ViewModel.MediaLibraryObj.BinName);
+            //});
         }
 
         private void SendToTarget_Click(object sender, RoutedEventArgs e)
@@ -1109,34 +1129,42 @@ namespace MAM.Views.MediaBinViews
         private async void MediaBinGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var gridView = sender as GridView;
-            ViewModel.SelectedItem = (MediaPlayerItem)gridView.SelectedItem;
+            ViewModel.SelectedItems = new ObservableCollection<MediaPlayerItem>();
+            foreach (var item in gridView.SelectedItems)
+            {
+                MediaPlayerItem mediaPlayerItem = item as MediaPlayerItem;
+                ViewModel.SelectedItems.Add(mediaPlayerItem);
+            }
+            // ViewModel.SelectedItems = (MediaPlayerItem)gridView.SelectedItems;
 
             // Enable or disable menu items based on selection state
-            bool isItemSelected = ViewModel.SelectedItem != null;
+            bool isItemSelected = ViewModel.SelectedItems != null && ViewModel.SelectedItems.Count == 1;
+            bool isMultipleItemsSelected = ViewModel.SelectedItems != null && ViewModel.SelectedItems.Count > 1;
 
-            ViewMenuItem.IsEnabled = isItemSelected;
-            RenameMenuItem.IsEnabled = isItemSelected;
-            DeleteMenuItem.IsEnabled = isItemSelected;
-            CutMenuItem.IsEnabled = isItemSelected;
-            MakeQCMenuItem.IsEnabled = isItemSelected;
-            if (ViewModel.SelectedItem != null)
+
+            //ViewMenuItem.IsEnabled = isItemSelected;
+            //RenameMenuItem.IsEnabled = isItemSelected;
+            //DeleteMenuItem.IsEnabled = isMultipleItemsSelected;
+            //CutMenuItem.IsEnabled = isMultipleItemsSelected;
+            //MakeQCMenuItem.IsEnabled = isItemSelected;
+            if (isItemSelected)
             {
-                MediaPlayerItem media = ViewModel.SelectedItem;
+                MediaPlayerItem media = ViewModel.SelectedItems[0];
                 ViewModel.MediaObj = await GetAssetsAsync(media);
-                //(MediaPlayerItem)MediaBinGridView.SelectedItem;
-                //viewModel.MediaObj.IsArchived = ((MediaPlayerItem)MediaBinGridView.SelectedItem).IsArchived;
+
                 if (ViewModel.MediaObj != null)
                 {
-                    UnarchiveItem.IsEnabled = ViewModel.MediaObj.IsArchived;
+                    //UnarchiveItem.IsEnabled = ViewModel.MediaObj.IsArchived;
                     if (ViewModel.MediaObj.IsArchived)
                         ViewModel.Path = GlobalClass.Instance.ArchivePath;
                     else
-                        ViewModel.Path = (ViewModel.SelectedItem).MediaPath;
+                        ViewModel.Path = (ViewModel.SelectedItems[0]).MediaPath;
                 }
             }
         }
         private void MediaBinGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            MediaBinGridView.Focus(FocusState.Programmatic);
             var gridView = sender as GridView;
             if (gridView == null) return;
             // Get the clicked point relative to the GridView
@@ -1164,16 +1192,27 @@ namespace MAM.Views.MediaBinViews
                 gridView.SelectedItem = null;
             }
         }
+        //private void MediaBinGridView_KeyDown(object sender, KeyRoutedEventArgs e)
+        //{
+        //    var ctrlState = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control);
+        //    bool isCtrlDown = ctrlState.HasFlag(CoreVirtualKeyStates.Down);
+
+        //    if (e.Key == VirtualKey.A && isCtrlDown)
+        //    {
+        //        MediaBinGridView.SelectAll();
+        //        e.Handled = true;
+        //    }
+        //}
 
 
         private async Task ShowAssetWindow()
         {
-            if (ViewModel.SelectedItem != null)
+            if (ViewModel.SelectedItems != null && ViewModel.SelectedItems.Count > 0)
             {
-                MediaPlayerItem mediaPlayerItem = await GetAssetsAsync(ViewModel.SelectedItem);
+                MediaPlayerItem mediaPlayerItem = await GetAssetsAsync(ViewModel.SelectedItems[0]);
                 AssetWindow.ShowWindow(mediaPlayerItem, ViewModel.MediaPlayerItems, async () =>
                 {
-                    await GetAllAssetsAsync(ViewModel.MediaLibraryObj.BinName);
+                    await LoadAssetsAsync();
                 });
             }
         }
@@ -1425,7 +1464,7 @@ namespace MAM.Views.MediaBinViews
 
         private async void RefreshMediaLibrary_Click(object sender, RoutedEventArgs e)
         {
-               await LoadAssetsAsync();
+            await LoadAssetsAsync();
 
         }
 
@@ -1461,7 +1500,7 @@ namespace MAM.Views.MediaBinViews
                 DownloadMenuItem.IsEnabled = false;
                 UnarchiveItem.IsEnabled = false;
             }
-            else
+            else if (gridView.SelectedItems.Count == 1)
             {
                 AddAssetMenuItem.IsEnabled = false;
                 AddNewBinMenuItem.IsEnabled = false;
@@ -1470,6 +1509,21 @@ namespace MAM.Views.MediaBinViews
                 DeleteMenuItem.IsEnabled = true;
                 UpdateMenuItem.IsEnabled = true;
                 AuthorizationMenuItem.IsEnabled = true;
+                CutMenuItem.IsEnabled = true;
+                CopyMenuItem.IsEnabled = true;
+                SendToMenuItem.IsEnabled = true;
+                DownloadMenuItem.IsEnabled = true;
+                UnarchiveItem.IsEnabled = true;
+            }
+            else if (gridView.SelectedItems.Count > 1)
+            {
+                AddAssetMenuItem.IsEnabled = false;
+                AddNewBinMenuItem.IsEnabled = false;
+                ViewMenuItem.IsEnabled = true;
+                RenameMenuItem.IsEnabled = false;
+                DeleteMenuItem.IsEnabled = true;
+                UpdateMenuItem.IsEnabled = false;
+                AuthorizationMenuItem.IsEnabled = false;
                 CutMenuItem.IsEnabled = true;
                 CopyMenuItem.IsEnabled = true;
                 SendToMenuItem.IsEnabled = true;
@@ -1561,34 +1615,101 @@ namespace MAM.Views.MediaBinViews
                 }
             }
         }
+        //private async Task RestoreMediaItemAsync(RecycleBinMediaPlayerItem mediaItem)
+        //{
+        //    try
+        //    {
 
+        //        string recycleBinFolder = ViewModel.MediaLibraryObj.RecycleBinFolder;
+        //        if (Directory.Exists(recycleBinFolder))
+        //        {
+        //            string mediaLibraryPath = Path.GetDirectoryName(mediaItem.MediaLibraryPath);
+        //            if (!Directory.Exists(mediaLibraryPath))
+        //                Directory.CreateDirectory(mediaLibraryPath);
+        //            string thumbnailPath = Path.GetDirectoryName(mediaItem.ThumbnailPath);
+        //            if (!Directory.Exists(thumbnailPath))
+        //                Directory.CreateDirectory(thumbnailPath);
+        //            string proxyPath = Path.GetDirectoryName(mediaItem.ProxyPath);
+        //            if (!Directory.Exists(proxyPath))
+        //                Directory.CreateDirectory(proxyPath);
+        //            Dictionary<string, object> props = new Dictionary<string, object> { { "@AssetId", mediaItem.MediaId } };
+        //            File.Move(mediaItem.RecycleBinPath, mediaItem.MediaLibraryPath);
+        //            File.Move(mediaItem.RecycleBinThumbnailPath, mediaItem.ThumbnailPath);
+        //            File.Move(mediaItem.RecycleBinProxyPath, mediaItem.ProxyPath);
+        //            Dictionary<string, object> propsList = new Dictionary<string, object>
+        //            {
+        //                {"is_deleted", false },
+        //                {"recyclebin_path",string.Empty }
+        //            };
+
+        //            int res = await dataAccess.UpdateRecord("Asset", "asset_id", mediaItem.MediaId, propsList);
+        //            ViewModel.RecycleBinMediaPlayerItems.Remove(mediaItem);
+        //            ViewModel.ApplyFilter();
+        //            await GlobalClass.Instance.AddtoHistoryAsync("Restore", $"Restored asset '{mediaItem.Title}' .");
+        //        }
+        //        else
+        //        {
+        //            await GlobalClass.Instance.ShowDialogAsync("The file does not exist.", this.Content.XamlRoot);
+        //        }
+        //    }
+        //    catch (IOException ioEx)
+        //    {
+        //        await GlobalClass.Instance.ShowDialogAsync($"File operation failed: {ioEx.Message}", this.Content.XamlRoot);
+        //    }
+        //    catch (UnauthorizedAccessException authEx)
+        //    {
+        //        await GlobalClass.Instance.ShowDialogAsync($"Permission error: {authEx.Message}", this.Content.XamlRoot);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await GlobalClass.Instance.ShowDialogAsync($"An error occurred: {ex.Message}", this.Content.XamlRoot);
+        //    }
+        //}
         private async void UnarchiveItem_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                string archiveFolder = Path.Combine(ViewModel.MediaLibraryObj.ArchiveServer.ServerName, ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath);
-                if (Directory.Exists(archiveFolder))
+                foreach (var mediaItem in ViewModel.SelectedItems)
                 {
-                    string destinationPath = Path.Combine(ViewModel.MediaObj.MediaPath, ViewModel.MediaObj.Title);
-                    File.Copy(ViewModel.MediaObj.ArchivePath, destinationPath, false);
-                    File.Delete(ViewModel.MediaObj.ArchivePath);
-                    Dictionary<string, object> propsList = new Dictionary<string, object>
+                    App.MainAppWindow.StatusBar.ShowStatus($"Unarchiving {mediaItem}...");
+                    string archiveFolder = Path.Combine(ViewModel.MediaLibraryObj.ArchiveServer.ServerName, ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath);
+                    if (Directory.Exists(archiveFolder))
                     {
-                        {"is_archived", false },
-                        {"archive_path",string.Empty }
-                    };
+                        if (mediaItem.IsArchived)
+                        {
+                            string proxyName = Path.GetFileNameWithoutExtension(mediaItem.Title) + "_Proxy.MP4";
+                            //string archivePath = Path.Combine(mediaItem.ArchivePath, mediaItem.Title);
+                            string destinationPath = Path.Combine(mediaItem.MediaPath, mediaItem.Title);
+                            //string archiveProxyPath = Path.Combine(mediaItem.ProxyPath,);
+                            string baseRoot = Directory.GetParent(ViewModel.MediaLibraryObj.FileServer.FileFolder).FullName;
+                            string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ThumbnailFolder), Path.GetDirectoryName(mediaItem.ThumbnailPath));
+                            string destinationProxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ProxyFolder, relativePath);
+                            Dictionary<string, object> propsList = new Dictionary<string, object>
+                            {   {"proxy_path",destinationProxyPath},
+                                {"is_archived", false },
+                                {"archive_path",string.Empty }
+                            };
+                            if (!Directory.Exists(destinationProxyPath))
+                                Directory.CreateDirectory(destinationProxyPath);
+                            File.Move(mediaItem.ArchivePath, destinationPath, false);
+                            destinationProxyPath = Path.Combine(destinationProxyPath, proxyName);
+                            File.Move(mediaItem.ProxyPath, destinationProxyPath, false);
 
-                    int res = await dataAccess.UpdateRecord("Asset", "asset_id", ViewModel.MediaObj.MediaId, propsList);
-                    if (res > 0)
+                            int res = await dataAccess.UpdateRecord("Asset", "asset_id", mediaItem.MediaId, propsList);
+                            if (res > 0)
+                            {
+                                await GlobalClass.Instance.AddtoHistoryAsync("Unarchive", $"Unarchived asset '{destinationPath}'.");
+                            }
+                        }
+                    }
+                    else
                     {
-                        ViewModel.MediaObj.IsArchived = false;
-                        await GlobalClass.Instance.AddtoHistoryAsync("Unarchive", $"Unarchived asset '{destinationPath}' .");
+                        await GlobalClass.Instance.ShowDialogAsync($"{archiveFolder} does not exist.", this.Content.XamlRoot);
                     }
                 }
-                else
-                {
-                    await GlobalClass.Instance.ShowDialogAsync("The file does not exist.", this.Content.XamlRoot);
-                }
+                App.MainAppWindow.StatusBar.HideStatus();
+                await LoadAssetsAsync();
+
             }
             catch (IOException ioEx)
             {
@@ -1812,7 +1933,7 @@ namespace MAM.Views.MediaBinViews
                     string relativeNewPath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder), newPath);  // "Songs\Hindi"
                     string proxyNewPath = Path.Combine(ViewModel.MediaLibraryObj.ProxyFolder, relativeNewPath);
                     string thumbnailNewPath = Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, relativeNewPath);
-                    if(Directory.Exists(thumbnailOldPath))
+                    if (Directory.Exists(thumbnailOldPath))
                         Directory.Move(thumbnailOldPath, thumbnailNewPath);
                     if (Directory.Exists(proxyOldPath))
                         Directory.Move(proxyOldPath, proxyNewPath);
@@ -2076,6 +2197,8 @@ namespace MAM.Views.MediaBinViews
                 }
             }
         }
+
+
     }
     public class MediaPlayerItem : ObservableObject, IEquatable<MediaPlayerItem>
     {
@@ -2342,7 +2465,7 @@ namespace MAM.Views.MediaBinViews
         private int pageSize;
         private int _currentPageIndex;
         private int _selectedPageIndex;
-        private MediaPlayerItem selectedItem;
+        private ObservableCollection<MediaPlayerItem> selectedItems;
         private List<MediaPlayerItem> _filteredItems = new();
         private ObservableCollection<MediaPlayerItem> _pagedMediaPlayerItems = new();
         private MediaViewMode _currentViewMode = MediaViewMode.Grid;
@@ -2352,10 +2475,10 @@ namespace MAM.Views.MediaBinViews
             set => SetProperty(ref _currentViewMode, value); // Assuming ObservableObject
         }
 
-        public MediaPlayerItem SelectedItem
+        public ObservableCollection<MediaPlayerItem> SelectedItems
         {
-            get => selectedItem;
-            set { SetProperty(ref selectedItem, value); }
+            get => selectedItems;
+            set { SetProperty(ref selectedItems, value); }
         }
         public string Path
         {
@@ -2560,7 +2683,10 @@ namespace MAM.Views.MediaBinViews
             if (SelectedPageIndex < TotalPages - 1)
                 SelectedPageIndex++;
         });
-
+        //public ICommand DeleteCommand => new RelayCommand(() =>
+        //{
+            
+        //});
     }
 
 

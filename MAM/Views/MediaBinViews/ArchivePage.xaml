@@ -9,7 +9,12 @@
     xmlns:local1="using:MAM.UserControls"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-
+    <Page.Resources>
+        <MenuFlyout x:Key="ArchiveMenuFlyout">
+            <MenuFlyoutItem x:Name="DeleteMenuItem" Text="Delete" Icon="Delete" Click="Delete_Click" IsEnabled="False"  />
+            <MenuFlyoutItem x:Name="UnArchiveMenuItem" Text="UnArchive" Icon="Refresh"  Click="UnArchive_Click" IsEnabled="False" />
+        </MenuFlyout>
+    </Page.Resources>
     <Grid x:Name="MainGrid" HorizontalAlignment="Left" Padding="10"  Width="auto">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -73,11 +78,12 @@
                                    VerticalAlignment="Top"
                                    Height="560"
                                    Width="1200"
+                                   SelectionMode="Extended"
+                                   ContextFlyout="{StaticResource ArchiveMenuFlyout}"
                                    SelectionChanged="MediaBinGridView_SelectionChanged"
                                    PointerPressed="MediaBinGridView_PointerPressed"
                                    DoubleTapped="MediaBinGridView_DoubleTapped"
                                    RightTapped="MediaBinGridView_RightTapped">
-
 
                             <GridView.ItemTemplate>
                                 <DataTemplate x:DataType="local:MediaPlayerItem">

@@ -365,7 +365,7 @@ namespace MAM.Windows
                                     };
                                     await DispatcherQueue.EnqueueAsync(() =>
                                     {
-                                        _onAssetAdded?.Invoke(); // Notify caller (MediaLibraryPage)
+                                        _onAssetAdded?.Invoke(); // Notify caller (MediaLibraryPage) to load the correct bin
 
                                         //viewModel.MediaLibraryObj.BinName = viewModel.MediaLibraryObj.BinName;
                                         //if (!viewModel.MediaPlayerItems.Contains(mediaItem))

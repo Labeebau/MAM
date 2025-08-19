@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Data;
 using Windows.Foundation;
@@ -82,10 +83,9 @@ namespace MAM.Views.MediaBinViews
                     {
                         ObservableCollection<AssetsMetadata> metadataList = new();
                         string file = row["asset_name"].ToString();
-                //string thumbnailPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ThumbnailFolder, "Thumbnail_" + System.IO.Path.GetFileNameWithoutExtension(file) + ".jpg");
-
-                ////string thumbnailPath = System.IO.Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, "Thumbnail_" + System.IO.Path.GetFileNameWithoutExtension(file) + ".jpg");
-                //string proxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName,ViewModel.MediaLibraryObj.ProxyFolder, "Proxy_" + (file));
+                string archivePath =Path.Combine(row["archive_path"].ToString(),file);
+                string proxyPath = Path.Combine(row["archive_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Proxy.MP4");
+                string thumbnailPath = Path.Combine(row["thumbnail_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG"); 
                 TimeSpan duration = (TimeSpan)(row["duration"]);
                 string description = string.Empty;
                         string updated_user = string.Empty;
@@ -163,14 +163,14 @@ namespace MAM.Views.MediaBinViews
                             CreationDate = DateOnly.FromDateTime(Convert.ToDateTime(row["created_at"]).Date),
                             UpdatedUser = updated_user,
                             LastUpdated = updated_at,
-                            ThumbnailPath = row["thumbnail_path"].ToString(),
-                            ProxyPath = row["proxy_path"].ToString(),
+                            ThumbnailPath = thumbnailPath,
+                            ProxyPath = proxyPath,
                             Tags = tags,
                             Keywords = keywords,
                             Rating = string.IsNullOrEmpty(rating) ? 0 : Convert.ToDouble(rating),
                             AssetMetadataList = metadataList,
                             IsArchived = isArchived,
-                            ArchivePath = row["archive_path"].ToString()
+                            ArchivePath = archivePath
                         });
 
                         ViewModel.AllMediaPlayerItems.Add(ViewModel.MediaPlayerItems[ViewModel.MediaPlayerItems.Count - 1]);
@@ -302,16 +302,18 @@ namespace MAM.Views.MediaBinViews
         }
         private void MediaBinGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Enable or disable menu items based on selection state
-            //bool isItemSelected = MediaBinGridView.SelectedItem != null;
-            //ViewMenuItem.IsEnabled = isItemSelected;
-            //RenameMenuItem.IsEnabled = isItemSelected;
-            //DeleteMenuItem.IsEnabled = isItemSelected;
-            //CutMenuItem.IsEnabled = isItemSelected;
-            //MakeQCMenuItem.IsEnabled = isItemSelected;
+            var gridView = sender as GridView;
+            ViewModel.SelectedItems = new ObservableCollection<MediaPlayerItem>();
+            foreach (var item in gridView.SelectedItems)
+            {
+                MediaPlayerItem mediaPlayerItem = item as MediaPlayerItem;
+                ViewModel.SelectedItems.Add(mediaPlayerItem);
+            }
         }
         private void MediaBinGridView_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            MediaBinGridView.Focus(FocusState.Programmatic);
+
             // Get the clicked point relative to the GridView
             var point = e.GetCurrentPoint(MediaBinGridView).Position;
 
@@ -338,6 +340,59 @@ namespace MAM.Views.MediaBinViews
                 }
                 // If no item bounds contained the click point, clear the selection
                 MediaBinGridView.SelectedItem = null;
+            }
+        }
+        private async void DeleteAsync()
+        {
+            var result = await GlobalClass.Instance.ShowDialogAsync($"Do you want to delete selected items ?", this.XamlRoot, "Delete", "Cancel", "Delete Confirmation");
+            if (result == ContentDialogResult.Primary)
+            {
+                foreach (var item in ViewModel.SelectedItems)
+                {
+                    App.MainAppWindow.StatusBar.ShowStatus($"Deleting{item} ...");
+                    await DeleteFilePermenantly(item);
+                }
+            }
+            ViewModel.MediaPlayerItems.Clear();
+            await GetAllAssetsAsync(GlobalClass.Instance.ArchivePath);
+        }
+        private async Task DeleteFilePermenantly(MediaPlayerItem item)
+        {
+            if (ViewModel.MediaPlayerItems.Contains(item))
+            {
+                ViewModel.MediaPlayerItems.Remove(item);
+                //ViewModel.ApplyFilter();
+                try
+                {
+                    File.Delete(Path.Combine(item.MediaPath, item.Title));
+                    File.Delete(item.ThumbnailPath);
+                    File.Delete(Path.Combine(item.ProxyPath));
+                    await DeleteAssetAsync(item.MediaId, item.Title, item.MediaPath);
+                    await GlobalClass.Instance.AddtoHistoryAsync("Asset Deleted Permenantly", $"Deleted asset '{ViewModel.MediaObj.MediaPath}' permenantly.");
+                }
+                catch (IOException ex)
+                {
+                    await GlobalClass.Instance.ShowDialogAsync($"File Deletion Error !!!\n {ex.ToString()}", this.XamlRoot);
+                }
+            }
+        }
+        private async Task<int> DeleteAssetAsync(int asset_Id, string assetName, string assetPath)
+        {
+            List<MySqlParameter> parameters = new();
+            parameters.Add(new MySqlParameter("@Asset_path", assetPath));
+            parameters.Add(new MySqlParameter("@Asset_name", assetName));
+            //int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and asset_path = @Asset_path;", parameters);
+            parameters.Add(new MySqlParameter("@Asset_id", asset_Id));
+            var (affectedRows, newId, errorMessage) = await dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters);
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                await GlobalClass.Instance.ShowDialogAsync("Deletion Failed.An unknown error occurred while trying to delete asset.", this.XamlRoot);
+                return -1;
+            }
+            else
+            {
+                //await GlobalClass.Instance.AddtoHistoryAsync("Delete from Library", $"Deleted '{assetPath}\\{assetName}' from library .");
+                return affectedRows;
             }
         }
         private readonly List<(string Tag, Type Page)> _pages = new List<(string Tag, Type Page)>
@@ -445,12 +500,80 @@ namespace MAM.Views.MediaBinViews
 
         private void MediaBinGridView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
-
+            if(ViewModel.SelectedItems!=null && ViewModel.SelectedItems.Count>0)
+            {
+                DeleteMenuItem.IsEnabled = true;
+                UnArchiveMenuItem.IsEnabled = true;
+            }
         }
 
         private void CustomMediaPlayer_Loaded(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void Delete_Click(object sender, RoutedEventArgs e)
+        {
+            DeleteAsync();
+            App.MainAppWindow.StatusBar.HideStatus();
+        }
+
+        private async void UnArchive_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                foreach (var mediaItem in ViewModel.SelectedItems)
+                {
+                    App.MainAppWindow.StatusBar.ShowStatus($"Unarchiving {mediaItem}...");
+                    string archiveFolder = GlobalClass.Instance.ArchivePath;
+                    if (Directory.Exists(archiveFolder))
+                    {
+                        string proxyName = Path.GetFileNameWithoutExtension(mediaItem.Title) + "_Proxy.MP4";
+                        //string archivePath = Path.Combine(mediaItem.ArchivePath, mediaItem.Title);
+                        string destinationPath = Path.Combine(mediaItem.MediaPath, mediaItem.Title);
+                        //string archiveProxyPath = Path.Combine(mediaItem.ProxyPath,);
+                        string baseRoot = Directory.GetParent(ViewModel.MediaLibraryObj.FileServer.FileFolder).FullName;
+                        string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ThumbnailFolder), Path.GetDirectoryName(mediaItem.ThumbnailPath));
+                        string destinationProxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ProxyFolder, relativePath);
+
+                        Dictionary<string, object> propsList = new Dictionary<string, object>
+                    {   {"proxy_path",destinationProxyPath},
+                        {"is_archived", false },
+                        {"archive_path",string.Empty }
+                    };
+                        if (!Directory.Exists(destinationProxyPath))
+                            Directory.CreateDirectory(destinationProxyPath);
+                        File.Move(mediaItem.ArchivePath, destinationPath, false);
+                        destinationProxyPath = Path.Combine(destinationProxyPath, proxyName);
+                        File.Move(mediaItem.ProxyPath, destinationProxyPath, false);
+
+                        int res = await dataAccess.UpdateRecord("Asset", "asset_id", mediaItem.MediaId, propsList);
+                        if (res > 0)
+                        {
+                            await GlobalClass.Instance.AddtoHistoryAsync("Unarchive", $"Unarchived asset '{destinationPath}'.");
+                        }
+                    }
+                    else
+                    {
+                        await GlobalClass.Instance.ShowDialogAsync("The file does not exist.", this.Content.XamlRoot);
+                    }
+                }
+                App.MainAppWindow.StatusBar.HideStatus();
+                ViewModel.MediaPlayerItems.Clear();
+                await GetAllAssetsAsync(GlobalClass.Instance.ArchivePath);
+            }
+            catch (IOException ioEx)
+            {
+                await GlobalClass.Instance.ShowDialogAsync($"File operation failed: {ioEx.Message}", this.Content.XamlRoot);
+            }
+            catch (UnauthorizedAccessException authEx)
+            {
+                await GlobalClass.Instance.ShowDialogAsync($"Permission error: {authEx.Message}", this.Content.XamlRoot);
+            }
+            catch (Exception ex)
+            {
+                await GlobalClass.Instance.ShowDialogAsync($"An error occurred: {ex.Message}", this.Content.XamlRoot);
+            }
         }
     }
     //public class MediaPlayerItem
@@ -470,7 +593,7 @@ namespace MAM.Views.MediaBinViews
         private string _filterDescription = string.Empty;
         private double _filterRating = -1;
         private string assetCount = string.Empty;
-        private MetadataClass selectedMetadata;
+        private ObservableCollection<MediaPlayerItem> selectedItems;
         public string RatingCaption { get; set; } = "& Up";
         private ObservableCollection<string> tagsList = new();
         public string Path
@@ -531,10 +654,10 @@ namespace MAM.Views.MediaBinViews
             get => selectedTag;
             set { SetProperty(ref selectedTag, value); ApplyFilter(); }
         }
-        public MetadataClass SelectedMetadata
+        public ObservableCollection<MediaPlayerItem> SelectedItems
         {
-            get => selectedMetadata;
-            set { SetProperty(ref selectedMetadata, value); ApplyFilter(); }
+            get => selectedItems;
+            set { SetProperty(ref selectedItems, value);  }
         }
         private ObservableCollection<MetadataClass> _metadataList = new();
         private AssetsMetadata _filterMetadata;

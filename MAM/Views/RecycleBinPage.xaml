@@ -12,7 +12,12 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     NavigationCacheMode="Enabled">
-
+    <Page.Resources>
+        <MenuFlyout x:Key="RecycleBinMenuFlyout">
+            <MenuFlyoutItem x:Name="DeleteMenuItem" Text="Delete" Icon="Delete" Click="Delete_Click" IsEnabled="False"  />
+            <MenuFlyoutItem x:Name="RestoreMenuItem" Text="Restore" Icon="Refresh"  Click="Restore_Click" IsEnabled="False" />
+        </MenuFlyout>
+    </Page.Resources>
 
     <Grid x:Name="MainGrid"  CornerRadius="10" Padding="10" HorizontalAlignment="Left" >
         <StackPanel Orientation="Vertical" >
@@ -33,16 +38,17 @@
                       Grid.Row="1"
                       Background="{StaticResource ThemePrimaryBackgroundColor}"
                       ItemsSource="{x:Bind ViewModel.PagedRecycleBinMediaPlayerItems,Mode=TwoWay}"
+                      ContextFlyout="{StaticResource RecycleBinMenuFlyout}"
                       Height="770"
                       Width="1800"
-                      SelectionMode="Single"
+                      IsTabStop="True"
+                      TabIndex="0"
+                      SelectionMode="Extended"
                       SelectionChanged="MediaBinGridView_SelectionChanged"
                       PointerPressed="MediaBinGridView_PointerPressed"
                       DoubleTapped="MediaBinGridView_DoubleTapped"
                       RightTapped="MediaBinGridView_RightTapped"
-                      Margin="0,10,0,0"        >
-
-
+                      Margin="0,10,0,0">
                 <GridView.ItemTemplate>
                     <DataTemplate x:DataType="local:RecycleBinMediaPlayerItem">
                         <Border>

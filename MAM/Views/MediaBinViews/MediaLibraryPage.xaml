@@ -55,7 +55,7 @@
         <!-- Grid View Template -->
         <DataTemplate x:Key="GridViewTemplate" x:DataType="local:MediaPlayerItem">
             <Border Background="Transparent" Padding="1"  >
-                <local1:CustomBinMedia MediaItem="{Binding}" />
+                <local1:CustomBinMedia x:Name="customMediaPlayer" MediaItem="{Binding}" Loaded="CustomMediaPlayer_Loaded" />
             </Border>
         </DataTemplate>
 
@@ -269,7 +269,7 @@
         <Border x:Name="CenterPanel"  Grid.Row="0" Grid.Column="2" Height="700" Width="auto"  Padding="20" >
             <Grid x:Name="CenterGrid"  Width="auto" VerticalAlignment="Top" >
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="30"/>
                     <RowDefinition Height="20"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="30"/>
@@ -320,6 +320,8 @@
                             ItemTemplateSelector="{StaticResource MediaTemplateSelector}"
                             Height="560"
                             Width="1200"
+                            IsTabStop="True"
+                            TabIndex="0"
                             ContextFlyout="{StaticResource AssetMenuFlyout}"
                             SelectionMode="Extended"
                             SelectionChanged="MediaBinGridView_SelectionChanged"
@@ -391,10 +393,12 @@
 
 
                 </GridView>
-                <ComboBox x:Name="ViewModeComboBox" Grid.Row="3"
-          Width="50"
-          SelectionChanged="ViewModeComboBox_SelectionChanged"
-          HorizontalAlignment="Right">
+                <ComboBox x:Name="ViewModeComboBox" 
+                          Grid.Row="3"
+                          Margin="0,5,0,0"
+                          Width="65"
+                          SelectionChanged="ViewModeComboBox_SelectionChanged"
+                          HorizontalAlignment="Right">
 
                     <ComboBoxItem Tag="Grid" IsSelected="True" >
                         <StackPanel Orientation="Horizontal">

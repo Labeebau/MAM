@@ -42,12 +42,6 @@ namespace MAM.UserControls
         public CustomBinMedia()
         {
             this.InitializeComponent();
-            //_mediaPlayer = new MediaPlayer();
-            //mediaPlayerElement.SetMediaPlayer(_mediaPlayer);
-            //         _mediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
-            //_mediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
-
-            //         _mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
             viewModel = new MediaAssetViewModel();
         }
         public MediaPlayerItem MediaItem

@@ -71,11 +71,11 @@ namespace MAM
             //ContentFrame.Navigated += On_Navigated;
 
             ////	// navSettings doesn't load any page by default, so load home page.
-            //navSettings.SelectedItem = navSettings.MenuItems[0];
+            navSettings.SelectedItem = navSettings.MenuItems[0];
             ////	// If navigation occurs on SelectionChanged, this isn't needed.
             ////	// Because we use ItemInvoked to navigate, we need to call Navigate
             ////	// here to load the home page.
-            //navSettings_Navigate("HomePage", new EntranceNavigationTransitionInfo());
+            navSettings_Navigate("GeneralSettings", new EntranceNavigationTransitionInfo());
         }
 
 
