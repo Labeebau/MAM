@@ -81,12 +81,14 @@ namespace MAM.Windows
                 foreach (var media in checkedItems)
                 {
                     App.MainAppWindow.StatusBar.ShowStatus($"Archiving {media}...");
-                    if (File.Exists(media.Model.MediaSource.LocalPath))
+                    if (!media.Model.IsArchived)
                     {
-                        if (!media.Model.IsArchived)
-                        {
+                        if (File.Exists(media.Model.MediaSource.LocalPath))
+                    {
+                        
                             string title = media.Model.Title;
-                            string archiveDirectory = Path.Combine(GlobalClass.Instance.ArchivePath, DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss"));
+                            string now = DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss");
+                            string archiveDirectory = Path.Combine(GlobalClass.Instance.ArchivePath,now );
                             Directory.CreateDirectory(archiveDirectory);
                             string destinationPath = Path.Combine(archiveDirectory, title);
                             string destinationProxyPath = Path.Combine(archiveDirectory, Path.GetFileName(media.Model.ProxyPath));
@@ -96,9 +98,8 @@ namespace MAM.Windows
 
                             Dictionary<string, object> propsList = new Dictionary<string, object>
                             {
-                                {"proxy_path",archiveDirectory },
                                 {"is_archived", true },
-                                {"archive_path",archiveDirectory }
+                                {"archive_path",now }
                             };
                             await dataAccess.UpdateRecord("Asset", "asset_id", media.Model.MediaId, propsList);
                             // ViewModel.ArchiveUpdatedCallback?.Invoke(); // Call back to MediaLibraryPage
@@ -107,10 +108,12 @@ namespace MAM.Windows
                             media.Model.ArchivePath = destinationPath;
                             await GlobalClass.Instance.AddtoHistoryAsync("Send to archive", $"Send asset '{media.Model.MediaPath}' to archive .");
                         }
+                        else
+                            await GlobalClass.Instance.ShowDialogAsync($"'{media.Model.MediaSource.LocalPath}' does not exist.", this.Content.XamlRoot);
                     }
                     else
                     {
-                        await GlobalClass.Instance.ShowDialogAsync($"The file{media.Model.MediaSource.LocalPath} does not exist.", this.Content.XamlRoot);
+                        await GlobalClass.Instance.ShowDialogAsync($"'{media.Model.MediaSource.LocalPath}' is already archived.", this.Content.XamlRoot);
                     }
                 }
                     App.MainAppWindow.StatusBar.HideStatus();

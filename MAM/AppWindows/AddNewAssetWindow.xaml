@@ -52,7 +52,7 @@
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="local:Asset">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                                    <TextBlock  Padding="15,0,0,10" VerticalAlignment="Center"  Text="{x:Bind Media.OriginalPath,Mode=TwoWay}" FontWeight="Light" FontSize="14"/>
+                                    <TextBlock  Padding="15,0,0,0" VerticalAlignment="Center"  Text="{x:Bind Media.OriginalPath,Mode=TwoWay}" FontWeight="Light" FontSize="14"/>
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>

@@ -65,14 +65,15 @@ namespace MAM
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
 		{
             //m_window = new TestWindow();
-            ////m_window = new MainWindow();
-            ////m_window = new ProjectWindow();
+            //////m_window = new MainWindow();
+            //////m_window = new ProjectWindow();
             //m_window.Activate();
 
 
             // Store reference to MainWindow
             //MainAppWindow = new MainWindow();
             //MainAppWindow.Activate();
+
             GlobalClass.Instance.IsFirstLaunch = SettingsService.Get<bool>(SettingKeys.IsFirstLaunch, defaultValue: true);
             try
             {

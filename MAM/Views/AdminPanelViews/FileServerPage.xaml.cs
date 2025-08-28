@@ -35,13 +35,13 @@ namespace MAM.Views.AdminPanelViews
             {
                 ServerId = -1,
                 ServerName = string.Empty,
-                ComputerName = string.Empty,
                 Domain = string.Empty,
                 UserName = string.Empty,
                 Password = string.Empty,
                 FileFolder = string.Empty,
                 ProxyFolder = string.Empty,
                 ThumbnailFolder = string.Empty,
+                RecycleFolder=string.Empty,
                 Active = false,
                 IsReadOnly = false,
             };
@@ -72,6 +72,7 @@ namespace MAM.Views.AdminPanelViews
                 NewFileServer.FileFolder = row["file_folder"].ToString();
                 NewFileServer.ProxyFolder = row["proxy_folder"].ToString();
                 NewFileServer.ThumbnailFolder = row["thumbnail_folder"].ToString();
+                NewFileServer.RecycleFolder = row["recycle_folder"].ToString();
                 NewFileServer.Active =Convert.ToBoolean(row["active"].ToString());
                 fileServerList.Add(NewFileServer);
             }
@@ -119,12 +120,13 @@ namespace MAM.Views.AdminPanelViews
                 new MySqlParameter("@FileFolder", fileServer.FileFolder),
                 new MySqlParameter("@ProxyFolder", fileServer.ProxyFolder),
                 new MySqlParameter("@ThumbnailFolder", fileServer.ThumbnailFolder),
+                new MySqlParameter("@RecycleFolder", fileServer.RecycleFolder),
                 new MySqlParameter("@Active", fileServer.Active)
             };
 
 
-            string query = "INSERT INTO file_server (server_name, domain,user_name, password,file_folder,proxy_folder,thumbnail_folder,active) " +
-                           "VALUES (@ServerName, @Domain, @UserName, @Password, @FileFolder, @ProxyFolder,@ThumbnailFolder, @Active)";
+            string query = "INSERT INTO file_server (server_name, domain,user_name, password,file_folder,proxy_folder,thumbnail_folder,recycle_folder,active) " +
+                           "VALUES (@ServerName, @Domain, @UserName, @Password, @FileFolder, @ProxyFolder,@ThumbnailFolder,@RecycleFolder, @Active)";
 
             // Execute insert
             var (affectedRows, newFileServerId,errorMessage) = await dataAccess.ExecuteNonQuery(query, parameters);
@@ -233,7 +235,6 @@ namespace MAM.Views.AdminPanelViews
     {
         private int serverId;
         private string name;
-        private string computerName;
         private string domain;
         private string userName;
         private string password;
@@ -242,6 +243,7 @@ namespace MAM.Views.AdminPanelViews
         private string thumbnailFolder;
         private bool active;
         private bool isReadOnly=true;
+        private string recycleFolder;
 
         public int ServerId
         {
@@ -253,11 +255,7 @@ namespace MAM.Views.AdminPanelViews
             get => name;
             set => SetProperty(ref name, value);
         }
-        public string ComputerName
-        {
-            get => computerName;
-            set => SetProperty(ref computerName, value);
-        }
+        
         public string Domain
         {
             get => domain;
@@ -287,6 +285,11 @@ namespace MAM.Views.AdminPanelViews
         {
             get => thumbnailFolder;
             set => SetProperty(ref thumbnailFolder, value);
+        }
+        public string RecycleFolder
+        {
+            get =>recycleFolder;
+            set => SetProperty(ref recycleFolder, value);
         }
         public bool Active
         {

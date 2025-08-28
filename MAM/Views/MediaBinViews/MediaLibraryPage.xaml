@@ -55,10 +55,11 @@
         <!-- Grid View Template -->
         <DataTemplate x:Key="GridViewTemplate" x:DataType="local:MediaPlayerItem">
             <Border Background="Transparent" Padding="1"  >
-                <local1:CustomBinMedia x:Name="customMediaPlayer" MediaItem="{Binding}" Loaded="CustomMediaPlayer_Loaded" />
+                <local1:CustomBinMedia x:Name="customMediaPlayer" MediaItem="{Binding}" 
+                                       DeleteRequested="CustomMediaPlayer_DeleteRequested"
+                                       PlayButtonClicked="CustomMediaPlayer_PlayButtonClicked"/>
             </Border>
         </DataTemplate>
-
 
         <!-- List View Template -->
         <DataTemplate x:Key="ListViewTemplate" x:DataType="local:MediaPlayerItem">
@@ -319,7 +320,7 @@
                             ItemsSource="{x:Bind ViewModel.PagedMediaPlayerItems,Mode=TwoWay}"
                             ItemTemplateSelector="{StaticResource MediaTemplateSelector}"
                             Height="560"
-                            Width="1200"
+                            HorizontalAlignment="Stretch"
                             IsTabStop="True"
                             TabIndex="0"
                             ContextFlyout="{StaticResource AssetMenuFlyout}"
@@ -328,15 +329,22 @@
                             PointerPressed="MediaBinGridView_PointerPressed"
                             DoubleTapped="MediaBinGridView_DoubleTapped"
                             RightTapped="MediaBinGridView_RightTapped"
+                          CanDrag="True"
+                          CanDragItems="True"
                             AllowDrop="True"
-                            DragOver="DgvFiles_DragOver"
-                            Drop="DgvFiles_Drop">
-                    <GridView.ItemsPanel>
-                        <ItemsPanelTemplate>
+                          DragEnter="MediaBinGridView_DragEnter"
+                          DragLeave="MediaBinGridView_DragLeave"
+                            DragOver="MediaBinGridView_DragOver"
+                            Drop="MediaBinGridView_Drop">
+                    
+                    <GridView.ItemsPanel >
+                        <ItemsPanelTemplate >
                             <ItemsWrapGrid Orientation="Horizontal"
-                                           MaximumRowsOrColumns="0" />
+                                           MaximumRowsOrColumns="0" 
+                                           AllowDrop="True"/>
                         </ItemsPanelTemplate>
                     </GridView.ItemsPanel>
+                    
                     <GridView.ItemContainerStyle>
                         <Style TargetType="GridViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />

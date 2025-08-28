@@ -1,15 +1,18 @@
 using MAM.Data;
 using MAM.Utilities;
 using MAM.Views.AdminPanelViews.Metadata;
+using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Data;
+using System.Windows.Input;
 using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -22,9 +25,7 @@ namespace MAM.Views.MediaBinViews
     /// </summary>
     public sealed partial class ArchivePage : Page
     {
-        private bool _isDraggingVertical;
-        private bool _isDraggingHorizontal;
-        private double _originalSplitterPosition;
+       
         private DataAccess dataAccess = new DataAccess();
         public ObservableCollection<MediaPlayerItem> MediaPlayerItems { get; set; }
         public ArchiveViewModel ViewModel { get; set; }
@@ -32,14 +33,28 @@ namespace MAM.Views.MediaBinViews
         {
             this.InitializeComponent();
             ViewModel = new ArchiveViewModel();
+            ViewModel.PageSize = SettingsService.Get(SettingKeys.DefaultPageSize, 8);
+            ViewModel.SelectedPageIndex = 0;
+            UpdatePageButtons();
+            ViewModel.PropertyChanged += async (s, e) =>
+            {
+                if (e.PropertyName == nameof(ViewModel.SelectedPageIndex) ||
+                    e.PropertyName == nameof(ViewModel.TotalPages))
+                {
+                    UpdatePageButtons();
+                }
 
+            };
+            ViewModel.PaginationUpdated += UpdatePageButtons;
             LoadFiles();
+            DataContext = ViewModel;
         }
         private async void LoadFiles()
         {
             ViewModel.MediaLibraryObj.FileServer = GlobalClass.Instance.FileServer;
             ViewModel.MediaLibraryObj.ProxyFolder = GlobalClass.Instance.ProxyFolder;
             ViewModel.MediaLibraryObj.ThumbnailFolder = GlobalClass.Instance.ThumbnailFolder;
+            ViewModel.MediaLibraryObj.RecycleFolder = GlobalClass.Instance.RecycleFolder;
 
             //ViewModel.MediaLibraryObj.ArchiveServer = await GlobalClass.Instance.GetArchiveServer(this.XamlRoot);
             //GlobalClass.Instance.ArchivePath = Path.Combine(ViewModel.MediaLibraryObj.ArchiveServer.ServerName, ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath);
@@ -63,243 +78,308 @@ namespace MAM.Views.MediaBinViews
             //{
             //    if (Directory.Exists(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ProxyFolder)))
             //    {
-                    // MediaLibrary.ProxyFolder = System.IO.Path.Combine(dir, "Proxy");
-                    parameters.Add("@Asset_path", FolderPath);
-                    dt = dataAccess.GetData($"SELECT a.asset_id, a.asset_name, a.asset_path, a.proxy_path,a.thumbnail_path,a.duration, a.description, a.version, a.type," +
-                        $"a.size,a.created_user, a.created_at, a.updated_user, a.updated_at, a.is_archived, a.archive_path," +
-                        $"IFNULL(GROUP_CONCAT(DISTINCT t.tag_name ORDER BY tag_name),'') AS tag_name," +
-                        $"IFNULL(GROUP_CONCAT(DISTINCT CONCAT(m.metadata_id, ':', m.metadata_name, ':', am.metadata_value, ':', m.metadata_type) " +
-                        $"ORDER BY m.metadata_name SEPARATOR '; '),'') AS metadata_info " +
-                        "FROM asset a " +
-                        $"LEFT JOIN asset_tag ta ON a.asset_id = ta.asset_id " +
-                        $"LEFT JOIN tag t ON t.tag_id = ta.tag_id " +
-                        $"LEFT JOIN asset_metadata am ON a.asset_id = am.asset_id " +
-                        $"LEFT JOIN metadata m ON am.metadata_id = m.metadata_id " +
-                        $"WHERE a.is_archived =true AND a.is_deleted=false "  +
-                        $"GROUP BY a.asset_id;", parameters);
+            // MediaLibrary.ProxyFolder = System.IO.Path.Combine(dir, "Proxy");
+            parameters.Add("@Asset_path", FolderPath);
+            dt = dataAccess.GetData($"SELECT a.asset_id, a.asset_name, a.relative_path," +
+                 "CONCAT(fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
+                 "CONCAT(fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
+                 "CASE " +
+                    "WHEN a.is_archived = 1 " +
+                        "THEN CONCAT(REPLACE(asr.archive_path, '/', '\\\\'), '\\\\', REPLACE(a.archive_path, '/', '\\\\')) " +
+                "END AS archive_path," +
+                "CASE " +
+                    "WHEN a.is_deleted = 1 " +
+                        "THEN CONCAT(fs.recycle_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) " +
+                "END AS recyclebin_path," +
+                $"a.duration, a.description, a.version, a.type," +
+                $"a.size,a.created_user, a.created_at, a.updated_user, a.updated_at, a.is_archived, a.archive_path," +
+                $"IFNULL(GROUP_CONCAT(DISTINCT t.tag_name ORDER BY tag_name),'') AS tag_name," +
+                $"IFNULL(GROUP_CONCAT(DISTINCT CONCAT(m.metadata_id, ':', m.metadata_name, ':', am.metadata_value, ':', m.metadata_type) " +
+                $"ORDER BY m.metadata_name SEPARATOR '; '),'') AS metadata_info " +
+                "FROM asset a " +
+                "JOIN file_server fs on a.file_server_id=fs.server_id " +
+                "JOIN archive_server asr on a.archive_server_id=asr.server_id " +
+                $"LEFT JOIN asset_tag ta ON a.asset_id = ta.asset_id " +
+                $"LEFT JOIN tag t ON t.tag_id = ta.tag_id " +
+                $"LEFT JOIN asset_metadata am ON a.asset_id = am.asset_id " +
+                $"LEFT JOIN metadata m ON am.metadata_id = m.metadata_id " +
+                $"WHERE a.is_archived =true AND a.is_deleted=false " +
+                $"GROUP BY a.asset_id;", parameters);
 
 
-                    foreach (DataRow row in dt.Rows)
-                    {
-                        ObservableCollection<AssetsMetadata> metadataList = new();
-                        string file = row["asset_name"].ToString();
-                string archivePath =Path.Combine(row["archive_path"].ToString(),file);
+            foreach (DataRow row in dt.Rows)
+            {
+                ObservableCollection<AssetsMetadata> metadataList = new();
+                string file = row["asset_name"].ToString();
+                string archivePath = Path.Combine(row["archive_path"].ToString(), file);
                 string proxyPath = Path.Combine(row["archive_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Proxy.MP4");
-                string thumbnailPath = Path.Combine(row["thumbnail_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG"); 
+
+                string thumbnailPath = Path.Combine(row["thumbnail_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG");
                 TimeSpan duration = (TimeSpan)(row["duration"]);
                 string description = string.Empty;
-                        string updated_user = string.Empty;
-                        DateTime updated_at = DateTime.MinValue;
-                        string source = Path.Combine(row["asset_path"].ToString(), row["asset_name"].ToString());
-                        bool isArchived = Convert.ToBoolean(row["is_archived"]);
-                        //if (!File.Exists(source))
-                        //{
-                        //    if ((File.Exists(proxyPath)) && !isArchived)
-                        //        continue;
-                        //}
-                        if (row["description"] != DBNull.Value)
-                            description = row["description"].ToString();
-                        if (row["updated_user"] != DBNull.Value)
-                            updated_user = row["updated_user"].ToString();
-                        if (row["updated_at"] != DBNull.Value)
-                            updated_at = Convert.ToDateTime(row["updated_at"]);
-
-                        Dictionary<string, object> metadata = null;
-                        List<string> keywords = null;
-                        string rating = string.Empty;
-                        string mediaPath = row["asset_path"].ToString();
-                        //if (!isArchived)
-                        //{
-                        //    metadata = await GetMetadata(source);
-                        //    keywords = new List<string>();
-
-                        //    if (metadata.TryGetValue("Keywords", out object value) && value is IList<string> keywordList)
-                        //    {
-                        //        keywords = keywordList.ToList(); // Convert to List<string>
-                        //    }
-                        //    else
-                        //    {
-                        //        keywords = new List<string>(); // Assign an empty list to avoid null issues
-                        //    }
-                        //    if (metadata.TryGetValue("Rating", out object val) && val is string mediaRating)
-                        //    {
-                        //        rating = mediaRating.ToString();
-                        //    }
-                        //}
-                        //else
-                        //{
-                        //    //source = row["archive_path"].ToString();
-                        //    //mediaPath = Path.GetDirectoryName(source);
-                        //}
-
-                        List<string> tags = row["tag_name"].ToString().Split(',').ToList();
-
-                        if (row["metadata_info"] != DBNull.Value && row["metadata_info"].ToString().Contains(';'))
-                        {
-                            foreach (var mdata in row["metadata_info"].ToString().Split(';'))
-                            {
-                                AssetsMetadata assetsMetadata = new();
-                                assetsMetadata.MetadataId = Convert.ToInt32(mdata.Split(':')[0]);
-                                assetsMetadata.Metadata = mdata.Split(':')[1].ToString();
-                                assetsMetadata.MetadataValue = mdata.Split(':')[2].ToString();
-                                assetsMetadata.MetadataType = mdata.Split(':')[3].ToString();
-                                metadataList.Add(assetsMetadata);
-                            }
-                        }
-                        ViewModel.MediaPlayerItems.Add(new MediaPlayerItem
-                        {
-                            MediaId = Convert.ToInt32(row["asset_id"]),
-                            Title = row["asset_name"].ToString(),
-                            MediaSource = new Uri(source),
-                            MediaPath = mediaPath,
-                            //OriginalPath = row["original_path"].ToString(),
-                            Duration = duration,
-                            DurationString = duration.ToString(@"hh\:mm\:ss"),
-                            Description = description,
-                            Version = row["version"].ToString(),
-                            Type = row["type"].ToString(),
-                            Size = Convert.ToDouble(row["size"]),
-                            CreatedUser = row["created_user"].ToString(),
-                            CreationDate = DateOnly.FromDateTime(Convert.ToDateTime(row["created_at"]).Date),
-                            UpdatedUser = updated_user,
-                            LastUpdated = updated_at,
-                            ThumbnailPath = thumbnailPath,
-                            ProxyPath = proxyPath,
-                            Tags = tags,
-                            Keywords = keywords,
-                            Rating = string.IsNullOrEmpty(rating) ? 0 : Convert.ToDouble(rating),
-                            AssetMetadataList = metadataList,
-                            IsArchived = isArchived,
-                            ArchivePath = archivePath
-                        });
-
-                        ViewModel.AllMediaPlayerItems.Add(ViewModel.MediaPlayerItems[ViewModel.MediaPlayerItems.Count - 1]);
-                    }
-                    parameters.Clear();
+                string updated_user = string.Empty;
+                DateTime updated_at = DateTime.MinValue;
+                string mediaPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, row["media_path"].ToString());
+                string source = Path.Combine(mediaPath, row["asset_name"].ToString());
+                bool isArchived = Convert.ToBoolean(row["is_archived"]);
+                //if (!File.Exists(source))
+                //{
+                //    if ((File.Exists(proxyPath)) && !isArchived)
+                //        continue;
                 //}
+                if (row["description"] != DBNull.Value)
+                    description = row["description"].ToString();
+                if (row["updated_user"] != DBNull.Value)
+                    updated_user = row["updated_user"].ToString();
+                if (row["updated_at"] != DBNull.Value)
+                    updated_at = Convert.ToDateTime(row["updated_at"]);
+
+                Dictionary<string, object> metadata = null;
+                List<string> keywords = null;
+                string rating = string.Empty;
+                //if (!isArchived)
+                //{
+                //    metadata = await GetMetadata(source);
+                //    keywords = new List<string>();
+
+                //    if (metadata.TryGetValue("Keywords", out object value) && value is IList<string> keywordList)
+                //    {
+                //        keywords = keywordList.ToList(); // Convert to List<string>
+                //    }
+                //    else
+                //    {
+                //        keywords = new List<string>(); // Assign an empty list to avoid null issues
+                //    }
+                //    if (metadata.TryGetValue("Rating", out object val) && val is string mediaRating)
+                //    {
+                //        rating = mediaRating.ToString();
+                //    }
+                //}
+                //else
+                //{
+                //    //source = row["archive_path"].ToString();
+                //    //mediaPath = Path.GetDirectoryName(source);
+                //}
+
+                List<string> tags = row["tag_name"].ToString().Split(',').ToList();
+
+                if (row["metadata_info"] != DBNull.Value && row["metadata_info"].ToString().Contains(';'))
+                {
+                    foreach (var mdata in row["metadata_info"].ToString().Split(';'))
+                    {
+                        AssetsMetadata assetsMetadata = new();
+                        assetsMetadata.MetadataId = Convert.ToInt32(mdata.Split(':')[0]);
+                        assetsMetadata.Metadata = mdata.Split(':')[1].ToString();
+                        assetsMetadata.MetadataValue = mdata.Split(':')[2].ToString();
+                        assetsMetadata.MetadataType = mdata.Split(':')[3].ToString();
+                        metadataList.Add(assetsMetadata);
+                    }
+                }
+                ViewModel.MediaPlayerItems.Add(new MediaPlayerItem
+                {
+                    MediaId = Convert.ToInt32(row["asset_id"]),
+                    Title = row["asset_name"].ToString(),
+                    MediaSource = new Uri(source),
+                    MediaPath = mediaPath,
+                    RelativePath = row["relative_path"].ToString(),
+                    Duration = duration,
+                    DurationString = duration.ToString(@"hh\:mm\:ss"),
+                    Description = description,
+                    Version = row["version"].ToString(),
+                    Type = row["type"].ToString(),
+                    Size = Convert.ToDouble(row["size"]),
+                    CreatedUser = row["created_user"].ToString(),
+                    CreationDate = DateOnly.FromDateTime(Convert.ToDateTime(row["created_at"]).Date),
+                    UpdatedUser = updated_user,
+                    LastUpdated = updated_at,
+                    ThumbnailPath = thumbnailPath,
+                    ProxyPath = proxyPath,
+                    Tags = tags,
+                    Keywords = keywords,
+                    Rating = string.IsNullOrEmpty(rating) ? 0 : Convert.ToDouble(rating),
+                    AssetMetadataList = metadataList,
+                    IsArchived = isArchived,
+                    ArchivePath = archivePath
+                });
+
+                //ViewModel.AllMediaPlayerItems.Add(ViewModel.MediaPlayerItems[ViewModel.MediaPlayerItems.Count - 1]);
+            }
+            parameters.Clear();
+            //}
             //}
             ViewModel.MediaLibraryObj.FileCount = ViewModel.MediaPlayerItems.Count;
             ViewModel.AssetCount = $"{ViewModel.MediaLibraryObj.FileCount} results found";
+            ViewModel.ApplyFilter();
         }
-        // Vertical Splitter events
+        private void UpdatePageButtons()
+        {
+            PageButtonsPanel.Children.Clear();
+            if (ViewModel.TotalPages > 1)
+            {
+                for (int i = 1; i <= ViewModel.TotalPages; i++)
+                {
+                    var btn = new Button
+                    {
+                        Content = i.ToString(),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Height = 30,
+                        Width = 37,
+                        BorderThickness = new Thickness(0),
+                        Background = new SolidColorBrush(Colors.Transparent),
+                        Foreground = (i - 1 == ViewModel.SelectedPageIndex)
+                            ? new SolidColorBrush(Colors.Blue)
+                            : new SolidColorBrush(Colors.White),
+                        Tag = i  // Store the page index
+                    };
+
+                    btn.Click += PageButton_Click;
+                    PageButtonsPanel.Children.Add(btn);
+                }
+            }
+            SetVisibility(ViewModel.SelectedPageIndex + 1);
+
+        }
+        private void PageButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is int pageIndex)
+            {
+                //SetVisibility(pageIndex);
+                ViewModel.SelectedPageIndex = pageIndex;
+                ViewModel.GoToPageCommand.Execute(pageIndex);
+                UpdatePageButtons(); // Refresh highlight
+            }
+        }
+        private void SetVisibility(int pageIndex)
+        {
+            if (ViewModel.TotalPages == 0)
+            {
+                ViewModel.IsPrevVisible = false;
+                ViewModel.IsNextVisible = false;
+            }
+            else if (ViewModel.TotalPages == 1)
+            {
+                ViewModel.IsPrevVisible = false;
+                ViewModel.IsNextVisible = false;
+            }
+            else
+            {
+                if (pageIndex == 1)
+                {
+                    ViewModel.IsPrevVisible = false;
+                    ViewModel.IsNextVisible = true;
+                }
+                else if (pageIndex == ViewModel.TotalPages)
+                {
+                    ViewModel.IsNextVisible = false;
+                    ViewModel.IsPrevVisible = true;
+                }
+                else
+                {
+                    ViewModel.IsPrevVisible = true;
+                    ViewModel.IsNextVisible = true;
+                }
+            }
+        }
+        private bool _isDraggingLeftVertical;
+        private bool _isDraggingRightVertical;
+        private bool _isDraggingHorizontal;
+
+        private double _originalSplitterPosition;
+        private GridLength _originalLeftWidth;
+        private GridLength _originalRightWidth;
+        private GridLength _originalTopHeight;
+        // LEFT SPLITTER EVENTS
         private void VerticalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            _isDraggingVertical = true;
-            _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+            _isDraggingLeftVertical = true;
+            _originalSplitterPosition = e.GetCurrentPoint(MainGrid).Position.X;
+            _originalLeftWidth = LeftColumn.Width;
 
-            // Capture the pointer so we continue receiving events even when the pointer leaves the splitter
-            VerticalSplitter.CapturePointer(e.Pointer);
-
-            // Set the resize cursor (for vertical resizing)
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
-#pragma warning disable CA1416 // Validate platform compatibility
-            ProtectedCursor = inputCursor;
-#pragma warning restore CA1416 // Validate platform compatibility
+            LeftVerticalSplitter.CapturePointer(e.Pointer);
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
         }
 
         private void VerticalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
-            if (_isDraggingVertical)
+            if (_isDraggingLeftVertical)
             {
-                // Move the vertical splitter and resize the panels
-                double currentPosition = e.GetCurrentPoint(MainCanvas).Position.X;
+                double currentPosition = e.GetCurrentPoint(MainGrid).Position.X;
                 double delta = currentPosition - _originalSplitterPosition;
-                double newLeft = Canvas.GetLeft(VerticalSplitter) + delta;
+                double newWidth = _originalLeftWidth.Value + delta;
 
-                // Ensure the splitter stays within bounds
-                if (newLeft > 100 && newLeft < MainCanvas.ActualWidth - 100)
+                if (newWidth >= 200 && newWidth <= 600)
                 {
-                    Canvas.SetLeft(VerticalSplitter, newLeft);
-                    Canvas.SetLeft(RightPanel, newLeft + VerticalSplitter.Width);
-                    LeftPanel.Width = newLeft;
-                    RightPanel.Width = MainCanvas.ActualWidth - newLeft - VerticalSplitter.Width;
-                    _originalSplitterPosition = currentPosition;
+                    LeftColumn.Width = new GridLength(newWidth, GridUnitType.Pixel);
+                    CenterColumn.Width = new GridLength(1, GridUnitType.Star);
                 }
             }
         }
 
-        // Horizontal Splitter events
+        private void VerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+        }
+
+        private void VerticalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        }
+        // HORIZONTAL SPLITTER EVENTS
         private void HorizontalSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             _isDraggingHorizontal = true;
-            _originalSplitterPosition = e.GetCurrentPoint(MainCanvas).Position.Y;
+            _originalSplitterPosition = e.GetCurrentPoint(null).Position.Y;
 
-            // Capture the pointer for horizontal splitter. This ensures that the control continues to receive pointer events even if the pointer moves quickly or leaves the splitter area.
-            _ = HorizontalSplitter.CapturePointer(e.Pointer);
+            _originalTopHeight = new GridLength(TopRow.ActualHeight, GridUnitType.Pixel);
 
-            // Set the resize cursor (for horizontal resizing)
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
-            this.ProtectedCursor = inputCursor;
+            HorizontalSplitter.CapturePointer(e.Pointer);
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
         }
 
         private void HorizontalSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             if (_isDraggingHorizontal)
             {
-                // Move the horizontal splitter and resize the top and bottom panels
-                double currentPosition = e.GetCurrentPoint(MainCanvas).Position.Y;
+                double currentPosition = e.GetCurrentPoint(null).Position.Y;
                 double delta = currentPosition - _originalSplitterPosition;
-                double newTop = Canvas.GetTop(HorizontalSplitter) + delta;
+                double newHeight = _originalTopHeight.Value + delta;
 
-                // Ensure the splitter stays within bounds
-                if (newTop > 100 && newTop < MainCanvas.ActualHeight - 100)
+                if (double.IsNaN(newHeight) || double.IsInfinity(newHeight))
+                    return;
+
+                if (newHeight >= 200 && newHeight <= MainGrid.ActualHeight - 200)
                 {
-                    Canvas.SetTop(HorizontalSplitter, newTop);
-                    Canvas.SetTop(BottomPanel, newTop + HorizontalSplitter.Height);
-                    LeftPanel.Height = newTop;
-                    RightPanel.Height = newTop;
-                    VerticalSplitter.Height = newTop;
-                    BottomPanel.Height = MainCanvas.ActualHeight - newTop - HorizontalSplitter.Height;
-                    _originalSplitterPosition = currentPosition;
+                    TopRow.Height = new GridLength(newHeight, GridUnitType.Pixel);
+                    BottomRow.Height = new GridLength(1, GridUnitType.Star);
                 }
             }
         }
 
-        private void Splitter_PointerReleased(object sender, PointerRoutedEventArgs e)
-        {
-            _isDraggingVertical = false;
-            _isDraggingHorizontal = false;
-
-            // Release the pointer capture
-            VerticalSplitter.ReleasePointerCapture(e.Pointer);
-            HorizontalSplitter.ReleasePointerCapture(e.Pointer);
-
-            // Reset cursor to default
-            var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-            this.ProtectedCursor = defaultCursor;
-        }
-
-
-        private void VerticalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-
-            // Set the resize cursor
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
-            this.ProtectedCursor = inputCursor;  // Assign it directly to the page
-        }
 
         private void HorizontalSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            // Set the resize cursor
-            var inputCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
-            this.ProtectedCursor = inputCursor;  // Assign it directly to the page
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.SizeNorthSouth);
         }
-        private void VerticalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            //_isDraggingVertical = false;
 
-            //// Reset cursor to default
-            var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-            this.ProtectedCursor = defaultCursor;  // Assign it directly to the page
-        }
         private void HorizontalSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            //_isDraggingHorizontal = false;
-
-            //// Reset cursor to default
-            var defaultCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
-            this.ProtectedCursor = defaultCursor;  // Assign it directly to the page
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
         }
+
+        // POINTER RELEASED (ALL)
+        private void Splitter_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            _isDraggingLeftVertical = false;
+            _isDraggingRightVertical = false;
+            _isDraggingHorizontal = false;
+
+            LeftVerticalSplitter.ReleasePointerCapture(e.Pointer);
+            //RightVerticalSplitter.ReleasePointerCapture(e.Pointer);
+            HorizontalSplitter.ReleasePointerCapture(e.Pointer);
+
+            this.ProtectedCursor = InputSystemCursor.Create(InputSystemCursorShape.Arrow);
+        }
+
         private void MediaBinGridView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var gridView = sender as GridView;
@@ -350,13 +430,13 @@ namespace MAM.Views.MediaBinViews
                 foreach (var item in ViewModel.SelectedItems)
                 {
                     App.MainAppWindow.StatusBar.ShowStatus($"Deleting{item} ...");
-                    await DeleteFilePermenantly(item);
+                    await DeleteFilePermanently(item);
                 }
             }
             ViewModel.MediaPlayerItems.Clear();
             await GetAllAssetsAsync(GlobalClass.Instance.ArchivePath);
         }
-        private async Task DeleteFilePermenantly(MediaPlayerItem item)
+        private async Task DeleteFilePermanently(MediaPlayerItem item)
         {
             if (ViewModel.MediaPlayerItems.Contains(item))
             {
@@ -368,7 +448,7 @@ namespace MAM.Views.MediaBinViews
                     File.Delete(item.ThumbnailPath);
                     File.Delete(Path.Combine(item.ProxyPath));
                     await DeleteAssetAsync(item.MediaId, item.Title, item.MediaPath);
-                    await GlobalClass.Instance.AddtoHistoryAsync("Asset Deleted Permenantly", $"Deleted asset '{ViewModel.MediaObj.MediaPath}' permenantly.");
+                    await GlobalClass.Instance.AddtoHistoryAsync("Asset Deleted Permanently", $"Deleted asset '{ViewModel.MediaObj.MediaPath}' permanently.");
                 }
                 catch (IOException ex)
                 {
@@ -401,12 +481,12 @@ namespace MAM.Views.MediaBinViews
             ("DownloadHistory",typeof(TransactionHistoryPage)),
             ("ExportHistory",typeof(ExportHistoryPage)),
         };
-        private void navFileHistory_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+        private void NavFileHistory_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             var navItemTag = args.InvokedItemContainer.Tag.ToString();
-            navFileHistory_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo);
+            NavFileHistory_Navigate(navItemTag, args.RecommendedNavigationTransitionInfo);
         }
-        private void navFileHistory_Navigate(string navItemTag, NavigationTransitionInfo recommendedNavigationTransitionInfo)
+        private void NavFileHistory_Navigate(string navItemTag, NavigationTransitionInfo recommendedNavigationTransitionInfo)
         {
             Type _page = null;
 
@@ -422,29 +502,29 @@ namespace MAM.Views.MediaBinViews
 
 
 
-        private void navFileHistory_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        private void NavFileHistory_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             //hrow new NotImplementedException();
         }
-        private void navFileHistory_Loaded(object sender, RoutedEventArgs e)
+        private void NavFileHistory_Loaded(object sender, RoutedEventArgs e)
         {
 
 
             //	// Add handler for ContentFrame navigation.
             //ContentFrame.Navigated += On_Navigated;
 
-            ////	// navFileHistory doesn't load any page by default, so load home page.
-            //navFileHistory.SelectedItem = navFileHistory.MenuItems[0];
+            ////	// NavFileHistory doesn't load any page by default, so load home page.
+            //NavFileHistory.SelectedItem = NavFileHistory.MenuItems[0];
             ////	// If navigation occurs on SelectionChanged, this isn't needed.
             ////	// Because we use ItemInvoked to navigate, we need to call Navigate
             ////	// here to load the home page.
-            //navFileHistory_Navigate("HomePage", new EntranceNavigationTransitionInfo());
+            //NavFileHistory_Navigate("HomePage", new EntranceNavigationTransitionInfo());
         }
 
 
 
 
-        private void navFileHistory_BackRequested(NavigationView sender,
+        private void NavFileHistory_BackRequested(NavigationView sender,
                                            NavigationViewBackRequestedEventArgs args)
         {
             TryGoBack();
@@ -456,9 +536,9 @@ namespace MAM.Views.MediaBinViews
                 return false;
 
             // Don't go back if the nav pane is overlayed.
-            if (navFileHistory.IsPaneOpen &&
-                (navFileHistory.DisplayMode == NavigationViewDisplayMode.Compact ||
-                 navFileHistory.DisplayMode == NavigationViewDisplayMode.Minimal))
+            if (NavFileHistory.IsPaneOpen &&
+                (NavFileHistory.DisplayMode == NavigationViewDisplayMode.Compact ||
+                 NavFileHistory.DisplayMode == NavigationViewDisplayMode.Minimal))
                 return false;
 
             ContentFrame.GoBack();
@@ -467,23 +547,23 @@ namespace MAM.Views.MediaBinViews
 
         private void On_Navigated(object sender, NavigationEventArgs e)
         {
-            navFileHistory.IsBackEnabled = ContentFrame.CanGoBack;
+            NavFileHistory.IsBackEnabled = ContentFrame.CanGoBack;
 
             if (ContentFrame.SourcePageType == typeof(SettingsPage))
             {
-                // SettingsItem is not part of navFileHistory.MenuItems, and doesn't have a Tag.
-                navFileHistory.SelectedItem = (NavigationViewItem)navFileHistory.SettingsItem;
-                navFileHistory.Header = "Settings";
+                // SettingsItem is not part of NavFileHistory.MenuItems, and doesn't have a Tag.
+                NavFileHistory.SelectedItem = (NavigationViewItem)NavFileHistory.SettingsItem;
+                NavFileHistory.Header = "Settings";
             }
             else if (ContentFrame.SourcePageType != null)
             {
                 // Select the nav view item that corresponds to the page being navigated to.
-                navFileHistory.SelectedItem = navFileHistory.MenuItems
+                NavFileHistory.SelectedItem = NavFileHistory.MenuItems
                             .OfType<NavigationViewItem>()
                             .First(i => i.Tag.Equals(ContentFrame.SourcePageType.FullName.ToString()));
 
-                navFileHistory.Header =
-                    ((NavigationViewItem)navFileHistory.SelectedItem)?.Content?.ToString();
+                NavFileHistory.Header =
+                    ((NavigationViewItem)NavFileHistory.SelectedItem)?.Content?.ToString();
 
             }
         }
@@ -500,7 +580,7 @@ namespace MAM.Views.MediaBinViews
 
         private void MediaBinGridView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
-            if(ViewModel.SelectedItems!=null && ViewModel.SelectedItems.Count>0)
+            if (ViewModel.SelectedItems != null && ViewModel.SelectedItems.Count > 0)
             {
                 DeleteMenuItem.IsEnabled = true;
                 UnArchiveMenuItem.IsEnabled = true;
@@ -532,12 +612,12 @@ namespace MAM.Views.MediaBinViews
                         //string archivePath = Path.Combine(mediaItem.ArchivePath, mediaItem.Title);
                         string destinationPath = Path.Combine(mediaItem.MediaPath, mediaItem.Title);
                         //string archiveProxyPath = Path.Combine(mediaItem.ProxyPath,);
-                        string baseRoot = Directory.GetParent(ViewModel.MediaLibraryObj.FileServer.FileFolder).FullName;
-                        string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ThumbnailFolder), Path.GetDirectoryName(mediaItem.ThumbnailPath));
-                        string destinationProxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ProxyFolder, relativePath);
+                        //string baseRoot = Directory.GetParent(ViewModel.MediaLibraryObj.FileServer.FileFolder).FullName;
+                        //string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ThumbnailFolder), Path.GetDirectoryName(mediaItem.ThumbnailPath));
+                        string destinationProxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ProxyFolder, mediaItem.RelativePath);
 
                         Dictionary<string, object> propsList = new Dictionary<string, object>
-                    {   {"proxy_path",destinationProxyPath},
+                    {  
                         {"is_archived", false },
                         {"archive_path",string.Empty }
                     };
@@ -575,6 +655,47 @@ namespace MAM.Views.MediaBinViews
                 await GlobalClass.Instance.ShowDialogAsync($"An error occurred: {ex.Message}", this.Content.XamlRoot);
             }
         }
+
+        private void ViewModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ViewModeComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                string viewMode = selectedItem.Tag as string;
+
+                if (Resources["MediaTemplateSelector"] is MediaTemplateSelector selector)
+                {
+                    selector.CurrentViewMode = viewMode;
+                    MediaBinGridView.ItemTemplateSelector = null; // Force refresh
+                    MediaBinGridView.ItemTemplateSelector = selector;
+                }
+                // Show/hide header depending on view mode
+                if (viewMode == "Details")
+                {
+                    DetailsHeader.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    DetailsHeader.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private void TagsFlyout_Opening(object sender, object e)
+        {
+            if (sender is Flyout flyout && flyout.Content is ListView listView)
+            {
+                bool hasValidTags = listView.Items.Count > 0 &&
+                                    listView.Items.Cast<object>()
+                                                   .Any(item => !string.IsNullOrWhiteSpace(item?.ToString()));
+
+                if (!hasValidTags)
+                {
+                    (sender as Flyout)?.Hide();
+                }
+            }
+        }
+
+       
     }
     //public class MediaPlayerItem
     //{
@@ -594,6 +715,9 @@ namespace MAM.Views.MediaBinViews
         private double _filterRating = -1;
         private string assetCount = string.Empty;
         private ObservableCollection<MediaPlayerItem> selectedItems;
+        private int pageSize;
+        private int _currentPageIndex;
+        private int _selectedPageIndex;
         public string RatingCaption { get; set; } = "& Up";
         private ObservableCollection<string> tagsList = new();
         public string Path
@@ -657,22 +781,49 @@ namespace MAM.Views.MediaBinViews
         public ObservableCollection<MediaPlayerItem> SelectedItems
         {
             get => selectedItems;
-            set { SetProperty(ref selectedItems, value);  }
+            set { SetProperty(ref selectedItems, value); }
         }
         private ObservableCollection<MetadataClass> _metadataList = new();
         private AssetsMetadata _filterMetadata;
         private ObservableCollection<MetadataClass> allMetadataList = new();
         private string selectedTag;
-
-        public ObservableCollection<MetadataClass> MetadataList
+        private List<MediaPlayerItem> _filteredItems = new();
+        private ObservableCollection<MediaPlayerItem> _pagedMediaPlayerItems = new();
+        private MediaViewMode _currentViewMode = MediaViewMode.Grid;
+        public MediaViewMode CurrentViewMode
         {
-            get => _metadataList;
-            set => SetProperty(ref _metadataList, value);
+            get => _currentViewMode;
+            set => SetProperty(ref _currentViewMode, value); // Assuming ObservableObject
         }
-        public ObservableCollection<MetadataClass> AllMetadataList
+
+        public int PageSize
         {
-            get => allMetadataList;
-            set => SetProperty(ref allMetadataList, value);
+            get => pageSize;
+            set { SetProperty(ref pageSize, value); }
+        }
+        public int TotalPages => (int)Math.Ceiling((double)_filteredItems.Count / PageSize);
+        private ObservableCollection<int> _totalPagesList = new();
+        private bool isPrevVisible = true;
+        private bool isNextVisible = true;
+
+        public ObservableCollection<int> TotalPagesList
+        {
+            get => _totalPagesList;
+            set => SetProperty(ref _totalPagesList, value);
+        }
+        public event Action? PaginationUpdated;
+
+
+
+        public bool IsPrevVisible
+        {
+            get => isPrevVisible;
+            set => SetProperty(ref isPrevVisible, value);
+        }
+        public bool IsNextVisible
+        {
+            get => isNextVisible;
+            set => SetProperty(ref isNextVisible, value);
         }
         public ArchiveViewModel()
         {
@@ -681,14 +832,14 @@ namespace MAM.Views.MediaBinViews
             ApplyFilter();
         }
         public ObservableCollection<FileSystemItem> FileSystemItems { get; set; }
+        private ObservableCollection<MediaPlayerItem> pagedMediaPlayerItems = new();
 
-        public ObservableCollection<MediaPlayerItem> AllMediaPlayerItems { get; set; } = new();
         public ObservableCollection<MediaPlayerItem> MediaPlayerItems { get; set; } = new();
         public MediaPlayerItem MediaObj { get => media; set => SetProperty(ref media, value); }
         public MediaLibrary MediaLibraryObj { get => mediaLibrary; set => SetProperty(ref mediaLibrary, value); }
         public void ApplyFilter()
         {
-            var filteredItems = AllMediaPlayerItems.Where(item =>
+            _filteredItems = MediaPlayerItems.Where(item =>
              (string.IsNullOrEmpty(FilterType) || item.Type.Equals(FilterType, StringComparison.OrdinalIgnoreCase)) &&
              (string.IsNullOrEmpty(FilterTitle) || item.Title.Contains(FilterTitle, StringComparison.OrdinalIgnoreCase)) &&
              (string.IsNullOrEmpty(FilterTag) || item.Tags.Any(t => t.Contains(FilterTag, StringComparison.OrdinalIgnoreCase))) &&
@@ -701,14 +852,46 @@ namespace MAM.Views.MediaBinViews
             ))
          ).ToList();
 
-            MediaPlayerItems.Clear();
-            foreach (var item in filteredItems)
-            {
-                MediaPlayerItems.Add(item);
-            }
-            MediaLibraryObj.FileCount = MediaPlayerItems.Count;
+            SelectedPageIndex = 0;
+            UpdatePagedMediaItems();
+            MediaLibraryObj.FileCount = _filteredItems.Count;
             AssetCount = $"{MediaLibraryObj.FileCount} results found";
+            OnPropertyChanged(nameof(TotalPages)); // In case filter changes page count
+            PaginationUpdated?.Invoke();
         }
+
+        public int SelectedPageIndex
+        {
+            get => _selectedPageIndex;
+            set
+            {
+                SetProperty(ref _selectedPageIndex, value);
+                UpdatePagedMediaItems();
+                PaginationUpdated?.Invoke();
+            }
+        }
+
+        public ObservableCollection<MediaPlayerItem> PagedMediaPlayerItems
+        {
+            get => pagedMediaPlayerItems;
+            set => SetProperty(ref pagedMediaPlayerItems, value);
+        }
+        private void UpdatePagedMediaItems()
+        {
+            var items = _filteredItems
+                .Skip(SelectedPageIndex * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            PagedMediaPlayerItems.Clear();
+            foreach (var item in items)
+            {
+                PagedMediaPlayerItems.Add(item);
+            }
+
+            PaginationUpdated?.Invoke(); // In case you want to refresh buttons
+        }
+
         public void ClearFilters()
         {
             FilterType = string.Empty;
@@ -720,13 +903,27 @@ namespace MAM.Views.MediaBinViews
             FilterRating = -1; // Assuming a negative rating means "no filter"
             FilterMetadata = null; // Reset metadata filter
             SelectedTag = string.Empty;
-            MediaPlayerItems.Clear();
-            foreach (var item in AllMediaPlayerItems)
-            {
-                MediaPlayerItems.Add(item);
-            }
-
+            pagedMediaPlayerItems.Clear();
+            UpdatePagedMediaItems();
         }
-    }
+        public ICommand GoToPageCommand => new RelayCommand<int>(page =>
+        {
+            int zeroBasedPage = page - 1;
+            if (zeroBasedPage >= 0 && zeroBasedPage < TotalPages)
+                SelectedPageIndex = zeroBasedPage;
+        });
 
+        public ICommand GoToPreviousPageCommand => new RelayCommand(() =>
+        {
+            if (SelectedPageIndex > 0)
+                SelectedPageIndex--;
+        });
+
+        public ICommand GoToNextPageCommand => new RelayCommand(() =>
+        {
+            if (SelectedPageIndex < TotalPages - 1)
+                SelectedPageIndex++;
+        });
+
+    }
 }

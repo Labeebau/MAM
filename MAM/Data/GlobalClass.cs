@@ -1,4 +1,5 @@
-﻿using MAM.Views.AdminPanelViews;
+﻿using CommunityToolkit.WinUI;
+using MAM.Views.AdminPanelViews;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -71,7 +72,8 @@ namespace MAM.Data
         public string ArchivePath { get; set; }
         public string ProxyFolder { get; set; }
         public string ThumbnailFolder { get; set; }
-        public FileServer FileServer { get; set; }
+        public string RecycleFolder { get; set; }
+        public  FileServer FileServer { get; set; }
 
         public string DownloadFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Downloads";
         public string ffmpegPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg.exe");
@@ -254,13 +256,14 @@ namespace MAM.Data
             await _dialogLock.WaitAsync();
             try
             {
-                var dialog = new ContentDialog
-                {
-                    Content = message,
-                    CloseButtonText = "OK",
-                    XamlRoot = xamlRoot
-                };
-                await dialog.ShowAsync();
+                    var dialog = new ContentDialog
+                    {
+                        Content = message,
+                        CloseButtonText = "OK",
+                        XamlRoot = xamlRoot
+                    };
+
+                    await dialog.ShowAsync();
             }
             finally
             {
@@ -387,12 +390,14 @@ namespace MAM.Data
                     newFileServer.FileFolder = row["file_folder"].ToString();
                     newFileServer.ProxyFolder = row["proxy_folder"].ToString();
                     newFileServer.ThumbnailFolder = row["thumbnail_folder"].ToString();
+                    newFileServer.RecycleFolder = row["recycle_folder"].ToString();
                     newFileServer.Active = Convert.ToBoolean(row["active"].ToString());
                 }
                 MediaLibraryPath = Path.Combine(newFileServer.ServerName, newFileServer.FileFolder);
                 FileServer = newFileServer;
                 ProxyFolder = newFileServer.ProxyFolder;
                 ThumbnailFolder = newFileServer.ThumbnailFolder;
+                RecycleFolder = newFileServer.RecycleFolder;
                 return newFileServer;
             }
             else

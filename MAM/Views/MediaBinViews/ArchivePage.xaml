@@ -14,20 +14,131 @@
             <MenuFlyoutItem x:Name="DeleteMenuItem" Text="Delete" Icon="Delete" Click="Delete_Click" IsEnabled="False"  />
             <MenuFlyoutItem x:Name="UnArchiveMenuItem" Text="UnArchive" Icon="Refresh"  Click="UnArchive_Click" IsEnabled="False" />
         </MenuFlyout>
+        <!-- Grid View Template -->
+        <DataTemplate x:Key="GridViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Background="Transparent" Padding="1"  >
+                <local1:CustomBinMedia x:Name="customMediaPlayer" MediaItem="{Binding}" Loaded="CustomMediaPlayer_Loaded" />
+            </Border>
+        </DataTemplate>
+
+        <!-- List View Template -->
+        <DataTemplate x:Key="ListViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Padding="1" HorizontalAlignment="Stretch" Background="Transparent">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Thumbnail -->
+                    <Image Source="{x:Bind ThumbnailPath}"
+                             Width="100" Height="60"
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Left" />  
+
+                    <!-- Text Content -->
+                    <StackPanel   Grid.Column="1" Margin="10,0,0,0"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Left">
+                        <TextBlock   Text="{x:Bind Title}"
+                                     FontSize="14"
+                                     TextWrapping="WrapWholeWords"
+                                     TextAlignment="Left"
+                                     HorizontalAlignment="Left"
+                                     Width="300"/>
+                        <!-- Add more info if needed -->
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        
+        <!-- Tile View Template -->
+        <DataTemplate x:Key="TileViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Padding="10" HorizontalAlignment="Stretch" Background="Transparent">
+                <StackPanel Width="200" Height="150" Padding="10">
+                    <Image Source="{x:Bind ThumbnailPath}" Stretch="UniformToFill" Height="100"/>
+                    <TextBlock Text="{x:Bind Title}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- Details View Template -->
+        <DataTemplate x:Key="DetailsViewTemplate" x:DataType="local:MediaPlayerItem">
+            <Border Padding="1" HorizontalAlignment="Stretch" Background="Transparent">
+
+                <Grid Padding="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="50" />
+                        <ColumnDefinition Width="500"/>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Grid.Column="0" Source="{x:Bind ThumbnailPath}" Width="40" Height="40" />
+                    <TextBlock Grid.Column="1" 
+                                 Text="{x:Bind Title}" 
+                                 FontSize="14"
+                                 VerticalAlignment="Center" 
+                                 Padding="5,0,5,0" 
+                                 TextWrapping="Wrap"
+                                 TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" 
+                                 Text="{x:Bind MediaPath}" 
+                                 VerticalAlignment="Center" 
+                                 FontStyle="Italic" 
+                                 Padding="5,0,5,0"
+                                 TextWrapping="Wrap"
+                                 TextTrimming="CharacterEllipsis"/>
+                    <DropDownButton Grid.Column="3" 
+                                      x:Name="TagsDropDown"
+                                      Width="150" 
+                                      HorizontalContentAlignment="Left"
+                                      Background="Transparent"
+                                      BorderThickness="1"
+                                      BorderBrush="#221100"
+                                      Content="{x:Bind Tags[0], Mode=OneWay}">
+                        <DropDownButton.Flyout >
+                            <Flyout x:Name="TagsFlyOut" 
+                                      Placement="BottomEdgeAlignedLeft" 
+                                      Opening="TagsFlyout_Opening"  >
+                                <ListView x:Name="TagsListView" 
+                                            ItemsSource="{x:Bind Tags}"
+                                            HorizontalContentAlignment="Left">
+                                </ListView>
+                            </Flyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        
+        <local:MediaTemplateSelector x:Key="MediaTemplateSelector"
+                           GridViewTemplate="{StaticResource GridViewTemplate}"
+                           ListViewTemplate="{StaticResource ListViewTemplate}"
+                           TileViewTemplate="{StaticResource TileViewTemplate}"
+                           DetailsViewTemplate="{StaticResource DetailsViewTemplate}" />
     </Page.Resources>
-    <Grid x:Name="MainGrid" HorizontalAlignment="Left" Padding="10"  Width="auto">
+
+    <Grid x:Name="MainGrid" Background="{StaticResource ThemePrimaryBackgroundColor}" Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="LeftColumn" Width="300"/>
+            <ColumnDefinition Width="10"/>
+            <!-- Left Splitter -->
+            <ColumnDefinition x:Name="CenterColumn" Width="*"/>
+            <!--<ColumnDefinition Width="10"/>
+            --><!-- Right Splitter --><!--
+            <ColumnDefinition x:Name="RightColumn" Width="300"/>-->
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <!--<RowDefinition Height="*"/>
-         <RowDefinition Height="2*"/>-->
-
-
+            <RowDefinition x:Name="TopRow" Height="*"/>
+            <RowDefinition Height="10"/>
+            <!-- Horizontal Splitter -->
+            <RowDefinition x:Name="BottomRow" Height="300"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Height="1000" Width="auto" >
-            <Canvas x:Name="MainCanvas"  Height="1000" Width="1850"  Background="{StaticResource ThemePrimaryBackgroundColor }"   >
-                <!-- Left Panel -->
-                <Border x:Name="LeftPanel" Height="700"   Width="300" Canvas.Left="0" Canvas.ZIndex="3" >
-                    <Grid x:Name="LeftGrid">
+
+
+        <!-- Left Panel -->
+        <Border x:Name="LeftPanel" Grid.Row="0" Grid.Column="0" Height="700"   Width="300"  >
+            <Grid x:Name="LeftGrid">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="4*"/>
@@ -36,7 +147,7 @@
                         <StackPanel Grid.Row="0"  Orientation="Horizontal" >
                             <TextBox x:Name="txtSearch" PlaceholderText="Search Text..." Width="200" Height="20" Margin="20,0,0,0" VerticalAlignment="Center"/>
                             <Button x:Name="BtnSearch" Style="{StaticResource SmallIconButton}" 
-                             VerticalAlignment="Center" Click="BtnSearch_Click">
+                                    VerticalAlignment="Center" Click="BtnSearch_Click">
                                 <FontIcon  Glyph="&#xf002;" />
                             </Button>
                         </StackPanel>
@@ -55,29 +166,44 @@
                     </Grid>
                 </Border>
 
-                <!-- VerticalSplitter (Rectangle as the draggable divider) -->
-                <Rectangle x:Name="VerticalSplitter" Width="10" Height="700" 
-                    Fill="{StaticResource ThemeSecondaryBackgroundColor}"  
-                    Canvas.Left="300"   IsHitTestVisible="True" Canvas.ZIndex="4" 
-                    PointerPressed="VerticalSplitter_PointerPressed" 
-                    PointerMoved="VerticalSplitter_PointerMoved" 
-                    PointerExited="VerticalSplitter_PointerExited" 
-             PointerEntered="VerticalSplitter_PointerEntered"/>
-                <!-- Right Panel -->
-                <Border x:Name="RightPanel"  Canvas.Left="310" Height="700" Width="auto" Canvas.ZIndex="3" >
-                    <Grid x:Name="RightGrid"  Width="auto" Margin="20,0,0,0" >
+        <Rectangle x:Name="LeftVerticalSplitter" Grid.Row="0" Grid.Column="1" Width="10" Height="700" 
+                Fill="{StaticResource ThemeSecondaryBackgroundColor}"  
+                IsHitTestVisible="True"  
+                PointerPressed="VerticalSplitter_PointerPressed" 
+                PointerMoved="VerticalSplitter_PointerMoved" 
+                PointerReleased="Splitter_PointerReleased" 
+                PointerEntered="VerticalSplitter_PointerEntered"
+                PointerExited="VerticalSplitter_PointerExited"
+                    />
+        <!-- Right Panel -->
+        <Border x:Name="CenterPanel"  Grid.Row="0" Grid.Column="2" Height="700" Width="auto"  Padding="20" >
+            <Grid x:Name="CenterGrid"  Width="auto" Margin="20,0,0,0" >
                         <Grid.RowDefinitions>
                             <RowDefinition Height="50"/>
                             <RowDefinition Height="*"/>
-                            <RowDefinition Height="50"/>
+                            <RowDefinition Height="30"/>
                         </Grid.RowDefinitions>
-                        <!--ContextFlyout="{StaticResource AssetMenuFlyout}"-->
+                        
+                        <Grid Grid.Row="0" x:Name="DetailsHeader"  Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80" />
+                                <ColumnDefinition Width="500"/>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="Title" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text=" Path" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="Tags" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Grid>
+                        
                         <GridView x:Name="MediaBinGridView" Grid.Row="1" 
-                                   ItemsSource="{x:Bind ViewModel.MediaPlayerItems,Mode=TwoWay}"
-                                   HorizontalAlignment="Left"
+                                   ItemsSource="{x:Bind ViewModel.PagedMediaPlayerItems,Mode=TwoWay}"
+                                   ItemTemplateSelector="{StaticResource MediaTemplateSelector}"
+                                   HorizontalAlignment="Stretch"
                                    VerticalAlignment="Top"
                                    Height="560"
-                                   Width="1200"
                                    SelectionMode="Extended"
                                    ContextFlyout="{StaticResource ArchiveMenuFlyout}"
                                    SelectionChanged="MediaBinGridView_SelectionChanged"
@@ -85,59 +211,167 @@
                                    DoubleTapped="MediaBinGridView_DoubleTapped"
                                    RightTapped="MediaBinGridView_RightTapped">
 
-                            <GridView.ItemTemplate>
-                                <DataTemplate x:DataType="local:MediaPlayerItem">
-                                    <Border>
-                                        <local1:CustomBinMedia x:Name="customMediaPlayer" MediaItem="{Binding}" Loaded="CustomMediaPlayer_Loaded"  />
-                                    </Border>
-                                </DataTemplate>
-                            </GridView.ItemTemplate>
-                        </GridView>
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,20" Spacing="5">
-                            <TextBlock x:Name="txtSearchCount" Text="4" VerticalAlignment="Center" />
-                            <ComboBox x:Name="NoofItemscomboBox" VerticalAlignment="Center" Width="400"/>
-                            <TextBlock Text="15 results found in 0 seconds"  Foreground="Red" VerticalAlignment="Center"/>
+                            <GridView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="0" />
+                                </ItemsPanelTemplate>
+                            </GridView.ItemsPanel>
+                            <GridView.ItemContainerStyle>
+                                <Style TargetType="GridViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="GridViewItem">
+                                                <Border x:Name="RootBorder"
+                                                        Background="Transparent"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="4">
+                                                    <ContentPresenter />
 
+                                                    <!-- 👇 VisualStates now inside the Border -->
+                                                    <VisualStateManager.VisualStateGroups>
+                                                        <VisualStateGroup x:Name="CommonStates">
+                                                            <VisualState x:Name="Normal"/>
+
+                                                            <VisualState x:Name="PointerOver">
+                                                                <VisualState.Setters>
+                                                                    <Setter Target="RootBorder.Background" Value="DarkGray"/>
+                                                                </VisualState.Setters>
+                                                            </VisualState>
+
+                                                            <VisualState x:Name="Pressed">
+                                                                <VisualState.Setters>
+                                                                    <Setter Target="RootBorder.Background" Value="DarkGray"/>
+                                                                </VisualState.Setters>
+                                                            </VisualState>
+
+                                                            <VisualState x:Name="Selected">
+                                                                <VisualState.Setters>
+                                                                    <Setter Target="RootBorder.Background" Value="DeepSkyBlue" />
+                                                                </VisualState.Setters>
+                                                            </VisualState>
+
+                                                            <VisualState x:Name="PointerOverSelected">
+                                                                <VisualState.Setters>
+                                                                    <Setter Target="RootBorder.Background" Value="DodgerBlue"/>
+                                                                </VisualState.Setters>
+                                                            </VisualState>
+                                                        </VisualStateGroup>
+
+                                                    </VisualStateManager.VisualStateGroups>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="UseSystemFocusVisuals" Value="False"/>
+                                </Style>
+                            </GridView.ItemContainerStyle>
+                        </GridView>
+
+                        <ComboBox x:Name="ViewModeComboBox" 
+                                   Grid.Row="2"
+                                   Margin="0,5,0,0"
+                                   Width="65"
+                                   SelectionChanged="ViewModeComboBox_SelectionChanged"
+                                   HorizontalAlignment="Right">
+
+                            <ComboBoxItem Tag="Grid" IsSelected="True" >
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf009;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Grid "/>
+                                </StackPanel>
+                            </ComboBoxItem>
+                            <ComboBoxItem Tag="Tile"  >
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf00a;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Tile "/>
+                                </StackPanel>
+                            </ComboBoxItem>
+                            <ComboBoxItem Tag="List">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf03a;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="List "/>
+                                </StackPanel>
+                            </ComboBoxItem>
+
+                            <ComboBoxItem Tag="Details">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="{StaticResource FontAwesome}" Text="&#xf022;" Margin="0,0,8,0" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Details "/>
+                                </StackPanel>
+                            </ComboBoxItem>
+                        </ComboBox>
+
+                <StackPanel x:Name="PageNumberPanel" Grid.Row="3" Orientation="Horizontal"
+              HorizontalAlignment="Center"
+              Margin="0,10,0,0"
+              Spacing="2">
+                    <!-- Previous Button -->
+
+                    <Button Style="{StaticResource SmallIconButton}" 
+              Visibility="{Binding IsPrevVisible,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityConverter}}"
+              Command="{Binding GoToPreviousPageCommand}" VerticalAlignment="Center" >
+                        <FontIcon  Glyph="&#xf100;" FontSize="12"  />
+                    </Button>
+                    <!-- Page Numbers -->
+
+                    <StackPanel x:Name="PageButtonsPanel"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="2" />
+
+                    <!-- Next Button -->
+                    <Button Style="{StaticResource SmallIconButton}"   
+              Visibility="{Binding IsNextVisible,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityConverter}}"
+              Command="{Binding GoToNextPageCommand}" 
+              VerticalAlignment="Center" >
+                        <FontIcon  Glyph="&#xf101;" FontSize="12" />
+                    </Button>
+                </StackPanel>
+
+
+                <StackPanel x:Name="FooterPanel" Grid.Row="2" Orientation="Horizontal"  VerticalAlignment="Bottom">
+                            <TextBlock Text="{Binding AssetCount}"  Foreground="Red" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <!--</Grid>-->
                     </Grid>
                 </Border>
 
 
-                <Rectangle x:Name="HorizontalSplitter"  Width="1850" Height="10" Fill="{StaticResource ThemeSecondaryBackgroundColor}"   
-                    Canvas.Top="700" IsHitTestVisible="True" Canvas.ZIndex="2" 
-                      PointerPressed="HorizontalSplitter_PointerPressed" 
-                    PointerMoved="HorizontalSplitter_PointerMoved" 
+
+        <Rectangle x:Name="HorizontalSplitter" Grid.Row="1" Grid.ColumnSpan="5"  Width="1850" Height="10" Fill="{StaticResource ThemeSecondaryBackgroundColor}"   
+                    IsHitTestVisible="True"  
+                    PointerPressed="HorizontalSplitter_PointerPressed"
+                    PointerMoved="HorizontalSplitter_PointerMoved"
+                    PointerReleased="Splitter_PointerReleased"
                     PointerEntered="HorizontalSplitter_PointerEntered"
                     PointerExited="HorizontalSplitter_PointerExited"/>
 
-                <Border x:Name="BottomPanel"   Height="400" Width="1850" Canvas.Top="710" Canvas.ZIndex="1" >
-                    <StackPanel Orientation="Vertical">
+        <Border x:Name="BottomPanel" Grid.Row="2" Grid.ColumnSpan="5"   Height="500" Width="1850"  >
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Top">
                         <TextBlock Text="File History" FontWeight="SemiBold"></TextBlock>
-                        <NavigationView x:Name="navFileHistory" 
-                                 PaneDisplayMode="Top"
-                                 IsBackButtonVisible="Collapsed"
-                                 IsBackEnabled="False"
-                                 IsSettingsVisible="False"
-                                 SelectionChanged="navFileHistory_SelectionChanged"
-                                 Loaded="navFileHistory_Loaded"
-                                 ItemInvoked="navFileHistory_ItemInvoked"
-                                 BackRequested="navFileHistory_BackRequested">
-                            <NavigationView.MenuItems>
-                                <NavigationViewItem  Content="Upload History" Tag="FileHistory" />
-                                <NavigationViewItem  Content="Download History" Tag="DownloadHistory" />
-                                <NavigationViewItem  Content="Export History" Tag="ExportHistory" />
-
-
+                        <NavigationView x:Name="NavFileHistory" 
+                             PaneDisplayMode="Top"
+                             IsBackButtonVisible="Collapsed"
+                             IsBackEnabled="False"
+                             IsSettingsVisible="False"
+                             SelectionChanged="NavFileHistory_SelectionChanged"
+                             Loaded="NavFileHistory_Loaded"
+                             ItemInvoked="NavFileHistory_ItemInvoked"
+                             BackRequested="NavFileHistory_BackRequested"
+                             VerticalAlignment="Top">
+                            <NavigationView.MenuItems >
+                                <NavigationViewItem  Content="Upload Status" Tag="UploadHistory" />
+                                <NavigationViewItem  Content="Download Status" Tag="DownloadHistory" />
+                                <NavigationViewItem  Content="Export Status" Tag="ExportHistory" />
                             </NavigationView.MenuItems>
-                            <ScrollViewer>
-                                <Frame x:Name="ContentFrame" IsTabStop="True">
+                            <ScrollViewer Height="1000" VerticalAlignment="Top">
+                                <Frame x:Name="ContentFrame" IsTabStop="True" VerticalAlignment="Top">
                                 </Frame>
                             </ScrollViewer>
                         </NavigationView>
                     </StackPanel>
                 </Border>
-            </Canvas>
-        </StackPanel>
     </Grid>
 </Page>

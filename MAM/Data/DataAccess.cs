@@ -7,6 +7,7 @@ using System.Text;
 using System.Xml.Linq;
 using System.Xml;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml;
 
 namespace MAM.Data
 {
@@ -15,8 +16,11 @@ namespace MAM.Data
         //private readonly string _connectionString = "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
         public static string ConnectionString { get; set; }//= "server=localhost;uid=root;pwd=root;database=mam;Connection Timeout=30;";
         public static List<string> ConnectionStringList { get; set; }
+        private XamlRoot xamlRoot;
         public DataAccess()
         {
+            if(App.MainAppWindow!=null)
+                xamlRoot = App.MainAppWindow.Content.XamlRoot;
         }
         // Constructor to initialize with a connection string
         public DataAccess(string connectionString)
@@ -133,19 +137,18 @@ namespace MAM.Data
         //    reader.DisposeAsync();
         //    return (-1,string.Empty, string.Empty,-1, string.Empty);
         //}
-        public (int, string, string, int, string) GetUserCredentials(string userName)
+        public async Task<(int, string, string, int, string)> GetUserCredentials(string userName)
         {
-            string query = @"
-        SELECT u.user_id, u.password_hash, u.password_salt, ug.group_id, ug.group_name
-        FROM user u
-        INNER JOIN user_roles ur ON u.user_id = ur.user_id
-        INNER JOIN user_group ug ON ug.group_id = ur.group_id
-        WHERE user_name = @userName";
+            string query = @"SELECT u.user_id, u.password_hash, u.password_salt, ug.group_id, ug.group_name
+                            FROM user u
+                            INNER JOIN user_roles ur ON u.user_id = ur.user_id
+                            INNER JOIN user_group ug ON ug.group_id = ur.group_id
+                            WHERE user_name = @userName";
 
             var parameters = new List<MySqlParameter> { new("@userName", userName) };
 
             using var reader = ExecuteReader(query, parameters);
-            if (reader!=null && reader.Read())
+            if (reader!=null && await reader.ReadAsync())
             {
                 return (
                     Convert.ToInt32(reader["user_id"]),
@@ -371,24 +374,24 @@ namespace MAM.Data
                         {
                             case 1062: // Duplicate primary key / unique constraint violation
                                 errorMessage = "This item already exists. Please use a unique value.";
-                                Console.WriteLine("Duplicate primary key error: Primary key or unique constraint violation.");
+                                await GlobalClass.Instance.ShowDialogAsync("Duplicate primary key error: Primary key or unique constraint violation.",xamlRoot);
                                 errorCode = 1062;
                                 break;
 
                             case 1451: // Foreign key constraint error
                                 errorMessage = "This item is assigned to one or more items and can't be deleted.";
-                                Console.WriteLine("Foreign key error: It is referenced in another table.");
+                                await GlobalClass.Instance.ShowDialogAsync("Foreign key error: It is referenced in another table.", xamlRoot);
                                 errorCode = 1451;
                                 break;
                             case 1644:
                                 errorMessage = "Please ensure the name is unique and try again.";
-                                Console.WriteLine("Duplicate root category not allowed.");
+                                await GlobalClass.Instance.ShowDialogAsync("Duplicate root category not allowed.", xamlRoot);
                                 errorCode = 1644;
                                 break;
 
                             default:
                                 errorMessage = "A database error ocuured.";
-                                Console.WriteLine($"A MySQL error occurred: {ex.Message}");
+                                await GlobalClass.Instance.ShowDialogAsync($"A MySQL error occurred: {ex.Message}",xamlRoot);
                                 errorCode = ex.Number;
                                 break;
                         }
@@ -396,7 +399,7 @@ namespace MAM.Data
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+                        await GlobalClass.Instance.ShowDialogAsync($"An unexpected error occurred: {ex.Message}",xamlRoot);
                         errorCode = -1;
                         return (0, lastInsertedId, errorMessage);
                     }

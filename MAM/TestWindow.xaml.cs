@@ -37,131 +37,18 @@ namespace MAM
         public TestWindow()
         {
             this.InitializeComponent();
-            //FileSystemItems = new ObservableCollection<FileSystemItem>();
-
-            //// Load the file system hierarchy
-            //var rootDirectory = @"F:\MAM"; // Change this to the desired root directory
-            //var rootItem = CreateFileSystemItem(rootDirectory);
-            //FileSystemItems.Add(rootItem);
-
-            //FileTreeView.DataContext = this;
+            
         }
 
-        //private FileSystemItem CreateFileSystemItem(string path)
-        //{
-        //    var item = new FileSystemItem
-        //    {
-        //        Name = System.IO.Path.GetFileName(path),
-        //        Path = path,
-        //        IsDirectory = Directory.Exists(path)
-        //    };
+        private void Grid_DragOver(object sender, DragEventArgs e)
+        {
 
-        //    if (item.IsDirectory)
-        //    {
-        //        try
-        //        {
-        //            foreach (var dir in Directory.GetDirectories(path))
-        //            {
-        //                item.Children.Add(CreateFileSystemItem(dir));
-        //            }
+        }
 
-        //            foreach (var file in Directory.GetFiles(path))
-        //            {
-        //                item.Children.Add(new FileSystemItem
-        //                {
-        //                    Name = System.IO.Path.GetFileName(file),
-        //                    Path = file,
-        //                    IsDirectory = false
-        //                });
-        //            }
-        //        }
-        //        catch (UnauthorizedAccessException)
-        //        {
-        //            // Handle access exceptions
-        //        }
-        //    }
+        private void Grid_Drop(object sender, DragEventArgs e)
+        {
 
-        //    return item;
-        //}
-        //private void FileTreeView_Expanded(object sender, TreeViewExpandingEventArgs e)
-        //{
-        //    if (e.Item is FileSystemItem item && item.IsDirectory && !item.IsLoaded)
-        //    {
-        //        // Use a temporary list to avoid modifying the collection directly during iteration
-        //        var newChildren = new List<FileSystemItem>();
-
-        //        try
-        //        {
-        //            foreach (var dir in Directory.GetDirectories(item.Path))
-        //            {
-        //                newChildren.Add(new FileSystemItem
-        //                {
-        //                    Name = System.IO.Path.GetFileName(dir),
-        //                    Path = dir,
-        //                    IsDirectory = true
-        //                });
-        //            }
-
-        //            foreach (var file in Directory.GetFiles(item.Path))
-        //            {
-        //                newChildren.Add(new FileSystemItem
-        //                {
-        //                    Name = System.IO.Path.GetFileName(file),
-        //                    Path = file,
-        //                    IsDirectory = false
-        //                });
-        //            }
-        //        }
-        //        catch (UnauthorizedAccessException)
-        //        {
-        //            // Handle access exceptions gracefully
-        //        }
-
-        //        // Update the ObservableCollection outside the event loop
-        //        DispatcherQueue.TryEnqueue(() =>
-        //         {
-        //             item.Children.Clear(); // Safe to clear now
-        //             foreach (var child in newChildren)
-        //             {
-        //                 item.Children.Add(child);
-        //             }
-        //             item.IsLoaded = true;
-        //         });
-        //    }
-        //}
-
-
-
+        }
     }
-    //public class FileSystemItem
-    //{
-    //    public string Name { get; set; }
-    //    public string Path { get; set; }
-    //    public bool IsDirectory { get; set; }
-    //    public bool IsLoaded { get; set; }
-
-    //    public ObservableCollection<FileSystemItem> Children { get; set; }
-
-    //    public FileSystemItem()
-    //    {
-    //        Children = new ObservableCollection<FileSystemItem>();
-    //    }
-    //}
-    //public class BoolToGlyphConverter : IValueConverter
-    //{
-    //    public object Convert(object value, Type targetType, object parameter, string language)
-    //    {
-    //        if (value is bool isDirectory)
-    //        {
-    //            return isDirectory ? "\uE8B7" : "\uE8A5"; // Folder glyph and file glyph
-    //        }
-
-    //        return "\uE10E"; // Default glyph (error/unknown)
-    //    }
-
-    //    public object ConvertBack(object value, Type targetType, object parameter, string language)
-    //    {
-    //        throw new NotImplementedException(); // One-way binding only
-    //    }
-    //}
+    
 }

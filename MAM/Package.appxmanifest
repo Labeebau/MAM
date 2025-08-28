@@ -49,6 +49,8 @@
     <rescap:Capability Name="runFullTrust" />
 	  <Capability Name="internetClient" />
 	  <uap:Capability Name="videosLibrary" />
+	  <rescap:Capability Name="broadFileSystemAccess"/>
+
   </Capabilities>
 	
 </Package>

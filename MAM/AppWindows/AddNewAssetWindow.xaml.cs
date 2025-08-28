@@ -1,5 +1,6 @@
 ﻿using MAM.Data;
 using MAM.Utilities;
+using MAM.Views.AdminPanelViews;
 using MAM.Views.MediaBinViews;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -153,12 +154,14 @@ namespace MAM.Windows
                 type = "Document";
             FileInfo fileInfo = new(file.Path);
             long fileSize = fileInfo.Length / (1024 * 1024);//Converts bytes to MB
+            string relativePath = Path.GetRelativePath(Path.Combine(viewModel.MediaLibraryObj.FileServer.ServerName, viewModel.MediaLibraryObj.FileServer.FileFolder), viewModel.MediaLibraryObj.BinName);  // "Songs\Hindi"
             MediaPlayerItem media = new()
             {
                 CreatedUser = GlobalClass.Instance.CurrentUser.UserName,
                 CreationDate = DateOnly.FromDateTime(DateTime.Today.Date),
                 Duration = duration,
                 DurationString = duration.ToString(@"hh\:mm\:ss"),
+                RelativePath = relativePath,
                 MediaSource = new Uri(Path.Combine(viewModel.MediaLibraryObj.BinName, file.Name)),
                 MediaPath = viewModel.MediaLibraryObj.BinName,
                 OriginalPath = file.Path,
@@ -303,7 +306,7 @@ namespace MAM.Windows
                             var thumbnailPath = Path.Combine(thumbnailMediaPath, Path.GetFileNameWithoutExtension(asset.Media.Title) + "_Thumbnail.JPG");
                             if (result.reWritten)
                             {
-                                if (await DeleteAssetAsync(asset.Media.Title, asset.Media.MediaPath, xamlRoot) > 0)
+                                if (await DeleteAssetAsync(asset.Media, xamlRoot) > 0)
                                 {
                                     if (File.Exists(proxyPath))
                                         File.Delete(proxyPath);
@@ -398,24 +401,28 @@ namespace MAM.Windows
                 File.AppendAllText("log.txt", "Unhandled Error: " + ex.ToString() + "\n");
             }
         }
-        private async Task<int> DeleteAssetAsync(string assetName, string assetPath, XamlRoot xamlRoot)
+        private async Task<int> DeleteAssetAsync(MediaPlayerItem media,XamlRoot xamlRoot)
         {
             List<MySqlParameter> parameters = new();
-            parameters.Add(new MySqlParameter("@Asset_path", assetPath));
-            parameters.Add(new MySqlParameter("@Asset_name", assetName));
-            int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and asset_path = @Asset_path;", parameters);
-            parameters.Add(new MySqlParameter("@Asset_id", id));
-            var (affectedRows, newId, errorMessage) = await dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters);
-            if (!string.IsNullOrEmpty(errorMessage))
+            parameters.Add(new MySqlParameter("@Relative_path", media.RelativePath));
+            parameters.Add(new MySqlParameter("@Asset_name", media.Title));
+            int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and relative_path = @Relative_path;", parameters);
+            if (id > 0)
             {
-                await GlobalClass.Instance.ShowDialogAsync("Deletion Failed.An unknown error occurred while trying to delete asset.", xamlRoot);
-                return -1;
+                parameters.Add(new MySqlParameter("@Asset_id", id));
+                var (affectedRows, newId, errorMessage) = await dataAccess.ExecuteNonQuery($"Delete from asset where asset_id=@Asset_id", parameters);
+                if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    await GlobalClass.Instance.ShowDialogAsync("Deletion Failed.An unknown error occurred while trying to delete asset.", xamlRoot);
+                    return -1;
+                }
+                else
+                {
+                    await GlobalClass.Instance.AddtoHistoryAsync("Delete from Library", $"Deleted '{media.MediaSource.LocalPath}' from library .");
+                    return affectedRows;
+                }
             }
-            else
-            {
-                await GlobalClass.Instance.AddtoHistoryAsync("Delete from Library", $"Deleted '{assetPath}\\{assetName}' from library .");
-                return affectedRows;
-            }
+            return -1;
         }
         private bool IsAssetReady(string copyPath, string thumbnailPath, string proxyPath)
         {
@@ -1133,13 +1140,13 @@ namespace MAM.Windows
         {
             UIThreadHelper.RunOnUIThread(() => { App.MainAppWindow.StatusBar.ShowStatus("Copying to db...", true); });
 
-            //  App.MainAppWindow.StatusBar.ShowStatus("Copying to db...", true);
+            string relativePath = Path.GetRelativePath(Path.Combine(viewModel.MediaLibraryObj.FileServer.ServerName, viewModel.MediaLibraryObj.FileServer.FileFolder), asset.Media.MediaPath);  // "Songs\Hindi"
             List<MySqlParameter> parameters = [];
             string query = string.Empty;
+            parameters.Add(new MySqlParameter("@FileServerId", viewModel.MediaLibraryObj.FileServer.ServerId));
+            parameters.Add(new MySqlParameter("@ArchiveServerId", viewModel.MediaLibraryObj.ArchiveServer.ServerId));
             parameters.Add(new MySqlParameter("@AssetName", asset.Media.Title));
-            parameters.Add(new MySqlParameter("@AssetPath", asset.Media.MediaPath));
-            parameters.Add(new MySqlParameter("@ProxyPath", Path.GetDirectoryName(asset.Media.ProxyPath)));
-            parameters.Add(new MySqlParameter("@ThumbnailPath", Path.GetDirectoryName(asset.Media.ThumbnailPath)));
+            parameters.Add(new MySqlParameter("@RelativePath", relativePath));
             parameters.Add(new MySqlParameter("@Duration", Convert.ToDateTime(asset.Media.DurationString)));
             parameters.Add(new MySqlParameter("@Version", asset.Media.Version));
             parameters.Add(new MySqlParameter("@Type", asset.Media.Type));
@@ -1147,13 +1154,13 @@ namespace MAM.Windows
             parameters.Add(new MySqlParameter("@createdUser", asset.Media.CreatedUser));
             parameters.Add(new MySqlParameter("@CreationDate", asset.Media.CreationDate.ToString("yyyy-MM-dd")));
             parameters.Add(new MySqlParameter("@IsArchived", asset.Media.IsArchived));
-            query = "INSERT INTO asset(asset_name, asset_path, proxy_path,thumbnail_path, duration, version, type, size, created_user, created_at,is_archived) " +
+            query = "INSERT INTO asset(file_server_id,archive_server_id,asset_name, relative_path, duration, version, type, size, created_user, created_at,is_archived) " +
                     "SELECT * FROM(" +
-                    "SELECT " +
+            "SELECT " +
+                    "@FileServerId AS file_server_id,"+
+                    "@ArchiveServerId AS archive_server_id,"+
                     "@AssetName AS asset_name," +
-                    "@AssetPath AS asset_path," +
-                    "@ProxyPath AS proxy_path," +
-                    "@ThumbnailPath AS thumbnail_path," +
+                    "@RelativePath AS relative_path," +
                     "@Duration AS duration," +
                     "@Version AS version," +
                     "@Type AS type," +
@@ -1165,9 +1172,7 @@ namespace MAM.Windows
                     "WHERE NOT EXISTS(" +
                         "SELECT 1 FROM asset " +
                         "WHERE asset_name = @AssetName " +
-                        "AND asset_path = @AssetPath " +
-                        "AND proxy_path = @ProxyPath " +
-                        "AND thumbnail_path = @ThumbnailPath " +
+                        "AND relative_path = @RelativePath " +
                         "AND duration = @Duration" +
                         ") LIMIT 1";
 

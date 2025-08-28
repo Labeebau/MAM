@@ -12,15 +12,8 @@
     Title="Test Window">
 
 
-    <Grid Height="500" Width="500" Background="White">
-        <!-- The content (thumbnailsPanel) you want to blur -->
-        <!--<StackPanel x:Name="thumbnailsPanel"  Height="100" Width="100" HorizontalAlignment="Center" VerticalAlignment="Center">-->
-        <Image Source="/Assets/Quality Server.png"  Height="100" Width="100"/>
-
-            <Rectangle Fill="Gray" Height="100" Width="100" Opacity="0.3"></Rectangle>
-        <!--</StackPanel>-->
-
-        <!-- The overlay that blurs the content -->
+    <Grid Height="500" Width="500" AllowDrop="True" DragOver="Grid_DragOver" Drop="Grid_Drop">
+       
     </Grid>
 
 </Window>

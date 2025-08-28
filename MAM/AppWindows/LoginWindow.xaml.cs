@@ -179,7 +179,7 @@ namespace MAM.Windows
                     if (!ValidateInput())
                         return;
 
-                    bool isLoginSuccessful = ValidateLogin();
+                    bool isLoginSuccessful = await ValidateLogin();
                     if (isLoginSuccessful)
                     {
                         isLoggedIn = true;
@@ -231,11 +231,11 @@ namespace MAM.Windows
         }
 
 
-        private bool ValidateLogin()
+        private async Task<bool> ValidateLogin()
         {
             int userId, groupId;
             string passwordHash, passwordSalt,groupName;
-            (userId, passwordHash, passwordSalt, groupId, groupName) = dataAccess.GetUserCredentials(viewModel.UserName);// ?? (null, null, null,null,null);
+            (userId, passwordHash, passwordSalt, groupId, groupName) =await dataAccess.GetUserCredentials(viewModel.UserName);// ?? (null, null, null,null,null);
 
             if (userId>0 && passwordHash != null && passwordSalt != null)
             {

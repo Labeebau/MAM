@@ -153,7 +153,22 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                         </DataTemplate>
                         </controls:DataGridTemplateColumn.CellEditingTemplate>
                     </controls:DataGridTemplateColumn>
-
+                    
+                    <controls:DataGridTemplateColumn Header="RecycleFolder" Width="auto" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="local:FileServer">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                    <TextBlock  Padding="2,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{x:Bind RecycleFolder}" FontWeight="Light" FontSize="14"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                        <controls:DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding RecycleFolder,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellEditingTemplate>
+                    </controls:DataGridTemplateColumn>
+                    
                     <controls:DataGridTemplateColumn Header="Active" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="local:FileServer">

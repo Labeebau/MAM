@@ -19,7 +19,7 @@
         </MenuFlyout>
     </Page.Resources>
 
-    <Grid x:Name="MainGrid"  CornerRadius="10" Padding="10" HorizontalAlignment="Left" >
+    <Grid x:Name="MainGrid"  CornerRadius="10" Padding="10" HorizontalAlignment="Stretch" >
         <StackPanel Orientation="Vertical" >
             <TextBlock Text="Recycle Bin" VerticalAlignment="Bottom" Padding="10,0,0,10" FontWeight="SemiBold"/>
 
@@ -40,7 +40,7 @@
                       ItemsSource="{x:Bind ViewModel.PagedRecycleBinMediaPlayerItems,Mode=TwoWay}"
                       ContextFlyout="{StaticResource RecycleBinMenuFlyout}"
                       Height="770"
-                      Width="1800"
+                      HorizontalAlignment="Stretch"
                       IsTabStop="True"
                       TabIndex="0"
                       SelectionMode="Extended"
