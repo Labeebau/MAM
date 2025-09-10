@@ -28,6 +28,16 @@ namespace MAM.Utilities
             // Append \% (single backslash + % for SQL LIKE)
             return NormalizeForMySql(oldPath) + "\\%";
         }
+        public static string NormalizePath(string rawPath)
+        {
+            if (rawPath.StartsWith(@"\\localhost\", StringComparison.OrdinalIgnoreCase))
+            {
+                // Local drive
+                return rawPath.Replace(@"\\localhost\", "");
+            }
+            // UNC path to other servers is fine as-is
+            return rawPath;
+        }
     }
 
 

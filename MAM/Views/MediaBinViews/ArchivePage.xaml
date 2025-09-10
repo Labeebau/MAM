@@ -69,8 +69,9 @@
                 <Grid Padding="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="50" />
-                        <ColumnDefinition Width="500"/>
-                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="400"/>
+                        <ColumnDefinition Width="400"/>
+                        <ColumnDefinition Width="400"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Image Grid.Column="0" Source="{x:Bind ThumbnailPath}" Width="40" Height="40" />
@@ -88,7 +89,14 @@
                                  Padding="5,0,5,0"
                                  TextWrapping="Wrap"
                                  TextTrimming="CharacterEllipsis"/>
-                    <DropDownButton Grid.Column="3" 
+                    <TextBlock Grid.Column="3" 
+             Text="{x:Bind ArchivePath}" 
+             VerticalAlignment="Center" 
+             FontStyle="Italic" 
+             Padding="5,0,5,0"
+             TextWrapping="Wrap"
+             TextTrimming="CharacterEllipsis"/>
+                    <DropDownButton Grid.Column="4" 
                                       x:Name="TagsDropDown"
                                       Width="150" 
                                       HorizontalContentAlignment="Left"
@@ -178,27 +186,31 @@
         <!-- Right Panel -->
         <Border x:Name="CenterPanel"  Grid.Row="0" Grid.Column="2" Height="700" Width="auto"  Padding="20" >
             <Grid x:Name="CenterGrid"  Width="auto" Margin="20,0,0,0" >
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="50"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="30"/>
-                        </Grid.RowDefinitions>
-                        
-                        <Grid Grid.Row="0" x:Name="DetailsHeader"  Visibility="Collapsed">
+                  <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="30"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" x:Name="txtSearchBin" Width="auto" Margin="0,0,0,0" Text="{x:Bind ViewModel.MediaObj.MediaPath,Mode=OneWay}"
+HorizontalAlignment="Left"/>
+                <Grid Grid.Row="1" x:Name="DetailsHeader"  Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="80" />
-                                <ColumnDefinition Width="500"/>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="400"/>
+                                <ColumnDefinition Width="400"/>
+                                <ColumnDefinition Width="400"/>
+                        <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0" Text="" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="Title" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text=" Path" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="Tags" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Original Path" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="Archive Path" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="Tags" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                         </Grid>
-                        
-                        <GridView x:Name="MediaBinGridView" Grid.Row="1" 
+                
+                <GridView x:Name="MediaBinGridView" Grid.Row="2" 
                                    ItemsSource="{x:Bind ViewModel.PagedMediaPlayerItems,Mode=TwoWay}"
                                    ItemTemplateSelector="{StaticResource MediaTemplateSelector}"
                                    HorizontalAlignment="Stretch"
@@ -270,7 +282,7 @@
                         </GridView>
 
                         <ComboBox x:Name="ViewModeComboBox" 
-                                   Grid.Row="2"
+                                   Grid.Row="3"
                                    Margin="0,5,0,0"
                                    Width="65"
                                    SelectionChanged="ViewModeComboBox_SelectionChanged"
@@ -332,7 +344,7 @@
                 </StackPanel>
 
 
-                <StackPanel x:Name="FooterPanel" Grid.Row="2" Orientation="Horizontal"  VerticalAlignment="Bottom">
+                <StackPanel x:Name="FooterPanel" Grid.Row="3" Orientation="Horizontal"  VerticalAlignment="Bottom">
                             <TextBlock Text="{Binding AssetCount}"  Foreground="Red" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Grid>

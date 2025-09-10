@@ -1,6 +1,7 @@
 using MAM.Data;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using MySql.Data.MySqlClient;
 using System.Collections.ObjectModel;
 using System.Data;
 
@@ -76,7 +77,7 @@ namespace MAM.Views.ProcessesViews
         {
             var processList = new ObservableCollection<Process>();
             string query = "SELECT * FROM process WHERE result = @result ORDER BY start_time DESC";
-            Dictionary<string, object> parameters = new Dictionary<string, object> { { "@result", result } };
+            List<MySqlParameter> parameters = new () {new MySqlParameter("@result", result)};
             DataTable dt = dataAccess.GetData(query, parameters);
             foreach (DataRow row in dt.Rows)
             {

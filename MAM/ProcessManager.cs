@@ -1,34 +1,35 @@
 ﻿using MAM.Data;
 using MAM.Utilities;
 using MySql.Data.MySqlClient;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MAM
 {
     public static class ProcessManager
     {
-        private static DataAccess dataAccess=new DataAccess();
+        private static DataAccess dataAccess = new DataAccess();
         public static ObservableCollection<Process> AllProcesses { get; set; } = new ObservableCollection<Process>();
-        public static async Task<Process> CreateProcessAsync(int assetId,string filePath, ProcessType processType, string status = "Initializing", string result = "Waiting")
+        public static async Task<Process> CreateProcessAsync(int assetId, string filePath, ProcessType processType, string status = "Initializing", string result = "Waiting")
         {
             var process = new Process(filePath)
             {
-                AssetId=assetId,
+                AssetId = assetId,
                 ProcessType = processType,
                 StartTime = DateTime.Now,
                 Status = status,
                 Progress = 0,
                 Result = result
             };
+            if (process != null)
+            {
+                process.ProcessId = await InsertProcessInDatabaseAsync(process);
+                AllProcesses.Add(process);
 
-            process.ProcessId = await InsertProcessInDatabaseAsync(process);
-            AllProcesses.Add(process);
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("⚠️ Null process added!");
+            }
             return process;
         }
         public static async Task<Process> GetOrCreateUnifiedProcessAsync(string filePath)
@@ -56,7 +57,7 @@ namespace MAM
             return process;
         }
 
-        public static async Task CompleteProcessAsync(Process process,string status="Finished", string result = "Finished")
+        public static async Task CompleteProcessAsync(Process process, string status = "Finished", string result = "Finished")
         {
             await UIThreadHelper.RunOnUIThreadAsync(() =>
             {
@@ -113,8 +114,8 @@ namespace MAM
             propsList.Add(new MySqlParameter("@Status", process.Status));
             propsList.Add(new MySqlParameter("@Result", process.Result));
             string query = "insert into process (server,file_name,type,start_time,status,result)values(@Server,@FilePath,@Type,@StartTime,@Status,@Result)";
-            var (affectedRows, newId,errorMessage) = await dataAccess.ExecuteNonQuery(query, propsList);
-           
+            var (affectedRows, newId, errorMessage) = await dataAccess.ExecuteNonQuery(query, propsList);
+
             return affectedRows > 0 ? newId : -1;
         }
     }

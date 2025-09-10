@@ -14,10 +14,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
 using MySql.Data.MySqlClient;
-using Mysqlx.Crud;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
@@ -25,7 +22,6 @@ using System.Net;
 using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Input;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Devices.Geolocation;
 using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
@@ -49,7 +45,7 @@ namespace MAM.Views.MediaBinViews
         private readonly List<string> ExcludedFolders = new() { "Proxy" };
         public MediaLibraryViewModel ViewModel { get; set; }
         private readonly IDropTargetHelper _dropHelper;
-
+        public static XamlRoot XamlRoot1 { get; set; }
         public MediaLibraryPage()
         {
             this.InitializeComponent();
@@ -77,98 +73,86 @@ namespace MAM.Views.MediaBinViews
         private async void MediaLibraryPage_Loaded(object sender, RoutedEventArgs e)
         {
             LoadServers();
-            if (GlobalClass.Instance.FileServer != null)
+            if (GlobalClass.Instance.ActiveFileServer != null)
             {
-                ViewModel.MediaLibraryObj.FileServer = GlobalClass.Instance.FileServer;
-                var builder = new MySqlConnectionStringBuilder(DataAccess.ConnectionString);
+                ViewModel.MediaLibraryObj.FileServerList = await GlobalClass.Instance.GetFileServerList(XamlRoot);
+                ViewModel.MediaLibraryObj.ArchiveServerList = await GlobalClass.Instance.GetArchiveServerList(XamlRoot);
 
-                string server = builder.Server;  // "192.168.29.191"
-                string fileServer = ViewModel.MediaLibraryObj.FileServer.ServerName.Replace("\\", "");
-                if (fileServer == server)
+                ViewModel.MediaLibraryObj.ActiveFileServer = GlobalClass.Instance.ActiveFileServer;
+                ViewModel.MediaLibraryObj.ActiveArchiveServer = GlobalClass.Instance.ActiveArchiveServer;
+
+                ViewModel.MediaLibraryObj.FileFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder);
+                ViewModel.MediaLibraryObj.ProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.ProxyFolder);
+                ViewModel.MediaLibraryObj.ThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.ThumbnailFolder);
+                ViewModel.MediaLibraryObj.RecycleFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.RecycleFolder);
+                ViewModel.MediaLibraryObj.ArchiveFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveArchiveServer.ServerName, ViewModel.MediaLibraryObj.ActiveArchiveServer.ArchivePath);
+
+                if (!Directory.Exists(ViewModel.MediaLibraryObj.FileFolder))
+                    Directory.CreateDirectory(ViewModel.MediaLibraryObj.FileFolder);
+                if (!Directory.Exists(ViewModel.MediaLibraryObj.ProxyFolder))
+                    Directory.CreateDirectory(ViewModel.MediaLibraryObj.ProxyFolder);
+                if (!Directory.Exists(ViewModel.MediaLibraryObj.ThumbnailFolder))
+                    Directory.CreateDirectory(ViewModel.MediaLibraryObj.ThumbnailFolder);
+                if (!Directory.Exists(ViewModel.MediaLibraryObj.ArchiveFolder))
+                    Directory.CreateDirectory(ViewModel.MediaLibraryObj.ArchiveFolder);
+                ViewModel.MediaLibraryObj.RecycleThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.RecycleFolder, "Thumbnail");
+                ViewModel.MediaLibraryObj.RecycleProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.RecycleFolder, "Proxy");
+                if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleFolder))
+                    Directory.CreateDirectory(ViewModel.MediaLibraryObj.RecycleFolder);
+                if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleThumbnailFolder))
+                    Directory.CreateDirectory(ViewModel.MediaLibraryObj.RecycleThumbnailFolder);
+                if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleProxyFolder))
+                    Directory.CreateDirectory(ViewModel.MediaLibraryObj.RecycleProxyFolder);
+                if (ViewModel.MediaLibraryObj.ActiveFileServer != null)
                 {
-                    string fileFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder);
-                    string baseRoot = Directory.GetParent(fileFolder).FullName;
-                    string mediaLibrary = fileFolder.Substring(baseRoot.Length).TrimStart('\\');
-                    //string RecycleBin = Path.Combine(baseRoot, "Recycle Bin");
-                    //string RecycleBinMediaLibrary = Path.Combine(RecycleBin, mediaLibrary);
-
-                    //string RecycleBinThumbnailFolder = Path.Combine(RecycleBin, "Thumbnail");
-                    //string RecycleBinProxyFolder = Path.Combine(RecycleBin, "Proxy");
-
-
-
-                    ViewModel.MediaLibraryObj.ProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.ProxyFolder);
-                    ViewModel.MediaLibraryObj.ThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.ThumbnailFolder);
-                    ViewModel.MediaLibraryObj.RecycleFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.RecycleFolder, mediaLibrary);
-                    if (!Directory.Exists(ViewModel.MediaLibraryObj.FileServer.FileFolder))
-                        Directory.CreateDirectory(ViewModel.MediaLibraryObj.FileServer.FileFolder);
-                    if (!Directory.Exists(ViewModel.MediaLibraryObj.ProxyFolder))
-                        Directory.CreateDirectory(ViewModel.MediaLibraryObj.ProxyFolder);
-                    if (!Directory.Exists(ViewModel.MediaLibraryObj.ThumbnailFolder))
-                        Directory.CreateDirectory(ViewModel.MediaLibraryObj.ThumbnailFolder);
-
-                    ViewModel.MediaLibraryObj.ArchiveServer = await GlobalClass.Instance.GetArchiveServer(XamlRoot);
-                    if (!Directory.Exists(ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath))
-                        Directory.CreateDirectory(ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath);
-                    // ViewModel.MediaLibraryObj.RecycleFolder = RecycleBinMediaLibrary;
-                    ViewModel.MediaLibraryObj.RecycleThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.RecycleFolder, "Thumbnail");
-                    ViewModel.MediaLibraryObj.RecycleProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.RecycleFolder, "Proxy");
-                    if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleFolder))
-                        Directory.CreateDirectory(ViewModel.MediaLibraryObj.RecycleFolder);
-                    if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleThumbnailFolder))
-                        Directory.CreateDirectory(ViewModel.MediaLibraryObj.RecycleThumbnailFolder);
-                    if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleProxyFolder))
-                        Directory.CreateDirectory(ViewModel.MediaLibraryObj.RecycleProxyFolder);
-                    if (ViewModel.MediaLibraryObj.FileServer != null)
+                    UIThreadHelper.RunOnUIThread(() =>
                     {
-                        UIThreadHelper.RunOnUIThread(() =>
+                        App.MainAppWindow.StatusBar.ShowStatus("Connecting...", true);
+                    });
+                    var root = await LoadRootItemsAsync(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName);
+                    if (root != null)
+                    {
+                        ViewModel.FileSystemItems.Clear();
+                        ViewModel.FileSystemItems.Add(root);
+                        SelectRootNode();
+                        try
                         {
-                            App.MainAppWindow.StatusBar.ShowStatus("Connecting...", true);
-                        });
-                        var root = await LoadRootItemsAsync(ViewModel.MediaLibraryObj.FileServer.ServerName);
-                        if (root != null)
-                        {
-                            ViewModel.FileSystemItems.Clear();
-                            ViewModel.FileSystemItems.Add(root);
-                            SelectRootNode();
-                            try
-                            {
-                                GetAllTags();
-                                GetAllMetadata();
-                                UIThreadHelper.RunOnUIThread(() =>
-                                {
-                                    App.MainAppWindow.StatusBar.ShowStatus("Connected.", false);
-                                    App.MainAppWindow.StatusBar.HideStatus();
-                                });
-                            }
-                            catch (Exception ex)
-                            {
-                                await GlobalClass.Instance.ShowDialogAsync($"Unable to create Directory. Check file server settings ", this.XamlRoot);
-                            }
-                        }
-                        else
+                            GetAllTags();
+                            GetAllMetadata();
                             UIThreadHelper.RunOnUIThread(() =>
                             {
-                                App.MainAppWindow.StatusBar.ShowStatus("Connection Failed.", false);
+                                App.MainAppWindow.StatusBar.ShowStatus("Connected.", false);
+                                App.MainAppWindow.StatusBar.HideStatus();
                             });
+                        }
+                        catch (Exception ex)
+                        {
+                            await GlobalClass.Instance.ShowDialogAsync($"Unable to create Directory. Check file server settings ", this.XamlRoot);
+                        }
                     }
+                    else
+                        UIThreadHelper.RunOnUIThread(() =>
+                        {
+                            App.MainAppWindow.StatusBar.ShowStatus("Connection Failed.", false);
+                        });
                 }
             }
+            //}
         }
         private async void LoadServers()
         {
-            await GlobalClass.Instance.GetArchiveServer(this.Content.XamlRoot);
-            await GlobalClass.Instance.GetFileServer(this.Content.XamlRoot);
+            await GlobalClass.Instance.GetActiveArchiveServer(this.Content.XamlRoot);
+            await GlobalClass.Instance.GetActiveFileServer(this.Content.XamlRoot);
         }
         public async Task<FileSystemItem> LoadRootItemsAsync(string rootPath)
         {
             var credentials = new NetworkCredential(
-                ViewModel.MediaLibraryObj.FileServer.UserName,
-                ViewModel.MediaLibraryObj.FileServer.Password,
-                ViewModel.MediaLibraryObj.FileServer.Domain);
+                ViewModel.MediaLibraryObj.ActiveFileServer.UserName,
+                ViewModel.MediaLibraryObj.ActiveFileServer.Password,
+                ViewModel.MediaLibraryObj.ActiveFileServer.Domain);
 
             var items = new FileSystemItem();
-            string fileFolder = Path.Combine(rootPath, ViewModel.MediaLibraryObj.FileServer.FileFolder);
+            string fileFolder = Path.Combine(rootPath, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder);
             var connection = await NetworkConnection.CreateAsync(rootPath, credentials, this.XamlRoot);
             if (connection != null)
             {
@@ -202,8 +186,8 @@ namespace MAM.Views.MediaBinViews
                 try
                 {
                     string archivePath = string.Empty;
-                    if (ViewModel.MediaLibraryObj.ArchiveServer != null)
-                        archivePath = Path.Combine(ViewModel.MediaLibraryObj.ArchiveServer.ServerName, ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath);
+                    if (ViewModel.MediaLibraryObj.ActiveArchiveServer != null)
+                        archivePath = Path.Combine(ViewModel.MediaLibraryObj.ActiveArchiveServer.ServerName, ViewModel.MediaLibraryObj.ActiveArchiveServer.ArchivePath);
                     foreach (var dir in Directory.GetDirectories(path))
                     {
                         // Skip folders named "Proxy"
@@ -236,20 +220,7 @@ namespace MAM.Views.MediaBinViews
                 FileTreeView.SelectedItem = firstRootNode.Content;
             }
         }
-        //private void CustomMediaPlayer_Loaded(object sender, RoutedEventArgs e)
-        //{
-        //    if (sender is CustomBinMedia customMedia && customMedia.DataContext is MediaPlayerItem mediaItem)
-        //    {
-        //        customMedia.DeleteRequested += async (s, args) =>
-        //        {
-        //            await DeleteMediaItemAsync(args.MediaItem);
-        //        };
-        //        customMedia.PlayButtonClicked += async (s, args) =>
-        //        {
-        //            await ShowAssetWindow();
-        //        };
-        //    }
-        //}
+
         private void ViewModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ViewModeComboBox.SelectedItem is ComboBoxItem selectedItem)
@@ -468,7 +439,7 @@ namespace MAM.Views.MediaBinViews
             {
                 // Get all subdirectories, excluding those named "Proxy"
                 var subDirs = Directory.GetDirectories(rootPath)
-                                       .Where(dir => new DirectoryInfo(dir).Name != ViewModel.MediaLibraryObj.ProxyFolder && new DirectoryInfo(dir).Name != ViewModel.MediaLibraryObj.ThumbnailFolder && new DirectoryInfo(dir).Name != ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath)
+                                       .Where(dir => new DirectoryInfo(dir).Name != ViewModel.MediaLibraryObj.ProxyFolder && new DirectoryInfo(dir).Name != ViewModel.MediaLibraryObj.ThumbnailFolder && new DirectoryInfo(dir).Name != ViewModel.MediaLibraryObj.ActiveArchiveServer.ArchivePath)
                                        .ToList();
                 if (subDirs.Count > 0)
                     directories.AddRange(subDirs);
@@ -491,7 +462,7 @@ namespace MAM.Views.MediaBinViews
         {
             //GlobalClass.Instance.MediaLibraryPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder);
             DataTable dt = new();
-            Dictionary<string, object> parameters = new();
+            List<MySqlParameter> parameters = new();
             List<string> directories = new();
             directories.Add(FolderPath);
             directories.AddRange(await GetAllSubdirectoriesAsync(FolderPath));
@@ -499,21 +470,25 @@ namespace MAM.Views.MediaBinViews
             // ViewModel.AllMediaPlayerItems.Clear();
             foreach (var dir in directories)
             {
-                if (Directory.Exists(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ProxyFolder)))
+                if (Directory.Exists(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.ProxyFolder)))
                 {
-                    string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder), dir);  // "Songs\Hindi"
-                    parameters.Add("@Relative_path", relativePath);
+                    string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder), dir);  // "Songs\Hindi"
+                    parameters.Add(new MySqlParameter("@Relative_path", relativePath));
+                    parameters.Add(new MySqlParameter("@FileServerId", ViewModel.MediaLibraryObj.ActiveFileServer.ServerId));
+
                     dt = dataAccess.GetData($"SELECT a.asset_id, a.asset_name,a.relative_path," +
-                                             "CONCAT(fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
-                                            "CONCAT(fs.proxy_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS proxy_path," +
-                                            "CONCAT(fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
-                                            "CASE " +
+                                             "fs.server_id as fs_server_id ,fs.server_name as fs_server_name,fs.file_folder as fs_file_folder,fs.proxy_folder as fs_proxy_folder,fs.thumbnail_folder as fs_thumbnail_folder,fs.recycle_folder as fs_recycle_folder," +
+                                             "ars.server_id as ars_server_id,ars.server_name as ars_server_name,ars.archive_path as ars_archive_path," +
+                                             "CONCAT(fs.server_name,'\\\\',fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
+                                             "CONCAT(fs.server_name,'\\\\',fs.proxy_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS proxy_path," +
+                                             "CONCAT(fs.server_name,'\\\\',fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
+                                             "CASE " +
                                                 "WHEN a.is_archived = 1 " +
-                                                "THEN CONCAT(REPLACE(asr.archive_path, '/', '\\\\'), '\\\\', REPLACE(a.archive_path, '/', '\\\\')) " +
+                                                "THEN CONCAT(REPLACE(ars.archive_path, '/', '\\\\'), '\\\\', REPLACE(a.archive_path, '/', '\\\\')) " +
                                             "END AS archive_path," +
                                             "CASE " +
                                                 "WHEN a.is_deleted = 1 " +
-                                                "THEN CONCAT(fs.recycle_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) " +
+                                                "THEN CONCAT(fs.server_name,'\\\\',fs.recycle_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) " +
                                             "END AS recyclebin_path," +
                                             "a.duration, a.description, a.version, a.type," +
                                             "a.size,a.created_user, a.created_at, a.updated_user, a.updated_at, a.is_archived, a.archive_path," +
@@ -521,13 +496,13 @@ namespace MAM.Views.MediaBinViews
                                             "IFNULL(GROUP_CONCAT(DISTINCT CONCAT(m.metadata_id, ':', m.metadata_name, ':', am.metadata_value, ':', m.metadata_type) " +
                                             "ORDER BY m.metadata_name SEPARATOR '; '),'') AS metadata_info " +
                                             "FROM asset a " +
-                                            "JOIN file_server fs on a.file_server_id=fs.server_id " +
-                                            "JOIN archive_server asr on a.archive_server_id=asr.server_id " +
+                                            "LEFT JOIN file_server fs on a.file_server_id=fs.server_id " +
+                                            "JOIN archive_server ars on a.archive_server_id=ars.server_id " +
                                             "LEFT JOIN asset_tag ta ON a.asset_id = ta.asset_id " +
                                             "LEFT JOIN tag t ON t.tag_id = ta.tag_id " +
                                             "LEFT JOIN asset_metadata am ON a.asset_id = am.asset_id " +
                                             "LEFT JOIN metadata m ON am.metadata_id = m.metadata_id " +
-                                            "WHERE a.relative_path = @Relative_path AND a.is_deleted=false " +
+                                            "WHERE a.file_server_id=@FileServerId AND a.relative_path = @Relative_path AND a.is_deleted=false " +
                                             "GROUP BY a.asset_id;", parameters);
 
                     foreach (DataRow row in dt.Rows)
@@ -539,20 +514,29 @@ namespace MAM.Views.MediaBinViews
                         //string thumbnailMediaPath = Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, relativePath);
                         //string thumbnailPath = Path.Combine(thumbnailMediaPath, Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG");
                         //Uri thumbnailUri = new Uri(thumbnailPath);
-                        string proxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, row["proxy_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Proxy.MP4");
+                        string proxyPath = Path.Combine(row["proxy_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Proxy.MP4");
                         ////string proxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.ProxyFolder,  (file)+ "+Proxy" );
                         //string proxyPath = row["proxy_path"].ToString();
-                        string thumbnailPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, row["thumbnail_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG");
+                        string thumbnailPath = Path.Combine(row["thumbnail_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG");
                         TimeSpan duration = (TimeSpan)(row["duration"]);
                         string description = string.Empty;
                         string updated_user = string.Empty;
                         DateTime updated_at = DateTime.MinValue;
-                        string mediaPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, row["media_path"].ToString());
+                        string mediaPath = Path.Combine(row["media_path"].ToString());
                         string source = Path.Combine(mediaPath, row["asset_name"].ToString());
                         bool isArchived = Convert.ToBoolean(row["is_archived"]);
                         string archivePath = string.Empty;
+                        ArchiveServer archiveServer = new ArchiveServer();
                         if (isArchived)
-                            archivePath = Path.Combine(row["archive_path"].ToString(), Path.GetFileName(file));
+                        {
+                            archiveServer = new ArchiveServer
+                            {
+                                ServerId = Convert.ToInt32(row["ars_server_id"]),
+                                ServerName = row["ars_server_name"].ToString(),
+                                ArchivePath = Path.Combine(row["ars_archive_path"].ToString(), Path.GetFileName(file))
+                            };
+                            //archivePath = Path.Combine(row["archive_path"].ToString(), Path.GetFileName(file));
+                        }
                         if (!File.Exists(source))
                         {
                             if ((File.Exists(proxyPath)) && !isArchived)
@@ -582,8 +566,19 @@ namespace MAM.Views.MediaBinViews
                                 metadataList.Add(assetsMetadata);
                             }
                         }
+                        FileServer fileServer = new FileServer
+                        {
+                            ServerId = Convert.ToInt32(row["fs_server_id"]),
+                            ServerName = row["fs_server_name"].ToString(),
+                            FileFolder = row["fs_file_folder"].ToString(),
+                            ProxyFolder = row["fs_proxy_folder"].ToString(),
+                            ThumbnailFolder = row["fs_thumbnail_folder"].ToString(),
+                            RecycleFolder = row["fs_recycle_folder"].ToString(),
+                        };
                         ViewModel.MediaPlayerItems.Add(new MediaPlayerItem
                         {
+                            FileServer = fileServer,
+                            ArchiveServer = archiveServer,
                             MediaId = Convert.ToInt32(row["asset_id"]),
                             RelativePath = row["relative_path"].ToString(),
                             Title = row["asset_name"].ToString(),
@@ -623,79 +618,49 @@ namespace MAM.Views.MediaBinViews
         {
             string assetPath = media.RelativePath;
             string assetName = media.Title;
-            GlobalClass.Instance.MediaLibraryPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder);
+            GlobalClass.Instance.MediaLibraryPath = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder);
             DataTable dt = new();
-            Dictionary<string, object> parameters = new();
-            if (Directory.Exists(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.ProxyFolder)))
+            List<MySqlParameter> parameters = new();
+            if (Directory.Exists(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ProxyFolder)))
             {
                 //MediaLibrary.ProxyFolder = System.IO.Path.Combine(assetPath, "Proxy");
-                parameters.Add("@Relative_path", assetPath);
-                parameters.Add("@Asset_name", assetName);
+                parameters.Add(new MySqlParameter("@Relative_path", assetPath));
+                parameters.Add(new MySqlParameter("@Asset_name", assetName));
                 string query = string.Empty;
 
-                query = $"select a.asset_id," +
-                       $"a.asset_name ," +
-                       $"a.relative_path ," +
-                       "CONCAT(fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
-                       "CONCAT(fs.proxy_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS proxy_path," +
-                       "CONCAT(fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
+                query = $"select a.asset_id,a.asset_name,a.relative_path,"+
+                       "fs.server_id as fs_server_id ,fs.server_name as fs_server_name,fs.file_folder as fs_file_folder,fs.proxy_folder as fs_proxy_folder,fs.thumbnail_folder as fs_thumbnail_folder,fs.recycle_folder as fs_recycle_folder," +
+                       "ars.server_id as ars_server_id,ars.server_name as ars_server_name,ars.archive_path as ars_archive_path," +
+                       "CONCAT(fs.server_name,'\\\\',fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
+                       "CONCAT(fs.server_name,'\\\\',fs.proxy_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS proxy_path," +
+                       "CONCAT(fs.server_name,'\\\\',fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
                        "CASE " +
                         "WHEN a.is_archived = 1 " +
-                            "THEN CONCAT(fs.server_name, '\\\\', REPLACE(a.archive_path, '/', '\\\\')) " +
+                            "THEN CONCAT(ars.server_name, '\\\\', REPLACE(a.archive_path, '/', '\\\\')) " +
                         "END AS archive_path," +
                        "CASE " +
                         "WHEN a.is_deleted = 1 " +
-                            "THEN CONCAT(fs.recycle_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) " +
-                       "END AS recyclebin_path," +
-
-                       $"a.duration," +
-                       $"a.description," +
-                       $"a.version," +
-                       $"a.type," +
-                       $"a.size," +
-                       $"a.created_user," +
-                       $"a.created_at," +
-                       $"a.updated_user," +
-                       $"a.updated_at, " +
-                       $"a.is_archived, " +
-                       $"a.archive_path, " +
-                       $" group_concat( distinct t.tag_name order by tag_name) as tag_name," +
-                       $" group_concat(distinct concat(m.metadata_id,':',m.metadata_name, ':', am.metadata_value,':',m.metadata_type) ORDER BY m.metadata_name SEPARATOR '; ') AS metadata_info" +
-                       $" from asset a " +
+                            "THEN CONCAT(fs.server_name,'\\\\',fs.recycle_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) " +
+                       "END AS recyclebin_path,"+
+                       "a.duration,a.description,a.version,a.type,a.size,a.created_user,a.created_at,a.updated_user,a.updated_at, a.is_archived, a.archive_path, " +
+                       " group_concat( distinct t.tag_name order by tag_name) as tag_name," +
+                       " group_concat(distinct concat(m.metadata_id,':',m.metadata_name, ':', am.metadata_value,':',m.metadata_type) ORDER BY m.metadata_name SEPARATOR '; ') AS metadata_info" +
+                       " from asset a " +
                        "JOIN file_server fs on a.file_server_id=fs.server_id " +
-                       "JOIN archive_server asr on a.archive_server_id=asr.server_id " +
-                       $" left join asset_tag ta on a.asset_id=ta.asset_id" +
-                       $" left join tag t on t.tag_id=ta.tag_id" +
-                       $" left join asset_metadata am on a.asset_id = am.asset_id" +
-                       $" left join metadata m ON am.metadata_id = m.metadata_id" +
+                       "JOIN archive_server ars on a.archive_server_id=ars.server_id " +
+                       " left join asset_tag ta on a.asset_id=ta.asset_id" +
+                       " left join tag t on t.tag_id=ta.tag_id" +
+                       " left join asset_metadata am on a.asset_id = am.asset_id" +
+                       " left join metadata m ON am.metadata_id = m.metadata_id" +
                        $" WHERE a.relative_path = @Relative_path and a.asset_name=@Asset_name  AND a.is_deleted=false" +
-                       " GROUP BY " +
-                       " a.asset_id," +
-                       " a.asset_name," +
-                       " a.relative_path," +
-                      " a.duration," +
-                      " a.description," +
-                      " a.version," +
-                      " a.type," +
-                      " a.size," +
-                      " a.created_user," +
-                      " a.created_at," +
-                      " a.updated_user," +
-                      " a.updated_at," +
-                      " a.is_archived," +
-                      " a.archive_path;";
+                       " GROUP BY "+
+                       " a.asset_id,a.asset_name,a.relative_path,a.duration,a.description,a.version,a.type, a.size,a.created_user,a.created_at,a.updated_user,a.updated_at,a.is_archived,a.archive_path;";
                 //AND a.is_archived =false
                 dt = dataAccess.GetData(query, parameters);
                 if (dt.Rows.Count > 0)
                 {
                     ObservableCollection<AssetsMetadata> metadataList = new();
                     string file = dt.Rows[0]["asset_name"].ToString();
-                    //string baseRoot = Directory.GetParent(ViewModel.MediaLibraryObj.ThumbnailFolder).FullName;
-                    //string relativePath = assetPath.Substring(baseRoot.Length).TrimStart('\\');
-                    //string thumbnailMediaPath = Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, relativePath);
-                    //string thumbnailPath = Path.Combine(thumbnailMediaPath, Path.GetFileNameWithoutExtension(file) + "_Thumbnail" + ".jpg");
-                    //Uri thumbnailUri = new Uri(thumbnailPath);
-                    //var proxyPath = Path.Combine(ViewModel.MediaLibraryObj.ProxyFolder, relativePath, file + "_Proxy");
                     string proxyPath = Path.Combine(dt.Rows[0]["proxy_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Proxy.MP4");
                     string thumbnailPath = Path.Combine(dt.Rows[0]["thumbnail_path"].ToString(), Path.GetFileNameWithoutExtension(file) + "_Thumbnail.JPG");
 
@@ -703,11 +668,21 @@ namespace MAM.Views.MediaBinViews
                     string description = string.Empty;
                     string updated_user = string.Empty;
                     DateTime updated_at = DateTime.MinValue;
-                    string path = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, dt.Rows[0]["media_path"].ToString());
+                    string path = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, dt.Rows[0]["media_path"].ToString());
 
                     string source = Path.Combine(path, dt.Rows[0]["asset_name"].ToString());
                     bool isArchived = Convert.ToBoolean(dt.Rows[0]["is_archived"]);
-
+                    ArchiveServer archiveServer = new ArchiveServer();
+                    if (isArchived)
+                    {
+                        archiveServer = new ArchiveServer
+                        {
+                            ServerId = Convert.ToInt32(dt.Rows[0]["ars_server_id"]),
+                            ServerName = dt.Rows[0]["ars_server_name"].ToString(),
+                            ArchivePath = Path.Combine(dt.Rows[0]["ars_archive_path"].ToString(), Path.GetFileName(file))
+                        };
+                        //archivePath = Path.Combine(row["archive_path"].ToString(), Path.GetFileName(file));
+                    }
                     if (!File.Exists(source))
                     {
                         if ((File.Exists(proxyPath)) && !isArchived)
@@ -739,8 +714,19 @@ namespace MAM.Views.MediaBinViews
                         }
 
                     }
+                    FileServer fileServer = new FileServer
+                    {
+                        ServerId = Convert.ToInt32(dt.Rows[0]["fs_server_id"]),
+                        ServerName = dt.Rows[0]["fs_server_name"].ToString(),
+                        FileFolder = dt.Rows[0]["fs_file_folder"].ToString(),
+                        ProxyFolder = dt.Rows[0]["fs_proxy_folder"].ToString(),
+                        ThumbnailFolder = dt.Rows[0]["fs_thumbnail_folder"].ToString(),
+                        RecycleFolder = dt.Rows[0]["fs_recycle_folder"].ToString(),
+                    };
                     MediaPlayerItem mediaPlayerItem = new()
                     {
+                        FileServer = fileServer,
+                        ArchiveServer = archiveServer,
                         MediaId = Convert.ToInt32(dt.Rows[0]["asset_id"]),
                         Title = dt.Rows[0]["asset_name"].ToString(),
                         MediaSource = new Uri(source),
@@ -782,7 +768,7 @@ namespace MAM.Views.MediaBinViews
             //if (selectedNode != null && !selectedNode.IsEditing)
             //{
             await LoadAssetsAsync();
-            ViewModel.Path = ViewModel.MediaLibraryObj.BinName;
+            ViewModel.CurrentPath = ViewModel.MediaLibraryObj.BinName;
             //}
         }
         private void TreeViewItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
@@ -815,6 +801,7 @@ namespace MAM.Views.MediaBinViews
                 }
             }
         }
+
         private string GetFullPath(TreeViewNode selectedNode)
         {
             if (selectedNode == null) return string.Empty;
@@ -963,10 +950,12 @@ namespace MAM.Views.MediaBinViews
         }
         private async Task MoveItemToRecycleBinAsync(MediaPlayerItem item)
         {
-            string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder), item.MediaPath);  // "Songs\Hindi"
-            string recycleBinFolderPath = Path.Combine(ViewModel.MediaLibraryObj.RecycleFolder, relativePath);
-            string recycleBinThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.RecycleThumbnailFolder, relativePath);
-            string recycleBinProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.RecycleProxyFolder, relativePath);
+            string fileFolder = Path.Combine(item.FileServer.ServerName, item.FileServer.FileFolder);
+            string baseRoot = Directory.GetParent(fileFolder).FullName;
+            string mediaLibrary = fileFolder.Substring(baseRoot.Length).TrimStart('\\');
+            string recycleBinFolderPath = Path.Combine(item.FileServer.ServerName, item.FileServer.RecycleFolder, mediaLibrary, item.RelativePath);
+            string recycleBinThumbnailFolder = Path.Combine(item.FileServer.ServerName, item.FileServer.RecycleFolder, "Thumbnail", item.RelativePath);
+            string recycleBinProxyFolder = Path.Combine(item.FileServer.ServerName, item.FileServer.RecycleFolder, "Proxy", item.RelativePath);
             if (!Directory.Exists(recycleBinFolderPath))
                 Directory.CreateDirectory(recycleBinFolderPath);
             if (!Directory.Exists(recycleBinThumbnailFolder))
@@ -1009,7 +998,6 @@ namespace MAM.Views.MediaBinViews
                     }
                     else
                     {
-
                         File.Move(item.ProxyPath, recycleBinProxyPath);
                     }
                 }
@@ -1240,9 +1228,9 @@ namespace MAM.Views.MediaBinViews
                 {
                     //UnarchiveItem.IsEnabled = ViewModel.MediaObj.IsArchived;
                     if (ViewModel.MediaObj.IsArchived)
-                        ViewModel.Path = GlobalClass.Instance.ArchivePath;
+                        ViewModel.CurrentPath = Path.Combine(ViewModel.MediaObj.ArchiveServer.ServerName,Path.GetDirectoryName(ViewModel.MediaObj.ArchiveServer.ArchivePath));
                     else
-                        ViewModel.Path = (ViewModel.SelectedItems[0]).MediaPath;
+                        ViewModel.CurrentPath = (ViewModel.SelectedItems[0]).MediaPath;
                 }
             }
         }
@@ -1417,31 +1405,25 @@ namespace MAM.Views.MediaBinViews
 
             }
         }
-        private void TagAutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+        private async void TagAutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
         {
             if (ViewModel != null)
+            {
                 ViewModel.FilterTag = TagAutoSuggestBox.Text;
+                await ViewModel.ApplyFilterAsync();
+            }
+
         }
-        private void TitleButton_Click(object sender, RoutedEventArgs e)
+        private async void TitleButton_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel != null)
             {
                 ViewModel.FilterTitle = TitleFilterTextbox.Text;
+                await ViewModel.ApplyFilterAsync();
             }
         }
 
-        private void RatingControl_ValueChanged(RatingControl sender, object args)
-        {
-            //if (viewModel != null)
-            //{
-            //    viewModel.FilterRating = sender.Value;
-            //}
-        }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void RatingButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1540,7 +1522,6 @@ namespace MAM.Views.MediaBinViews
         private void ClearFiltersButton_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.ClearFilters();
-            //TypeDropDown.Content = "Select Type";
 
         }
 
@@ -1756,7 +1737,7 @@ namespace MAM.Views.MediaBinViews
                 foreach (var mediaItem in ViewModel.SelectedItems)
                 {
                     App.MainAppWindow.StatusBar.ShowStatus($"Unarchiving {mediaItem}...");
-                    string archiveFolder = Path.Combine(ViewModel.MediaLibraryObj.ArchiveServer.ServerName, ViewModel.MediaLibraryObj.ArchiveServer.ArchivePath);
+                    string archiveFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveArchiveServer.ServerName, ViewModel.MediaLibraryObj.ActiveArchiveServer.ArchivePath);
                     if (Directory.Exists(archiveFolder))
                     {
                         if (mediaItem.IsArchived)
@@ -1765,11 +1746,11 @@ namespace MAM.Views.MediaBinViews
                             //string archivePath = Path.Combine(mediaItem.ArchivePath, mediaItem.Title);
                             string destinationPath = Path.Combine(mediaItem.MediaPath, mediaItem.Title);
                             //string archiveProxyPath = Path.Combine(mediaItem.ProxyPath,);
-                            string baseRoot = Directory.GetParent(ViewModel.MediaLibraryObj.FileServer.FileFolder).FullName;
-                            string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ThumbnailFolder), Path.GetDirectoryName(mediaItem.ThumbnailPath));
-                            string destinationProxyPath = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.ProxyFolder, relativePath);
+                            string baseRoot = Directory.GetParent(ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder).FullName;
+                            string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.ThumbnailFolder), Path.GetDirectoryName(mediaItem.ThumbnailPath));
+                            string destinationProxyPath = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.ProxyFolder, relativePath);
                             Dictionary<string, object> propsList = new Dictionary<string, object>
-                            {   
+                            {
                                 {"is_archived", false },
                                 {"archive_path",string.Empty }
                             };
@@ -1857,13 +1838,15 @@ namespace MAM.Views.MediaBinViews
 
 
 
-        private void TitleFilterTextbox_KeyDown(object sender, KeyRoutedEventArgs e)
+        private async void TitleFilterTextbox_KeyDown(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == VirtualKey.Enter || TitleFilterTextbox.Text == "")
+            if (e.Key == VirtualKey.Enter)//|| TitleFilterTextbox.Text == "")
             {
                 if (ViewModel != null)
                 {
                     ViewModel.FilterTitle = TitleFilterTextbox.Text;
+                    await ViewModel.ApplyFilterAsync();
+
                 }
             }
         }
@@ -2044,10 +2027,10 @@ namespace MAM.Views.MediaBinViews
                 if (Directory.Exists(oldPath))
                 {
                     Directory.Move(oldPath, newPath);
-                    string relativeOldPath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder), oldPath);  // "Songs\Hindi"
+                    string relativeOldPath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder), oldPath);  // "Songs\Hindi"
                     string proxyOldPath = Path.Combine(ViewModel.MediaLibraryObj.ProxyFolder, relativeOldPath);
                     string thumbnailOldPath = Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, relativeOldPath);
-                    string relativeNewPath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder), newPath);  // "Songs\Hindi"
+                    string relativeNewPath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder), newPath);  // "Songs\Hindi"
                     string proxyNewPath = Path.Combine(ViewModel.MediaLibraryObj.ProxyFolder, relativeNewPath);
                     string thumbnailNewPath = Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, relativeNewPath);
                     if (Directory.Exists(thumbnailOldPath))
@@ -2181,7 +2164,7 @@ namespace MAM.Views.MediaBinViews
 
 
         private async void TextBox_KeyDown(object sender, KeyRoutedEventArgs e)
-       {
+        {
             if (e.Key == VirtualKey.Enter && sender is TextBox tb && tb.DataContext is FileSystemItem item)
             {
                 RenameFileSystemItem(item, tb.Text);
@@ -2342,7 +2325,7 @@ namespace MAM.Views.MediaBinViews
                     await MoveItemToRecycleBinAsync(asset);
                 }
                 Directory.Delete(itemToDelete.Path, true); // true = recursive
-                string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder), itemToDelete.Path);  // "Songs\Hindi"
+                string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder), itemToDelete.Path);  // "Songs\Hindi"
                 string proxyPath = Path.Combine(ViewModel.MediaLibraryObj.ProxyFolder, relativePath);
                 string thumbnailPath = Path.Combine(ViewModel.MediaLibraryObj.ThumbnailFolder, relativePath);
                 if (Directory.Exists(proxyPath))
@@ -2418,7 +2401,19 @@ namespace MAM.Views.MediaBinViews
         private List<string> keywords;
         private double rating = 0;
         private bool isArchived = false;
+        private FileServer fileServer;
+        private ArchiveServer archiveServer;
 
+        public FileServer FileServer
+        {
+            get => fileServer;
+            set => SetProperty(ref fileServer, value);
+        }
+        public ArchiveServer ArchiveServer
+        {
+            get => archiveServer;
+            set => SetProperty(ref archiveServer, value);
+        }
         public int MediaId
         {
             get => mediaId;
@@ -2548,7 +2543,6 @@ namespace MAM.Views.MediaBinViews
         }
         private ObservableCollection<AssetsMetadata> _assetMetadataList;
         private string archivePath;
-        private FileServer fileServer;
         private bool isDeleted;
         private string recycleBinPath;
 
@@ -2585,18 +2579,29 @@ namespace MAM.Views.MediaBinViews
     public class MediaLibrary : ObservableObject
     {
         private string binName = string.Empty;
+        private string fileFolder = string.Empty;
         private string proxyFolder = string.Empty;
         private int fileCount = 0;
+        private ObservableCollection<FileServer> fileServerList;
+        private ObservableCollection<ArchiveServer> archiveServerList;
+        private FileServer activeFileServer;
+        private ArchiveServer activeArchiveServer;
+
 
         public string BinName
         {
             get => binName;
             set => SetProperty(ref binName, value);
         }
-        public string ProxyFolder
+        public string FileFolder
         {
             get => proxyFolder;
             set => SetProperty(ref proxyFolder, value);
+        }
+        public string ProxyFolder
+        {
+            get => fileFolder;
+            set => SetProperty(ref fileFolder, value);
         }
         public string ThumbnailFolder
         {
@@ -2618,20 +2623,35 @@ namespace MAM.Views.MediaBinViews
             get => recycleProxyFolder;
             set => SetProperty(ref recycleProxyFolder, value);
         }
+        public string ArchiveFolder
+        {
+            get => archiveFolder;
+            set => SetProperty(ref archiveFolder, value);
+        }
         public int FileCount
         {
             get => fileCount;
             set => SetProperty(ref fileCount, value);
         }
-        public FileServer FileServer
+        public FileServer ActiveFileServer
         {
-            get => fileServer;
-            set { SetProperty(ref fileServer, value); }
+            get => activeFileServer;
+            set { SetProperty(ref activeFileServer, value); }
         }
-        public ArchiveServer ArchiveServer
+        public ArchiveServer ActiveArchiveServer
         {
-            get => archiveServer;
-            set { SetProperty(ref archiveServer, value); }
+            get => activeArchiveServer;
+            set { SetProperty(ref activeArchiveServer, value); }
+        }
+        public ObservableCollection<FileServer> FileServerList
+        {
+            get => fileServerList;
+            set { SetProperty(ref fileServerList, value); }
+        }
+        public ObservableCollection<ArchiveServer> ArchiveServerList
+        {
+            get => archiveServerList;
+            set { SetProperty(ref archiveServerList, value); }
         }
         private ObservableCollection<string> _recentFiles = new ObservableCollection<string>();
         private FileServer fileServer;
@@ -2640,6 +2660,8 @@ namespace MAM.Views.MediaBinViews
         private string recycleFolder;
         private string recycleThumbnailFolder;
         private string recycleProxyFolder;
+        private string archiveFolder;
+
         public ObservableCollection<string> RecentFiles
         {
             get => _recentFiles;
@@ -2650,7 +2672,7 @@ namespace MAM.Views.MediaBinViews
     {
         private MediaPlayerItem media;
         private MediaLibrary mediaLibrary;
-        private string path;
+        private string currentPath;
         private string _filterTitle = string.Empty;
         private string _filterType = string.Empty;
         private string _filterTag = string.Empty;
@@ -2665,7 +2687,7 @@ namespace MAM.Views.MediaBinViews
         private int _currentPageIndex;
         private int _selectedPageIndex;
         private ObservableCollection<MediaPlayerItem> selectedItems;
-        private List<MediaPlayerItem> _filteredItems = new();
+        public List<MediaPlayerItem> _filteredItems = new();
         private MediaViewMode _currentViewMode = MediaViewMode.Grid;
         public MediaViewMode CurrentViewMode
         {
@@ -2678,10 +2700,10 @@ namespace MAM.Views.MediaBinViews
             get => selectedItems;
             set { SetProperty(ref selectedItems, value); }
         }
-        public string Path
+        public string CurrentPath
         {
-            get => path;
-            set { SetProperty(ref path, value); }
+            get => currentPath;
+            set { SetProperty(ref currentPath, value); }
         }
         public string AssetCount
         {
@@ -2696,12 +2718,12 @@ namespace MAM.Views.MediaBinViews
         public string FilterTitle
         {
             get => _filterTitle;
-            set { SetProperty(ref _filterTitle, value); ApplyFilter(); }
+            set { SetProperty(ref _filterTitle, value); }
         }
         public string FilterTag
         {
             get => _filterTag;
-            set { SetProperty(ref _filterTag, value); ApplyFilter(); }
+            set { SetProperty(ref _filterTag, value); }
         }
         public string FilterKeyword
         {
@@ -2760,6 +2782,7 @@ namespace MAM.Views.MediaBinViews
         private ObservableCollection<int> _totalPagesList = new();
         private bool isPrevVisible = true;
         private bool isNextVisible = true;
+        private DataAccess dataAccess = new DataAccess();
 
         public ObservableCollection<int> TotalPagesList
         {
@@ -2794,6 +2817,123 @@ namespace MAM.Views.MediaBinViews
         public ObservableCollection<MediaPlayerItem> MediaPlayerItems { get => mediaPlayerItems; set => SetProperty(ref mediaPlayerItems, value); }
         public MediaPlayerItem MediaObj { get => media; set => SetProperty(ref media, value); }
         public MediaLibrary MediaLibraryObj { get => mediaLibrary; set => SetProperty(ref mediaLibrary, value); }
+        public async Task<(List<MediaPlayerItem> Items, int TotalCount)> SearchAssetsAsync()
+        {
+            var filters = new List<string> { "a.is_deleted = 0" };
+            var parameters = new List<MySqlParameter>();
+
+            if (!string.IsNullOrEmpty(FilterType))
+            {
+                filters.Add("a.type = @type");
+                parameters.Add(new MySqlParameter("@type", FilterType));
+            }
+            if (!string.IsNullOrEmpty(FilterTitle))
+            {
+                filters.Add("a.asset_name LIKE @title");
+                parameters.Add(new MySqlParameter("@title", $"%{FilterTitle}%"));
+            }
+            //if (!string.IsNullOrEmpty(ViewModel.FilterDescription))
+            //{
+            //    filters.Add("a.description LIKE @desc");
+            //    parameters.Add(new MySqlParameter("@desc", $"%{ViewModel.FilterDescription}%"));
+            //}
+
+            string whereClause = filters.Count > 0 ? "WHERE " + string.Join(" AND ", filters) : "";
+
+            string query = $@"SELECT a.asset_id, a.asset_name, a.relative_path,a.is_archived," +
+                             "fs.server_id,fs.server_name,fs.file_folder,fs.file_folder,fs.proxy_folder,fs.thumbnail_folder,fs.recycle_folder, " +
+                             "ars.server_id,ars.server_name,ars.archive_path," +
+                              "a.created_at, a.updated_at," +
+                              "fs.server_name AS file_server, ars.server_name AS archive_server," +
+                              "CONCAT(fs.server_name,'\\\\',fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
+                              "CONCAT(fs.server_name,'\\\\',fs.proxy_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS proxy_path," +
+                              "CONCAT(fs.server_name,'\\\\',fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
+                              "CASE WHEN a.is_archived = 1  THEN CONCAT(REPLACE(ars.archive_path, '/', '\\\\'), '\\\\', REPLACE(a.archive_path, '/', '\\\\'))  END AS archive_path " +
+                              "FROM asset a " +
+                              "LEFT JOIN file_server fs ON a.file_server_id = fs.server_id " +
+                              "LEFT JOIN archive_server ars ON a.archive_server_id = ars.server_id " +
+                              $"{whereClause} " +
+                              "ORDER BY a.asset_id DESC " +
+                              "LIMIT @offset, @pageSize; " +
+
+                             "SELECT COUNT(*) FROM asset a " +
+                             $"{whereClause};";
+
+
+            parameters.Add(new MySqlParameter("@offset", SelectedPageIndex * PageSize));
+            parameters.Add(new MySqlParameter("@pageSize", PageSize));
+
+            var items = new List<MediaPlayerItem>();
+            int totalCount = 0;
+
+            using var conn = new MySqlConnection(DataAccess.ConnectionString);
+            try
+            {
+                await conn.OpenAsync();
+            }
+            catch (Exception ex)
+            {
+                await GlobalClass.Instance.ShowDialogAsync($"Connection Failed.\n {ex.Message}", MediaLibraryPage.XamlRoot1);
+            }
+            using var cmd = new MySqlCommand(query, conn);
+            cmd.Parameters.AddRange(parameters.ToArray());
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            // First result set = items
+            while (await reader.ReadAsync())
+            {
+                string title = reader["asset_name"].ToString();
+                FileServer fileServer = new FileServer
+                {
+                    ServerId = reader.GetInt32("server_id"),
+                    ServerName = reader.GetString("server_name"),
+                    FileFolder = reader.GetString("file_folder"),
+                    ProxyFolder = reader.GetString("proxy_folder"),
+                    ThumbnailFolder = reader.GetString("thumbnail_folder"),
+                    RecycleFolder = reader.GetString("recycle_folder"),
+                };
+                ArchiveServer archiveServer = new ArchiveServer
+                {
+                    ServerId = reader.GetInt32("server_id"),
+                    ServerName = reader.GetString("server_name").ToString(),
+                    ArchivePath = Path.Combine(reader.GetString("archive_path").ToString(), Path.GetFileName(title))
+                };
+                //archivePath = Path.Combine(row["archive_path"].ToString(), Path.GetFileName(file));
+                items.Add(new MediaPlayerItem
+                {
+                    FileServer = fileServer,
+                    MediaId = reader.GetInt32("asset_id"),
+                    Title = reader.GetString("asset_name"),
+                    RelativePath = reader.GetString("relative_path").ToString(),
+                    MediaSource = new Uri(System.IO.Path.Combine(reader["media_path"].ToString(), title)),
+                    MediaPath = reader["media_path"].ToString(),
+                    ProxyPath = System.IO.Path.Combine(reader["proxy_path"].ToString(), System.IO.Path.GetFileNameWithoutExtension(title)) + "_Proxy.MP4",
+                    ThumbnailPath = System.IO.Path.Combine(reader["thumbnail_path"].ToString(), System.IO.Path.GetFileNameWithoutExtension(title)) + "_Thumbnail.JPG",
+                    IsArchived=reader.GetBoolean("is_archived"),
+                    ArchivePath = reader["archive_path"] as string
+                });
+            }
+
+            // Move to second result set = total count
+            if (await reader.NextResultAsync() && await reader.ReadAsync())
+            {
+                totalCount = reader.GetInt32(0);
+            }
+
+            return (items, totalCount);
+        }
+        public async Task ApplyFilterAsync()
+        {
+            var (results, totalCount) = await SearchAssetsAsync();
+            _filteredItems = results;
+            SelectedPageIndex = 0;
+            UpdatePagedMediaItems();
+            MediaLibraryObj.FileCount = totalCount;
+            AssetCount = $"{totalCount} results found";
+            CurrentPath = string.Empty;
+            OnPropertyChanged(nameof(TotalPages));
+            PaginationUpdated?.Invoke();
+        }
         public void ApplyFilter()
         {
             _filteredItems = MediaPlayerItems.Where(item =>
@@ -2813,6 +2953,7 @@ namespace MAM.Views.MediaBinViews
             UpdatePagedMediaItems();
             MediaLibraryObj.FileCount = _filteredItems.Count;
             AssetCount = $"{MediaLibraryObj.FileCount} results found";
+            CurrentPath = string.Empty;
             OnPropertyChanged(nameof(TotalPages)); // In case filter changes page count
             PaginationUpdated?.Invoke();
         }
@@ -2833,7 +2974,7 @@ namespace MAM.Views.MediaBinViews
             get => pagedMediaPlayerItems;
             set => SetProperty(ref pagedMediaPlayerItems, value);
         }
-        private void UpdatePagedMediaItems()
+        public void UpdatePagedMediaItems()
         {
             var items = _filteredItems
                 .Skip(SelectedPageIndex * PageSize)

@@ -220,7 +220,7 @@ namespace MAM.Data
             return result;
         }
 
-        public DataTable GetData(string query, Dictionary<string, object> parameters = null)
+        public DataTable GetData(string query, List<MySqlParameter> parameters = null)
         {
             DataTable dataTable = new DataTable();
             using (MySqlConnection connection = OpenConnection())
@@ -233,7 +233,7 @@ namespace MAM.Data
                         {
                             foreach (var param in parameters)
                             {
-                                command.Parameters.Add(new MySqlParameter(param.Key, param.Value));
+                                command.Parameters.Add(new MySqlParameter(param.ParameterName, param.Value));
                             }
                         }
                         using (MySqlDataReader reader = command.ExecuteReader())

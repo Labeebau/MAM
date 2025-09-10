@@ -21,7 +21,7 @@
       
         <Border Grid.Row="1" CornerRadius="10">
             <controls:DataGrid x:Name="DgvSendToArchive" 
-                               ItemsSource="{Binding ArchiveList,Mode=OneWay}"
+                               ItemsSource="{Binding MediaList,Mode=OneWay}"
                                 Height="600" 
                                 AutoGenerateColumns="False"
                                SelectionMode="Single"
@@ -55,13 +55,35 @@
         </Border>
         <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0,10,0,10">
         <TextBlock Grid.Row="1" Text="Archive Path" VerticalAlignment="Center"/>
-            <DropDownButton x:Name="ArchiveDropDown" Margin="5,0,0,0" Width="300" HorizontalContentAlignment="Left" >
+            <!--<ComboBox  x:Name="ArchiveServerComboBox"
+                       Width="200"
+                       ItemsSource="{Binding ArchiveServerList}"
+                       DisplayMemberPath="ServerName"
+                       SelectedValuePath="ServerId"
+                       SelectedItem="{Binding SelectedArchiveServer, Mode=TwoWay}"
+                       SelectionChanged="ArchiveServerComboBox_SelectionChanged"/>-->
+            <DropDownButton x:Name="ArchiveServerDropDown"
+                Width="200"
+                Content="{Binding SelectedArchiveServer.ServerName, Mode=OneWay}">
                 <DropDownButton.Flyout>
-                    <MenuFlyout Placement="BottomEdgeAlignedLeft" >
-                        <MenuFlyoutItem Text="{Binding ArchivePath,Mode=OneWay}" Width="300" Click="MenuFlyoutItem_Click" HorizontalContentAlignment="Left"/>
-                </MenuFlyout>
+                    <Flyout Placement="BottomEdgeAlignedLeft">
+                        <ListView x:Name="ArchiveServerListView"
+                      ItemsSource="{Binding ArchiveServerList}"
+                      SelectedItem="{Binding SelectedArchiveServer, Mode=TwoWay}"
+                      IsItemClickEnabled="True"
+                      ItemClick="ArchiveServerListView_ItemClick"
+                      MinWidth="200">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- No x:DataType needed -->
+                                    <TextBlock Text="{Binding ServerName}" Margin="8,6"/>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Flyout>
                 </DropDownButton.Flyout>
             </DropDownButton>
+
         </StackPanel>
         <StackPanel Grid.Row="3" x:Name="ButtonPanel"  Orientation="Horizontal" HorizontalAlignment="Right" Height="auto"  >
             <Button Click="SendButton_Click">

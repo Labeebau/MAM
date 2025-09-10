@@ -101,7 +101,7 @@ namespace MAM.Views.AdminPanelViews
         {
             DataTable dt = new DataTable();
             string groupName = string.Empty;
-            Dictionary<string, object> parameters = new Dictionary<string, object> { { "@group_id", userGroupId } };
+            List<MySqlParameter> parameters = new List<MySqlParameter> {new MySqlParameter("@group_id", userGroupId) };
             dt = dataAccess.GetData("select group_name from user_group where group_id=@group_id", parameters);
             foreach (DataRow row in dt.Rows)
             {
@@ -236,8 +236,8 @@ namespace MAM.Views.AdminPanelViews
         private async void GetUserRightList(int groupId)
         {
             UserRightsList.Clear();
-            var param = new Dictionary<string, object>();
-            param.Add( "@GroupId", groupId );
+            List<MySqlParameter> param = new();
+            param.Add(new MySqlParameter("@GroupId", groupId ));
             DataTable dt = dataAccess.GetData($"SELECT u.user_id, u.user_name FROM user u INNER JOIN user_roles ur ON u.user_id = ur.user_id WHERE ur.group_id = @GroupId",param);
 
             foreach (DataRow row in dt.Rows)

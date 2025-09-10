@@ -108,8 +108,8 @@
                 <Grid Padding="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="50" />
-                        <ColumnDefinition Width="500"/>
-                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="450"/>
+                        <ColumnDefinition Width="450"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Image Grid.Column="0" Source="{x:Bind ThumbnailPath}" Width="40" Height="40" />
@@ -284,7 +284,7 @@
                         <!-- Takes only required space -->
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="1" x:Name="txtSearchBin" Width="500" Margin="0,0,0,10" Text="{x:Bind ViewModel.Path,Mode=OneWay}"
+                    <TextBlock Grid.Row="1" x:Name="txtSearchBin" Width="auto" Margin="0,0,0,10" Text="{x:Bind ViewModel.CurrentPath,Mode=OneWay}"
                                      HorizontalAlignment="Left"/>
                     <Button x:Name="BtnRefreshGroup" Style="{StaticResource SmallIconButton}" 
                                     VerticalAlignment="Center" Click="RefreshMediaLibrary_Click"
@@ -292,20 +292,12 @@
                         <FontIcon  Glyph="&#xf2f9;" />
                     </Button>
                 </Grid>
-                <!--<FlipView x:Name="MediaFlipView" Grid.Row="1"
-                          HorizontalAlignment="Left"
-                          VerticalAlignment="Top"
-                          Height="560"
-                          Width="1200"
-              ItemsSource="{x:Bind ViewModel.PagedMediaPlayerItems, Mode=OneWay}"
-              SelectedIndex="{x:Bind ViewModel.SelectedPageIndex, Mode=TwoWay}">
-                    <FlipView.ItemTemplate>
-                        <DataTemplate x:DataType="local:MediaLibraryViewModel">-->
+               
                 <Grid Grid.Row="1" x:Name="DetailsHeader"  Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="80" />
-                        <ColumnDefinition Width="500"/>
-                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="450"/>
+                        <ColumnDefinition Width="450"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -329,11 +321,11 @@
                             PointerPressed="MediaBinGridView_PointerPressed"
                             DoubleTapped="MediaBinGridView_DoubleTapped"
                             RightTapped="MediaBinGridView_RightTapped"
-                          CanDrag="True"
-                          CanDragItems="True"
+                            CanDrag="True"
+                            CanDragItems="True"
                             AllowDrop="True"
-                          DragEnter="MediaBinGridView_DragEnter"
-                          DragLeave="MediaBinGridView_DragLeave"
+                            DragEnter="MediaBinGridView_DragEnter"
+                            DragLeave="MediaBinGridView_DragLeave"
                             DragOver="MediaBinGridView_DragOver"
                             Drop="MediaBinGridView_Drop">
                     

@@ -54,6 +54,7 @@ namespace MAM.Views.MediaBinViews
             MergedProcesses.Clear();
 
             var grouped = ProcessManager.AllProcesses
+                .Where(p => p != null) // avoid null entries
                 .Where(p => p.Result == "Waiting" && 
                            (p.ProcessType == ProcessType.FileCopying ||
                             p.ProcessType == ProcessType.ThumbnailGeneration ||

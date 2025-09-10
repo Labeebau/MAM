@@ -199,14 +199,21 @@ namespace MAM.Windows
 
                         App.MainAppWindow.CurrentUser = viewModel.UserName;
                         GlobalClass.Instance.CurrentUser =await GlobalClass.Instance.GetUserRightsAsync(viewModel.UserId);
-                        GlobalClass.Instance.CurrentUser.UserName = viewModel.UserName;
-                        GlobalClass.Instance.CurrentUserGroup = GlobalClass.Instance.GetUserGroupWithRights(viewModel.GroupId);
-                        GlobalClass.Instance.IsAdmin = viewModel.GroupName == "Admin";
-                        await GlobalClass.Instance.AddtoHistoryAsync("Login", "User logged in", viewModel.UserId);
+                        if (GlobalClass.Instance.CurrentUser != null)
+                        {
+                            GlobalClass.Instance.CurrentUser.UserName = viewModel.UserName;
+                            GlobalClass.Instance.CurrentUserGroup = GlobalClass.Instance.GetUserGroupWithRights(viewModel.GroupId);
+                            GlobalClass.Instance.IsAdmin = viewModel.GroupName == "Admin";
+                            await GlobalClass.Instance.AddtoHistoryAsync("Login", "User logged in", viewModel.UserId);
 
-                        this.Close();
-                        App.MainAppWindow = new MainWindow();
-                        App.MainAppWindow.Activate();
+                            this.Close();
+                            App.MainAppWindow = new MainWindow();
+                            App.MainAppWindow.Activate();
+                        }
+                        else
+                        {
+                            ShowStatusMessage("Connection Failed", "Unable to connect to the database.", InfoBarSeverity.Error);
+                        }
                     }
                     else
                     {

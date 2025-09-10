@@ -69,11 +69,13 @@ namespace MAM.Data
         public int SessionTimeout { get; set; }
         public bool IsLoggedIn { get; set; }
         public string MediaLibraryPath { get; set; }
-        public string ArchivePath { get; set; }
+        public ArchiveServer ActiveArchiveServer { get; set; }
         public string ProxyFolder { get; set; }
         public string ThumbnailFolder { get; set; }
         public string RecycleFolder { get; set; }
-        public  FileServer FileServer { get; set; }
+        public  FileServer ActiveFileServer { get; set; }
+        public ObservableCollection<FileServer> FileServerList { get; set; } = [];
+        public ObservableCollection<ArchiveServer> ArchiveServerList { get; set; } = [];
 
         public string DownloadFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Downloads";
         public string ffmpegPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg.exe");
@@ -371,8 +373,78 @@ namespace MAM.Data
             }
             return props.Count > 0;
         }
+        public async Task<ObservableCollection<FileServer>> GetFileServerList(XamlRoot xamlRoot)
+        {
+            FileServerList.Clear();
+            FileServer newFileServer = new();
+            DataTable dt = new DataTable();
+            dt = dataAccess.GetData("select * from file_server; ");
+            if (dt.Rows.Count > 0)
+            {
+                foreach (DataRow row in dt.Rows)
+                {
+                    newFileServer = new FileServer();
+                    newFileServer.ServerId = Convert.ToInt32(row["server_Id"]);
+                    newFileServer.ServerName = row["server_name"].ToString();
+                    newFileServer.Domain = row["domain"].ToString();
+                    newFileServer.UserName = row["user_name"].ToString();
+                    newFileServer.Password = row["password"].ToString();
+                    newFileServer.FileFolder = row["file_folder"].ToString();
+                    newFileServer.ProxyFolder = row["proxy_folder"].ToString();
+                    newFileServer.ThumbnailFolder = row["thumbnail_folder"].ToString();
+                    newFileServer.RecycleFolder = row["recycle_folder"].ToString();
+                    newFileServer.Active = Convert.ToBoolean(row["active"].ToString());
+                    FileServerList.Add(newFileServer);
+                }
+                MediaLibraryPath = Path.Combine(newFileServer.ServerName, newFileServer.FileFolder);
+                //ActiveFileServer = newFileServer;
+                //FileFolder = Path.Combine(newFileServer.ServerName, newFileServer.FileFolder);
+                ProxyFolder = Path.Combine(newFileServer.ServerName,newFileServer.ProxyFolder);
+                ThumbnailFolder = Path.Combine(newFileServer.ServerName ,newFileServer.ThumbnailFolder);
+                RecycleFolder = Path.Combine(newFileServer.ServerName, newFileServer.RecycleFolder);
+                return FileServerList;
+            }
+            else
+            {
+                await GlobalClass.Instance.ShowDialogAsync("No active file server found.", xamlRoot);
+                return null;
+            }
+        }
 
-        public async Task<FileServer> GetFileServer(XamlRoot xamlRoot)
+        public async Task<ObservableCollection<ArchiveServer>> GetArchiveServerList(XamlRoot xamlRoot)
+        {
+            ArchiveServerList.Clear();
+            ArchiveServer newArchiveServer = new();
+            DataTable dt = new DataTable();
+            dt = dataAccess.GetData("select * from archive_server; ");
+            if (dt.Rows.Count > 0)
+            {
+                foreach (DataRow row in dt.Rows)
+                {
+                    newArchiveServer = new ArchiveServer();
+                    newArchiveServer.ServerId = Convert.ToInt32(row["server_Id"]);
+                    newArchiveServer.ServerType = row["server_type"].ToString();
+                    newArchiveServer.ServerName = row["server_name"].ToString();
+                    newArchiveServer.ComputerName = row["computer_name"].ToString();
+                    newArchiveServer.UserName = row["user_name"].ToString();
+                    newArchiveServer.Password = row["password"].ToString();
+                    newArchiveServer.ArchivePath = row["archive_path"].ToString();
+                    newArchiveServer.LTOServerId = Convert.ToInt32(row["lto_server_id"]);
+                    newArchiveServer.LTOServer = row["lto_server"].ToString();
+                    newArchiveServer.Active = Convert.ToBoolean(row["active"].ToString());
+                    ArchiveServerList.Add(newArchiveServer);
+                }
+                //ArchivePath = Path.Combine(newArchiveServer.ServerName, newArchiveServer.ArchivePath);
+                return ArchiveServerList;
+            }
+            else
+            {
+                await GlobalClass.Instance.ShowDialogAsync("No active archive server found.", xamlRoot);
+                return null;
+
+            }
+        }
+        public async Task<FileServer> GetActiveFileServer(XamlRoot xamlRoot)
         {
             FileServer newFileServer = new();
             DataTable dt = new DataTable();
@@ -394,7 +466,7 @@ namespace MAM.Data
                     newFileServer.Active = Convert.ToBoolean(row["active"].ToString());
                 }
                 MediaLibraryPath = Path.Combine(newFileServer.ServerName, newFileServer.FileFolder);
-                FileServer = newFileServer;
+                ActiveFileServer = newFileServer;
                 ProxyFolder = newFileServer.ProxyFolder;
                 ThumbnailFolder = newFileServer.ThumbnailFolder;
                 RecycleFolder = newFileServer.RecycleFolder;
@@ -407,7 +479,7 @@ namespace MAM.Data
             }
         }
 
-        public async Task<ArchiveServer> GetArchiveServer(XamlRoot xamlRoot)
+        public async Task<ArchiveServer> GetActiveArchiveServer(XamlRoot xamlRoot)
         {
             ArchiveServer newArchiveServer = new();
             DataTable dt = new DataTable();
@@ -428,7 +500,7 @@ namespace MAM.Data
                     newArchiveServer.LTOServer = row["lto_server"].ToString();
                     newArchiveServer.Active = Convert.ToBoolean(row["active"].ToString());
                 }
-                ArchivePath = Path.Combine(newArchiveServer.ServerName, newArchiveServer.ArchivePath);
+                ActiveArchiveServer = newArchiveServer;
                 return newArchiveServer;
             }
             else

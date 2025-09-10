@@ -28,6 +28,7 @@ using MySql.Data.MySqlClient;
 using Microsoft.UI.Input;
 using Windows.System;
 using Windows.UI.Core;
+using MAM.Views.AdminPanelViews;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -66,9 +67,9 @@ namespace MAM.Views
         }
         private async void RecycleBinPage_Loaded(object sender, RoutedEventArgs e)
         {
-            await GlobalClass.Instance.GetFileServer(this.Content.XamlRoot);
-            ViewModel.MediaLibraryObj.FileServer = GlobalClass.Instance.FileServer;
-            if (ViewModel.MediaLibraryObj.FileServer != null)
+            await GlobalClass.Instance.GetActiveFileServer(this.Content.XamlRoot);
+            ViewModel.MediaLibraryObj.ActiveFileServer = GlobalClass.Instance.ActiveFileServer;
+            if (ViewModel.MediaLibraryObj.ActiveFileServer != null)
             {
                 UIThreadHelper.RunOnUIThread(() =>
                 {
@@ -78,19 +79,19 @@ namespace MAM.Views
                 {
                     //if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleFolder))
                     //{
-                    string fileFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, ViewModel.MediaLibraryObj.FileServer.FileFolder);
+                    string fileFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder);
                     string baseRoot = Directory.GetParent(fileFolder).FullName;
                     string mediaLibrary = fileFolder.Substring(baseRoot.Length).TrimStart('\\');
                     //    string RecycleBin = Path.Combine(baseRoot, "Recycle Bin");
                     //    string RecycleBinMediaLibrary = Path.Combine(RecycleBin, mediaLibrary);
                     //    string RecycleBinThumbnailFolder = Path.Combine(RecycleBin, "Thumbnail");
                     //    string RecycleBinProxyFolder = Path.Combine(RecycleBin, "Proxy");
-                    ViewModel.MediaLibraryObj.ProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.ProxyFolder);
-                    ViewModel.MediaLibraryObj.ThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.ThumbnailFolder);
-                    ViewModel.MediaLibraryObj.RecycleFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.RecycleFolder, mediaLibrary);
-                    ViewModel.MediaLibraryObj.ArchiveServer = await GlobalClass.Instance.GetArchiveServer(XamlRoot);
-                    ViewModel.MediaLibraryObj.RecycleThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.RecycleFolder, "Thumbnail");
-                    ViewModel.MediaLibraryObj.RecycleProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.RecycleFolder, "Proxy");
+                    ViewModel.MediaLibraryObj.ProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, GlobalClass.Instance.ProxyFolder);
+                    ViewModel.MediaLibraryObj.ThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, GlobalClass.Instance.ThumbnailFolder);
+                    ViewModel.MediaLibraryObj.RecycleFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, GlobalClass.Instance.RecycleFolder, mediaLibrary);
+                    ViewModel.MediaLibraryObj.ActiveArchiveServer = await GlobalClass.Instance.GetActiveArchiveServer(XamlRoot);
+                    ViewModel.MediaLibraryObj.RecycleThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, GlobalClass.Instance.RecycleFolder, "Thumbnail");
+                    ViewModel.MediaLibraryObj.RecycleProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, GlobalClass.Instance.RecycleFolder, "Proxy");
 
                     if (!Directory.Exists(ViewModel.MediaLibraryObj.RecycleFolder))
                             Directory.CreateDirectory(ViewModel.MediaLibraryObj.RecycleFolder);
@@ -103,8 +104,8 @@ namespace MAM.Views
                         //ViewModel.MediaLibraryObj.RecycleThumbnailFolder = RecycleBinThumbnailFolder;
                         //ViewModel.MediaLibraryObj.RecycleProxyFolder = RecycleBinProxyFolder;
 
-                        ViewModel.MediaLibraryObj.ThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.ThumbnailFolder);
-                        ViewModel.MediaLibraryObj.ProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.FileServer.ServerName, GlobalClass.Instance.ProxyFolder);
+                        ViewModel.MediaLibraryObj.ThumbnailFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, GlobalClass.Instance.ThumbnailFolder);
+                        ViewModel.MediaLibraryObj.ProxyFolder = Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, GlobalClass.Instance.ProxyFolder);
 
                     //}
                     await LoadAssetsAsync();
@@ -162,7 +163,7 @@ namespace MAM.Views
         public async Task GetAllAssetsAsync(string FolderPath)
         {
             DataTable dt = new();
-            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            List<MySqlParameter> parameters = new ();
             ViewModel.RecycleBinMediaPlayerItems.Clear();
             //List<string> directories = new();
             //directories.Add(FolderPath);
@@ -173,15 +174,21 @@ namespace MAM.Views
                 //{
                     if (Directory.Exists(FolderPath))
                     {
-                        parameters.Add("@recyclebin_path", FolderPath);
+                        //if (Directory.Exists(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.ProxyFolder)))
+                        //{
+                        //    string relativePath = Path.GetRelativePath(Path.Combine(ViewModel.MediaLibraryObj.ActiveFileServer.ServerName, ViewModel.MediaLibraryObj.ActiveFileServer.FileFolder), dir);  // "Songs\Hindi"
+                        //    parameters.Add(new MySqlParameter("@Relative_path", relativePath));
+                        parameters.Add(new MySqlParameter("@FileServerId", ViewModel.MediaLibraryObj.ActiveFileServer.ServerId));
+
+                        parameters.Add(new MySqlParameter("@recyclebin_path", FolderPath));
                         string query = @"SELECT a.asset_id, a.asset_name,a.relative_path,"+
-                                        "CONCAT(fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
-                                        "CONCAT(fs.proxy_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS proxy_path," +
-                                        "CONCAT(fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
-                                        "CONCAT(fs.recycle_folder, '\\\\', SUBSTRING_INDEX(fs.file_folder, '\\\\', -1), '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS recycle_path "+
+                                        "CONCAT(fs.server_name,'\\\\',fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
+                                        "CONCAT(fs.server_name,'\\\\',fs.proxy_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS proxy_path," +
+                                        "CONCAT(fs.server_name,'\\\\',fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
+                                        "CONCAT(fs.server_name,'\\\\',fs.recycle_folder, '\\\\', SUBSTRING_INDEX(fs.file_folder, '\\\\', -1), '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS recycle_path " +
                                         "FROM asset a " +
                                         "JOIN file_server fs on a.file_server_id=fs.server_id " +
-                                        $"WHERE a.is_deleted=true ";
+                                        $"WHERE a.is_deleted=true AND a.file_server_id=@FileServerId ";
                         dt = dataAccess.GetData(query, parameters);
                         foreach (DataRow row in dt.Rows)
                         {
@@ -245,7 +252,6 @@ namespace MAM.Views
                 }
             }
             SetVisibility(ViewModel.SelectedPageIndex + 1);
-
         }
         private void PageButton_Click(object sender, RoutedEventArgs e)
         {
@@ -369,20 +375,7 @@ namespace MAM.Views
 
         }
 
-        //private void CustomRecycleBinMedia_Loaded(object sender, RoutedEventArgs e)
-        //{
-        //    if (sender is CustomRecycleBinMedia customMedia && customMedia.DataContext is RecycleBinMediaPlayerItem mediaItem)
-        //    {
-        //        customMedia.DeleteRequested += async (s, args) =>
-        //        {
-        //            await DeleteMediaItemAsync(args.MediaItem);
-        //        };
-        //        customMedia.RestoreRequested += async (s, args) =>
-        //        {
-        //            await RestoreMediaItemAsync(args.MediaItem);
-        //        };
-        //    }
-        //}
+      
 
         private async Task RestoreMediaItemAsync(RecycleBinMediaPlayerItem mediaItem)
         {
@@ -391,7 +384,7 @@ namespace MAM.Views
                 string recycleBinFolder = ViewModel.MediaLibraryObj.RecycleFolder;
                 if (Directory.Exists(recycleBinFolder))
                 {
-                    string mediaLibraryPath = Path.GetDirectoryName(mediaItem.MediaLibraryPath);
+                    string mediaLibraryPath =Path.Combine(Path.GetDirectoryName(mediaItem.MediaLibraryPath));
                     if (!Directory.Exists(mediaLibraryPath))
                         Directory.CreateDirectory(mediaLibraryPath);
                     string thumbnailPath = Path.GetDirectoryName(mediaItem.ThumbnailPath);
@@ -412,7 +405,6 @@ namespace MAM.Views
                     int res = await dataAccess.UpdateRecord("Asset", "asset_id", mediaItem.MediaId, propsList);
                     ViewModel.RecycleBinMediaPlayerItems.Remove(mediaItem);
                     ViewModel.ApplyFilter();
-                    //await LoadAssetsAsync();
                     await GlobalClass.Instance.AddtoHistoryAsync("Restore", $"Restored asset '{mediaItem.Title}' .");
                 }
                 else
@@ -517,12 +509,17 @@ namespace MAM.Views
         private string mediaLibraryPath;
         private string proxyPath;
         private string recyclebinProxyPath;
-
+        private FileServer fileServer;
 
         public int MediaId
         {
             get => mediaId;
             set { SetProperty(ref mediaId, value); }
+        }
+        public FileServer FileServer
+        {
+            get => fileServer;
+            set { SetProperty(ref fileServer, value); }
         }
         public string RecycleBinPath
         {

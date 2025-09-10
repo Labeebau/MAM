@@ -154,7 +154,7 @@ namespace MAM.Windows
                 type = "Document";
             FileInfo fileInfo = new(file.Path);
             long fileSize = fileInfo.Length / (1024 * 1024);//Converts bytes to MB
-            string relativePath = Path.GetRelativePath(Path.Combine(viewModel.MediaLibraryObj.FileServer.ServerName, viewModel.MediaLibraryObj.FileServer.FileFolder), viewModel.MediaLibraryObj.BinName);  // "Songs\Hindi"
+            string relativePath = Path.GetRelativePath(Path.Combine(viewModel.MediaLibraryObj.ActiveFileServer.ServerName, viewModel.MediaLibraryObj.ActiveFileServer.FileFolder), viewModel.MediaLibraryObj.BinName);  // "Songs\Hindi"
             MediaPlayerItem media = new()
             {
                 CreatedUser = GlobalClass.Instance.CurrentUser.UserName,
@@ -293,7 +293,7 @@ namespace MAM.Windows
                         {
                             string baseRoot = Directory.GetParent(viewModel.MediaLibraryObj.ThumbnailFolder).FullName;
                             string relativePath = asset.Media.MediaPath.Substring(baseRoot.Length).TrimStart('\\');
-                            string mediaLibrary = Path.GetFileName(viewModel.MediaLibraryObj.FileServer.FileFolder);
+                            string mediaLibrary = Path.GetFileName(viewModel.MediaLibraryObj.ActiveFileServer.FileFolder);
                             relativePath = relativePath.Substring(mediaLibrary.Length).TrimStart('\\');
                             string thumbnailMediaPath = Path.Combine(viewModel.MediaLibraryObj.ThumbnailFolder, relativePath);
                             if (!Directory.Exists(thumbnailMediaPath))
@@ -1140,11 +1140,11 @@ namespace MAM.Windows
         {
             UIThreadHelper.RunOnUIThread(() => { App.MainAppWindow.StatusBar.ShowStatus("Copying to db...", true); });
 
-            string relativePath = Path.GetRelativePath(Path.Combine(viewModel.MediaLibraryObj.FileServer.ServerName, viewModel.MediaLibraryObj.FileServer.FileFolder), asset.Media.MediaPath);  // "Songs\Hindi"
+            string relativePath = Path.GetRelativePath(Path.Combine(viewModel.MediaLibraryObj.ActiveFileServer.ServerName, viewModel.MediaLibraryObj.ActiveFileServer.FileFolder), asset.Media.MediaPath);  // "Songs\Hindi"
             List<MySqlParameter> parameters = [];
             string query = string.Empty;
-            parameters.Add(new MySqlParameter("@FileServerId", viewModel.MediaLibraryObj.FileServer.ServerId));
-            parameters.Add(new MySqlParameter("@ArchiveServerId", viewModel.MediaLibraryObj.ArchiveServer.ServerId));
+            parameters.Add(new MySqlParameter("@FileServerId", viewModel.MediaLibraryObj.ActiveFileServer.ServerId));
+            parameters.Add(new MySqlParameter("@ArchiveServerId", viewModel.MediaLibraryObj.ActiveArchiveServer.ServerId));
             parameters.Add(new MySqlParameter("@AssetName", asset.Media.Title));
             parameters.Add(new MySqlParameter("@RelativePath", relativePath));
             parameters.Add(new MySqlParameter("@Duration", Convert.ToDateTime(asset.Media.DurationString)));
