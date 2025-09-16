@@ -81,34 +81,35 @@ namespace MAM.Views.MediaBinViews
             //    {
             // MediaLibrary.ProxyFolder = System.IO.Path.Combine(dir, "Proxy");
             parameters.Add(new MySqlParameter( "@Asset_path", FolderPath));
-            dt = dataAccess.GetData($"SELECT a.asset_id, a.asset_name, a.relative_path," +
-                "fs.server_id as fs_server_id ,fs.server_name as fs_server_name,fs.file_folder as fs_file_folder,fs.proxy_folder as fs_proxy_folder,fs.thumbnail_folder as fs_thumbnail_folder,fs.recycle_folder as fs_recycle_folder," +
-                 "ars.server_id as ars_server_id,ars.server_name as ars_server_name,ars.archive_path as ars_archive_path," +
-                 "CONCAT(fs.server_name,'\\\\', fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
-                 "CONCAT(fs.server_name,'\\\\',fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
-                 "CASE " +
-                    "WHEN a.is_archived = 1 " +
-                        "THEN CONCAT(REPLACE(ars.archive_path, '/', '\\\\'), '\\\\', REPLACE(a.archive_path, '/', '\\\\')) " +
-                "END AS archive_path," +
-                "CASE " +
-                    "WHEN a.is_deleted = 1 " +
-                        "THEN CONCAT(fs.recycle_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) " +
-                "END AS recyclebin_path," +
-                $"a.duration, a.description, a.version, a.type," +
-                $"a.size,a.created_user, a.created_at, a.updated_user, a.updated_at, a.is_archived, a.archive_path," +
-                $"IFNULL(GROUP_CONCAT(DISTINCT t.tag_name ORDER BY tag_name),'') AS tag_name," +
-                $"IFNULL(GROUP_CONCAT(DISTINCT CONCAT(m.metadata_id, ':', m.metadata_name, ':', am.metadata_value, ':', m.metadata_type) " +
-                $"ORDER BY m.metadata_name SEPARATOR '; '),'') AS metadata_info " +
-                "FROM asset a " +
-                "JOIN file_server fs on a.file_server_id=fs.server_id " +
-                "JOIN archive_server ars on a.archive_server_id=ars.server_id " +
-                $"LEFT JOIN asset_tag ta ON a.asset_id = ta.asset_id " +
-                $"LEFT JOIN tag t ON t.tag_id = ta.tag_id " +
-                $"LEFT JOIN asset_metadata am ON a.asset_id = am.asset_id " +
-                $"LEFT JOIN metadata m ON am.metadata_id = m.metadata_id " +
-                $"WHERE a.is_archived =true AND a.is_deleted=false " +
-                $"GROUP BY a.asset_id;", parameters);
 
+            string query = $"SELECT a.asset_id, a.asset_name, a.relative_path," +
+            "fs.server_id as fs_server_id ,fs.server_name as fs_server_name,fs.file_folder as fs_file_folder,fs.proxy_folder as fs_proxy_folder,fs.thumbnail_folder as fs_thumbnail_folder,fs.recycle_folder as fs_recycle_folder," +
+             "ars.server_id as ars_server_id,ars.server_name as ars_server_name,ars.archive_path as ars_archive_path," +
+             "CONCAT(fs.server_name,'\\\\', fs.file_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS media_path," +
+             "CONCAT(fs.server_name,'\\\\',fs.thumbnail_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) AS thumbnail_path," +
+             "CASE " +
+                "WHEN a.is_archived = 1 " +
+                    "THEN CONCAT(REPLACE(ars.archive_path, '/', '\\\\'), '\\\\', REPLACE(a.archive_path, '/', '\\\\')) " +
+            "END AS archive_path," +
+            "CASE " +
+                "WHEN a.is_deleted = 1 " +
+                    "THEN CONCAT(fs.recycle_folder, '\\\\', REPLACE(a.relative_path, '/', '\\\\')) " +
+            "END AS recyclebin_path," +
+            $"a.duration, a.description, a.version, a.type," +
+            $"a.size,a.created_user, a.created_at, a.updated_user, a.updated_at, a.is_archived, a.archive_path," +
+            $"IFNULL(GROUP_CONCAT(DISTINCT t.tag_name ORDER BY tag_name),'') AS tag_name," +
+            $"IFNULL(GROUP_CONCAT(DISTINCT CONCAT(m.metadata_id, ':', m.metadata_name, ':', am.metadata_value, ':', m.metadata_type) " +
+            $"ORDER BY m.metadata_name SEPARATOR '; '),'') AS metadata_info " +
+            "FROM asset a " +
+            "JOIN file_server fs on a.file_server_id=fs.server_id " +
+            "JOIN archive_server ars on a.archive_server_id=ars.server_id " +
+            $"LEFT JOIN asset_tag ta ON a.asset_id = ta.asset_id " +
+            $"LEFT JOIN tag t ON t.tag_id = ta.tag_id " +
+            $"LEFT JOIN asset_metadata am ON a.asset_id = am.asset_id " +
+            $"LEFT JOIN metadata m ON am.metadata_id = m.metadata_id " +
+            $"WHERE a.is_archived =true AND a.is_deleted=false " +
+            $"GROUP BY a.asset_id;";
+            dt = await dataAccess.GetDataAsync(query, parameters);
 
             foreach (DataRow row in dt.Rows)
             {
@@ -419,7 +420,7 @@ namespace MAM.Views.MediaBinViews
                        " GROUP BY " +
                        " a.asset_id,a.asset_name,a.relative_path,a.duration,a.description,a.version,a.type, a.size,a.created_user,a.created_at,a.updated_user,a.updated_at,a.is_archived,a.archive_path;";
                 //AND a.is_archived =false
-                dt = dataAccess.GetData(query, parameters);
+                dt =await dataAccess.GetDataAsync(query, parameters);
                 if (dt.Rows.Count > 0)
                 {
                     ObservableCollection<AssetsMetadata> metadataList = new();

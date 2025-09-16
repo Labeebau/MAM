@@ -75,47 +75,7 @@ public class NetworkConnection : IDisposable
         return null;
     }
 
-    //public static  async Task<NetworkConnection?> CreateAsync(string networkName, NetworkCredential credentials, XamlRoot xamlRoot)
-    //{
-    //    var netResource = new NetResource
-    //    {
-    //        Scope = ResourceScope.GlobalNetwork,
-    //        ResourceType = ResourceType.Disk,
-    //        DisplayType = ResourceDisplaytype.Share,
-    //        RemoteName = networkName
-    //    };
-
-    //    const int maxRetries = 3;
-    //    const int delayMs = 2000;
-
-    //    for (int attempt = 1; attempt <= maxRetries; attempt++)
-    //    {
-    //        int result = WNetAddConnection2(
-    //            netResource,
-    //            credentials.Password,
-    //            $@"{credentials.Domain}\{credentials.UserName}",
-    //            0);
-
-    //        if (result == 0)
-    //        {
-    //            return new NetworkConnection(networkName); // success
-    //        }
-
-    //        LogNetworkError(result, networkName, attempt);
-
-    //        if (attempt < maxRetries)
-    //            await Task.Delay(delayMs);
-    //        else
-    //        {
-    //            string errorMessage = GetNetworkErrorMessage(result);
-    //            await GlobalClass.Instance.ShowErrorDialogAsync(
-    //                $"Can't connect to {networkName}\n\n{errorMessage}", xamlRoot);
-    //        }
-    //    }
-
-    //    return null; // Failed
-
-    //}
+    
     private static string GetNetworkErrorMessage(int errorCode)
     {
         return errorCode switch

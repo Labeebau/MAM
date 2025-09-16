@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using MAM.Views;
 using MySql.Data.MySqlClient;
 using Windows.UI;
+using PdfSharp.Snippets.Drawing;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -103,15 +104,14 @@ namespace MAM.Windows
         // Method to get the instance of the window or create it if it doesn't exist
         public static void ShowWindow()
         {
-            //if (_instance == null)
-            //{
-            _instance = new LoginWindow();
-            _instance.Activate(); // Show the window
-                                  //}
-                                  //else
-                                  //{
-            _instance.Activate(); // Bring the existing window to the front
-            //}
+            if (_instance == null)
+            {
+                _instance = new LoginWindow();
+                // When the window closes, clear the instance so it can be opened again
+                _instance.Closed += (s, e) => _instance = null;
+            }
+            _instance.Activate();
+
         }
         private bool ValidateInput()
         {
@@ -202,11 +202,11 @@ namespace MAM.Windows
                         if (GlobalClass.Instance.CurrentUser != null)
                         {
                             GlobalClass.Instance.CurrentUser.UserName = viewModel.UserName;
-                            GlobalClass.Instance.CurrentUserGroup = GlobalClass.Instance.GetUserGroupWithRights(viewModel.GroupId);
+                            GlobalClass.Instance.CurrentUserGroup =await GlobalClass.Instance.GetUserGroupWithRights(viewModel.GroupId);
                             GlobalClass.Instance.IsAdmin = viewModel.GroupName == "Admin";
                             await GlobalClass.Instance.AddtoHistoryAsync("Login", "User logged in", viewModel.UserId);
 
-                            this.Close();
+                            Close();
                             App.MainAppWindow = new MainWindow();
                             App.MainAppWindow.Activate();
                         }

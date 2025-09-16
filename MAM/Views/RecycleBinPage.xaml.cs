@@ -189,7 +189,7 @@ namespace MAM.Views
                                         "FROM asset a " +
                                         "JOIN file_server fs on a.file_server_id=fs.server_id " +
                                         $"WHERE a.is_deleted=true AND a.file_server_id=@FileServerId ";
-                        dt = dataAccess.GetData(query, parameters);
+                        dt =await dataAccess.GetDataAsync(query, parameters);
                         foreach (DataRow row in dt.Rows)
                         {
                             string title = row["asset_name"].ToString();

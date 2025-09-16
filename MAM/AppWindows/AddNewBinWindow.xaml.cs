@@ -4,6 +4,7 @@ using MAM.Views.MediaBinViews;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using PdfSharp.Snippets.Drawing;
 using System.Collections.ObjectModel;
 using Windows.Graphics;
 // To learn more about WinUI, the WinUI project structure,
@@ -49,6 +50,7 @@ namespace MAM.Windows
             {
                 _instance.Activate(); // Bring the existing window to the front
             }
+
         }
        
         private void Window_Closed(object sender, WindowEventArgs args)

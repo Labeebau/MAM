@@ -44,10 +44,10 @@ namespace MAM.Views.AdminPanelViews.Metadata
             LoadCategories();
             DataContext = this;
         }
-        private void GetMetadataCategories()
+        private async void GetMetadataCategories()
         {
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select category_id,category_name,parent_id from metadata_category");
+            dt =await dataAccess.GetDataAsync("select category_id,category_name,parent_id from metadata_category");
             if (MetadataCategoryList != null)
             {
                 MetadataCategoryList.Clear();
@@ -157,9 +157,9 @@ namespace MAM.Views.AdminPanelViews.Metadata
             {
                 if (category != null)
                 {
-                    string errorMessage = string.Empty;
-                    int errorCode = 0;
-                    if (dataAccess.Delete("metadata_category", "category_id", category.CategoryId, out errorMessage,out errorCode))
+
+                    (int rowsAffected, string errorMessage, int errorCode) = await dataAccess.Delete("metadata_category", "category_id", category.CategoryId);
+                    if (rowsAffected>0) 
                     {
                         MetadataCategoryList.Remove(category);
                         LoadCategories();

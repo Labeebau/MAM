@@ -89,12 +89,9 @@ namespace MAM.Windows
             if (_instance == null)
             {
                 _instance = new AddNewAssetWindow(mediaLibrary, onAssetAdded);
-                _instance.Activate(); // Show the window
+                _instance.Closed += (s, e) => _instance = null;
             }
-            else
-            {
-                _instance.Activate(); // Bring the existing window to the front
-            }
+            _instance.Activate(); // Bring the existing window to the front
         }
         private void LoadDataGrid()
         {
@@ -406,7 +403,7 @@ namespace MAM.Windows
             List<MySqlParameter> parameters = new();
             parameters.Add(new MySqlParameter("@Relative_path", media.RelativePath));
             parameters.Add(new MySqlParameter("@Asset_name", media.Title));
-            int id = dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and relative_path = @Relative_path;", parameters);
+            int id =await dataAccess.GetId($"Select asset_id from asset where asset_name = @Asset_name and relative_path = @Relative_path;", parameters);
             if (id > 0)
             {
                 parameters.Add(new MySqlParameter("@Asset_id", id));

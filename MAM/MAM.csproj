@@ -40,6 +40,8 @@
     <Content Remove="Assets\Restore.png" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="AppWindows\AssetAuthorizationWindow.xaml" />
+    <None Remove="AppWindows\UpdateMetadata.xaml" />
     <None Remove="Assets\4k.png" />
     <None Remove="Assets\Fonts\Font Awesome 6 Free-Solid-900.otf" />
     <None Remove="Assets\MediaLibraryStorage.png" />
@@ -200,6 +202,12 @@
     <Folder Include="Resources\" />
   </ItemGroup>
   <ItemGroup>
+    <Page Update="AppWindows\AssetAuthorizationWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="AppWindows\UpdateMetadata.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <None Update="Assets\ffmpeg\ffmpeg.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -37,6 +37,7 @@ namespace MAM.UserControls
         private MediaAssetViewModel viewModel;
         public event EventHandler<CustomBinMedia> DeleteRequested;
         public event EventHandler<CustomBinMedia> PlayButtonClicked;
+        public event EventHandler<CustomBinMedia> AuthorizeButtonClicked;
 
 
         public CustomBinMedia()
@@ -144,7 +145,7 @@ namespace MAM.UserControls
         }
         private void AuthorizeButton_Click(object sender, RoutedEventArgs e)
         {
-            // Handle custom button click
+            AuthorizeButtonClicked?.Invoke(this, this);
 
         }
         public void DeleteButton_Click(object sender, RoutedEventArgs e)

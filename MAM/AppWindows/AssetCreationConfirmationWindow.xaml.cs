@@ -1,5 +1,7 @@
+using MAM.AppWindows;
 using MAM.Data;
 using MAM.Utilities;
+using MAM.Views.MediaBinViews;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -38,13 +40,11 @@ namespace MAM.Windows
         {
             if (_instance == null)
             {
-                _instance = new AssetCreationConfirmationWindow(fileName,pathList);
-                _instance.Activate(); // Show the window
+                _instance = new AssetCreationConfirmationWindow(fileName, pathList);
+                // When the window closes, clear the instance so it can be opened again
+                _instance.Closed += (s, e) => _instance = null;
             }
-            else
-            {
-                _instance.Activate(); // Bring the existing window to the front
-            }
+            _instance.Activate();
         }
         private void SetWindowSizeAndPosition(int width, int height)
         {

@@ -83,8 +83,9 @@ namespace MAM.Windows
             // Set the initial media source
             if (ViewModel.Media != null && ViewModel.Media.MediaSource != null)
             {
-                if (File.Exists(ViewModel.Media.ProxyPath))
-                    LoadMediaFromUri(ViewModel.Media.ProxyPath);
+                string normalizedProxyPath = PathHelper.NormalizePath(ViewModel.Media.ProxyPath);
+                if (File.Exists(normalizedProxyPath))
+                    LoadMediaFromUri(normalizedProxyPath);
                 else
                     LoadMediaFromUri(ViewModel.Media.MediaSource.LocalPath);
                
@@ -396,7 +397,7 @@ namespace MAM.Windows
 
                 // Set window as TOPMOST for a moment, then return it to normal
                // SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                //SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+               // SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             }
             else
             {
@@ -946,30 +947,7 @@ namespace MAM.Windows
 
         };
 
-        private object GetParameterBasedOnTag(string tag, Dictionary<string, object> parameters)
-        {
-            // Check if the dictionary contains the tag as a key
-            //if (parameters.TryGetValue(tag, out var parameter))
-            //{
-            //    return parameter; // Return the associated value
-            //}
-
-            return parameters; // Return null if the tag isn't found
-        }
-
-        //private object GetParameterBasedOnTag(Dictionary<string,object> metadata)
-        //{
-        //    // Define the parameter you want to pass based on the tag
-        //    return metadata switch
-        //    {
-        //        FileInfo => metadata,
-        //        //"Categories" => "Sample Parameter for CategoriesPage",
-        //        //"Collection" => "Sample Parameter for CollectionPage",
-        //        //"Tags" => "Sample Parameter for TagsPage",
-        //        _ => null,
-        //    };
-        //}
-        // Dictionary<string, object> parameter;
+      
         private void navMetadata_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
         {
             //var navItemTag = args.InvokedItemContainer.Tag.ToString();

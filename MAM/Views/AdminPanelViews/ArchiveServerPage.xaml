@@ -136,7 +136,7 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                         </controls:DataGridTemplateColumn.CellEditingTemplate>
                     </controls:DataGridTemplateColumn>
 
-                    <controls:DataGridTemplateColumn Header="LTO Server Id" Width="auto" >
+                    <!--<controls:DataGridTemplateColumn Header="LTO Server Id" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="local:ArchiveServer">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
@@ -165,13 +165,16 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                                 <TextBox Text="{Binding LTOServer,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellEditingTemplate>
-                    </controls:DataGridTemplateColumn>
+                    </controls:DataGridTemplateColumn>-->
 
                     <controls:DataGridTemplateColumn Header="Active" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="local:ArchiveServer">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
-                                    <CheckBox IsChecked="{Binding Active,Mode=TwoWay}" IsEnabled="{Binding IsReadOnly,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityConverter}}" Padding="10,0,10,0" />
+                                    <CheckBox IsChecked="{Binding Active,Mode=TwoWay}" 
+                                              IsEnabled="{Binding IsReadOnly,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityConverter}}" 
+                                              Checked="ActiveCheckBox_Checked"
+                                              Padding="10,0,10,0" />
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>

@@ -52,11 +52,11 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 //HasCategories = AssetCategories.Any();
             }
         }
-        private void GetAllMetadata()
+        private async void GetAllMetadata()
         {
             MetadataClass NewMetadata;
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select metadata_id,metadata_name,metadata_type from metadata");
+            dt =await dataAccess.GetDataAsync("select metadata_id,metadata_name,metadata_type from metadata");
             ViewModel.AllMetadata.Clear();
             foreach (DataRow row in dt.Rows)
             {

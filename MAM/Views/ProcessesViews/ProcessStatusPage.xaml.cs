@@ -27,14 +27,14 @@ namespace MAM.Views.ProcessesViews
             this.InitializeComponent();
             Instance = this;
         }
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             if (e.Parameter is string openedTab)
             {
                 OpenedTab = openedTab;
                 FilteredProcesses.Clear();
-                ProcessManager.AllProcesses = GetProcesses();
+                ProcessManager.AllProcesses =await GetProcesses();
                 //AllProcesses = GetProcesses();
                 SyncProcessesFromDatabase(ProcessManager.AllProcesses);
 
@@ -49,11 +49,11 @@ namespace MAM.Views.ProcessesViews
             DataContext = this;
             // FilterData();
         }
-        public static ObservableCollection<Process> GetProcesses()
+        public static async Task<ObservableCollection<Process>> GetProcesses()
         {
             var processList = new ObservableCollection<Process>();
             string query = "SELECT * FROM process ORDER BY start_time DESC";
-            DataTable dt = dataAccess.GetData(query);
+            DataTable dt =await dataAccess.GetDataAsync(query);
             foreach (DataRow row in dt.Rows)
             {
                 processList.Add(new Process
@@ -73,12 +73,12 @@ namespace MAM.Views.ProcessesViews
             }
             return processList;
         }
-        public static ObservableCollection<Process> GetProcesses(string result)
+        public static async Task<ObservableCollection<Process>> GetProcesses(string result)
         {
             var processList = new ObservableCollection<Process>();
             string query = "SELECT * FROM process WHERE result = @result ORDER BY start_time DESC";
             List<MySqlParameter> parameters = new () {new MySqlParameter("@result", result)};
-            DataTable dt = dataAccess.GetData(query, parameters);
+            DataTable dt =await dataAccess.GetDataAsync(query, parameters);
             foreach (DataRow row in dt.Rows)
             {
                 processList.Add(new Process

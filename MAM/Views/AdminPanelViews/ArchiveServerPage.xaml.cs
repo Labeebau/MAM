@@ -31,13 +31,24 @@ namespace MAM.Views.AdminPanelViews
             this.InitializeComponent();
             ArchiveServerList = new ObservableCollection<ArchiveServer>();
             DataContext = this;
-            ArchiveServerList = GetArchiveServers();
+            LoadArchiveServers();
         }
-        private ObservableCollection<ArchiveServer> GetArchiveServers()
+
+        private async void LoadArchiveServers()
+        {
+            var servers = await GetArchiveServers();
+            ArchiveServerList.Clear();
+            foreach (var server in servers)
+            {
+                ArchiveServerList.Add(server);
+            }
+        }
+
+        private async Task<ObservableCollection<ArchiveServer>> GetArchiveServers()
         {
             ObservableCollection<ArchiveServer> archiveServerList = new();
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select * from archive_server");
+            dt =await dataAccess.GetDataAsync("select * from archive_server");
             foreach (DataRow row in dt.Rows)
             {
                 NewArchiveServer = new ArchiveServer();
@@ -131,7 +142,7 @@ namespace MAM.Views.AdminPanelViews
         }
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            ObservableCollection<ArchiveServer> dbArchiveServerList = GetArchiveServers();
+            ObservableCollection<ArchiveServer> dbArchiveServerList =await GetArchiveServers();
             Dictionary<PropertyInfo, string> DbFields = new Dictionary<PropertyInfo, string>();
             foreach (ArchiveServer server in ArchiveServerList)
             {
@@ -184,7 +195,7 @@ namespace MAM.Views.AdminPanelViews
         }
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-
+            LoadArchiveServers();
         }
 
         private void DgvArchiveServer_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -214,6 +225,23 @@ namespace MAM.Views.AdminPanelViews
                 archiveServer.IsReadOnly = false;
             }
             EditingArchiveServer = archiveServer;
+        }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ActiveCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is ArchiveServer selected)
+            {
+                foreach (var server in ArchiveServerList)
+                {
+                    if (server != selected)
+                        server.Active = false;
+                }
+            }
         }
     }
     public class ArchiveServer:ObservableObject

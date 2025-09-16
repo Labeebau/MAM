@@ -25,7 +25,7 @@ HorizontalAlignment="Center"   Height="auto" Width="auto" Padding="20" Margin="1
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="5">
             <ComboBox  Width="200"
-                       ItemsSource="{Binding AllUserGroups,Mode=TwoWay}"
+                       ItemsSource="{Binding AllUserGroups,Mode=OneWay}"
                        DisplayMemberPath="GroupName"
                        SelectedItem="{Binding SelectedUserGroup, Mode=TwoWay}"
                        PlaceholderText="Select user group "

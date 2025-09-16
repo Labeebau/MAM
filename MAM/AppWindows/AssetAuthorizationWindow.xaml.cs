@@ -1,23 +1,37 @@
 using MAM.Data;
-using MAM.Utilities;
+using MAM.Views.AdminPanelViews;
+using MAM.Views.MediaBinViews;
+using MAM.Windows;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using MySql.Data.MySqlClient;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace MAM.Views.AdminPanelViews
+namespace MAM.AppWindows
 {
     /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
+    /// An empty window that can be used on its own or navigated to within a Frame.
     /// </summary>
-    /// 
-    public sealed partial class AuthorizationSetingsPage : Page, INotifyPropertyChanged
+    public sealed partial class AssetAuthorizationWindow : Window
     {
         Data.DataAccess dataAccess = new Data.DataAccess();
         public ObservableCollection<UserGroup> UserGroupRightsList { get; set; } = new ObservableCollection<UserGroup>();
@@ -32,17 +46,46 @@ namespace MAM.Views.AdminPanelViews
         public UserGroup NewUserGroup { get; set; }
         public UserGroup NewUserGroupRight { get; set; }
         private bool isInitialized = false;
+        private static AssetAuthorizationWindow _instance;
 
-        public AuthorizationSetingsPage()
+        public XamlRoot xamlRoot { get; private set; }
+
+        public AssetAuthorizationWindow()
         {
             this.InitializeComponent();
-            DataContext = this;
-            this.Loaded += AuthorizationSetingsPage_Loaded;
+            // Customize the title bar
+            var titleBar = AppWindow.TitleBar;
+            // Set the background colors for active and inactive states
+            titleBar.BackgroundColor = Colors.Black;
+            titleBar.InactiveBackgroundColor = Colors.DarkGray;
+            // Set the foreground colors (text/icons) for active and inactive states
+            titleBar.ForegroundColor = Colors.White;
+            titleBar.InactiveForegroundColor = Colors.Gray;
+            GlobalClass.Instance.DisableMaximizeButton(this);
+            GlobalClass.Instance.SetWindowSizeAndPosition(1000, 600, this);
+            MainGrid.DataContext = this;
+            this.Activated += AssetAuthorizationWindow_Activated;
             isInitialized = true;
+            xamlRoot = (App.MainAppWindow.Content as FrameworkElement)?.XamlRoot;
         }
-
-        private async void AuthorizationSetingsPage_Loaded(object sender, RoutedEventArgs e)
+        public static void ShowWindow()
         {
+            if (_instance == null)
+            {
+                _instance = new AssetAuthorizationWindow();
+                // When the window closes, clear the instance so it can be opened again
+                _instance.Closed += (s, e) => _instance = null;
+            }
+            _instance.Activate();
+          
+        }
+        private bool _isLoaded = false; // ensure it runs only once
+        private async void AssetAuthorizationWindow_Activated(object sender, WindowActivatedEventArgs args)
+        {
+            if (_isLoaded) return; // run only the first time
+            _isLoaded = true;
+
+            // Your async code
             UserList = new ObservableCollection<User>((IEnumerable<User>)(await dataAccess.GetUsers()));
             await LoadUserGroups();
         }
@@ -129,14 +172,13 @@ namespace MAM.Views.AdminPanelViews
         }
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            SavePermissions();
+            //SavePermissions();
         }
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            UserList = new ObservableCollection<User>((IEnumerable<User>)dataAccess.GetUsers());
-            await LoadUserGroups();
-
-            GetAllUserGroupRights();
+            //UserList = new ObservableCollection<User>((IEnumerable<User>)dataAccess.GetUsers());
+            //await LoadUserGroups();
+            //GetAllUserGroupRights();
         }
         private void ComboBoxUSer_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -417,7 +459,7 @@ namespace MAM.Views.AdminPanelViews
         };
                 allParamsUsed.AddRange(paramList);
 
-                int id =await dataAccess.GetId("SELECT permission_id FROM permissions WHERE permission_name = @PermissionName", paramList);
+                int id = await dataAccess.GetId("SELECT permission_id FROM permissions WHERE permission_name = @PermissionName", paramList);
 
                 if (Convert.ToBoolean(permission.Value))
                     await InsertPermission(groupId, id, permission.Key);
@@ -439,7 +481,7 @@ namespace MAM.Views.AdminPanelViews
                 };
                 allParamsUsed.AddRange(paramList);
 
-                int id =await dataAccess.GetId("SELECT permission_id FROM permissions WHERE permission_name = @PermissionName", paramList);
+                int id = await dataAccess.GetId("SELECT permission_id FROM permissions WHERE permission_name = @PermissionName", paramList);
 
                 var parameters = new List<MySqlParameter>
                     {
@@ -474,7 +516,7 @@ namespace MAM.Views.AdminPanelViews
             }
             else
             {
-                await GlobalClass.Instance.ShowDialogAsync($"Unable to add permission '{permissionName}'\n {errorMessage}", this.XamlRoot);
+                await GlobalClass.Instance.ShowDialogAsync($"Unable to add permission '{permissionName}'\n {errorMessage}", xamlRoot);
                 return -1;
             }
         }
@@ -496,7 +538,7 @@ namespace MAM.Views.AdminPanelViews
             }
             else
             {
-                await GlobalClass.Instance.ShowDialogAsync($"Failed to delete permission. \n {errorMessage}", XamlRoot);
+                await GlobalClass.Instance.ShowDialogAsync($"Failed to delete permission. \n {errorMessage}", xamlRoot);
                 return 0;
             }
         }
@@ -534,58 +576,6 @@ namespace MAM.Views.AdminPanelViews
             }
             SelectedUser = user;
             SelectedUser.IsEnabled = true;
-        }
-    }
-
-    public class Right : ObservableObject
-    {
-        private bool read;
-        private bool write;
-        private bool edit;
-        private bool delete;
-        private bool originalDownload;
-        private bool proxyDownload;
-        private bool archive;
-        private bool broadcast;
-        public bool Read
-        {
-            get => read;
-            set => SetProperty(ref read, value);
-        }
-        public bool Write
-        {
-            get => write;
-            set => SetProperty(ref write, value);
-        }
-        public bool Edit
-        {
-            get => edit;
-            set => SetProperty(ref edit, value);
-        }
-        public bool Delete
-        {
-            get => delete;
-            set => SetProperty(ref delete, value);
-        }
-        public bool OriginalDownload
-        {
-            get => originalDownload;
-            set => SetProperty(ref originalDownload, value);
-        }
-        public bool ProxyDownload
-        {
-            get => proxyDownload;
-            set => SetProperty(ref proxyDownload, value);
-        }
-        public bool Archive
-        {
-            get => archive;
-            set => SetProperty(ref archive, value);
-        }
-        public bool Broadcast
-        {
-            get => broadcast;
-            set => SetProperty(ref broadcast, value);
         }
     }
 }

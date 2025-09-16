@@ -18,17 +18,29 @@ namespace MAM.Views.AdminPanelViews
     public sealed partial class FileServerPage : Page
 	{
         public DataAccess dataAccess = new();
-        public ObservableCollection<FileServer> FileServerList { get; set; }
+        public ObservableCollection<FileServer> FileServerList { get; set; } = [];
         public FileServer NewFileServer { get; set; }
         public FileServer EditingFileServer { get; set; }
 
         public FileServerPage()
         {
             this.InitializeComponent();
-            FileServerList = new ObservableCollection<FileServer>();
+            LoadFileServers();
             DataContext = this;
-            FileServerList= GetFileServers();
+
         }
+
+       
+        private async void LoadFileServers()
+        { 
+            var servers = await GetFileServers();
+            FileServerList.Clear();
+            foreach (var server in servers)
+            {
+                FileServerList.Add(server);
+            }
+        }
+
         private void Add_Click(object sender, RoutedEventArgs e)
         {
             NewFileServer = new FileServer
@@ -56,11 +68,11 @@ namespace MAM.Views.AdminPanelViews
                 DgvFileServer.ScrollIntoView(items[DgvFileServer.SelectedIndex], DgvFileServer.Columns[0]);
             }
         }
-        private ObservableCollection<FileServer> GetFileServers()
+        private async Task<ObservableCollection<FileServer>> GetFileServers()
         {
             ObservableCollection<FileServer> fileServerList = new();
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select * from file_server");
+            dt =await dataAccess.GetDataAsync("select * from file_server");
             foreach (DataRow row in dt.Rows)
             {
                 NewFileServer = new FileServer();
@@ -146,7 +158,7 @@ namespace MAM.Views.AdminPanelViews
         }
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            ObservableCollection<FileServer> dbFileServerList = GetFileServers();
+            ObservableCollection<FileServer> dbFileServerList = await GetFileServers();
                 Dictionary<PropertyInfo, string> DbFields = new Dictionary<PropertyInfo, string>();
                 foreach (FileServer server in FileServerList)
                 {
@@ -198,9 +210,9 @@ namespace MAM.Views.AdminPanelViews
             }
             return editedProps;
         }
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        private  void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-
+           LoadFileServers();
         }
 
         private void DgvFileServer_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -229,6 +241,23 @@ namespace MAM.Views.AdminPanelViews
                 fileServer.IsReadOnly = false;
             }
             EditingFileServer = fileServer;
+        }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ActiveCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is FileServer selected)
+            {
+                foreach (var server in FileServerList)
+                {
+                    if (server != selected)
+                        server.Active = false;
+                }
+            }
         }
     }
     public class FileServer:ObservableObject

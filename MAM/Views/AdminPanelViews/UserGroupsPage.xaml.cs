@@ -2,14 +2,10 @@
 using MAM.Utilities;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using MySql.Data.MySqlClient;
-using Mysqlx.Crud;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Reflection;
-using Windows.System;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
@@ -38,14 +34,23 @@ namespace MAM.Views.AdminPanelViews
         public UserGroupsPage()
         {
             this.InitializeComponent();
-            UserGroupsList = GetUserGroup();
             GetGroupedData();
             GetUserInUserGroup();
             DataContext = this;
+            LoadUSerGroup();
         }
 
+        private async void LoadUSerGroup()
+        {
+            var userGroups = await GetUserGroup();
+            UserGroupsList.Clear();
+            foreach (var userGroup in userGroups)
+            {
+                UserGroupsList.Add(userGroup);
+            }
+            //UserGroupsList =await GetUserGroup();
+        }
 
-       
         private UserGroup _selectedUserGroup;
         public UserGroup SelectedUserGroup
         {
@@ -58,11 +63,11 @@ namespace MAM.Views.AdminPanelViews
             get => _selectedUser;
             set => _selectedUser = value;
         }
-        private ObservableCollection<UserGroup> GetUserGroup()
+        private async Task<ObservableCollection<UserGroup>> GetUserGroup()
         {
             ObservableCollection<UserGroup> userGroupsList = new ObservableCollection<UserGroup>();
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select group_id,group_name,ad_group,active from user_group");
+            dt = await dataAccess.GetDataAsync("select group_id,group_name,ad_group,active from user_group");
             foreach (DataRow row in dt.Rows)
             {
                 NewUserGroup = new UserGroup();
@@ -74,13 +79,13 @@ namespace MAM.Views.AdminPanelViews
             }
             return userGroupsList;
         }
-        private void GetGroupedData()
+        private async void GetGroupedData()
         {
             // Clear existing items
             GroupedUsersList.Clear();
 
             // SQL to include all user groups even if no users are assigned
-            DataTable dt = dataAccess.GetData(
+            DataTable dt = await dataAccess.GetDataAsync(
                 "SELECT ug.group_id, ug.group_name, u.user_id, u.user_name " +
                 "FROM user_group ug " +
                 "LEFT JOIN user_roles ur ON ug.group_id = ur.group_id " +
@@ -136,11 +141,11 @@ namespace MAM.Views.AdminPanelViews
             }
         }
 
-        private async  void DeleteUserFromUserGroup_Click(object sender, RoutedEventArgs e)
+        private async void DeleteUserFromUserGroup_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is UserForGrouping userToRemove)
             {
-               await DeleteFromUserGroupAsync(userToRemove);
+                await DeleteFromUserGroupAsync(userToRemove);
             }
         }
         private async Task DeleteFromUserGroupAsync(UserForGrouping userForGrouping)
@@ -150,13 +155,13 @@ namespace MAM.Views.AdminPanelViews
             ContentDialogResult result = await GlobalClass.Instance.ShowDialogAsync($"Are you sure you want to delete {userForGrouping.User.UserName} from {userForGrouping.ParentGroup.Group.GroupName}?", XamlRoot, "Delete", "Cancel", "Delete Confirmation");
             if (result == ContentDialogResult.Primary)
             {
-                if (userForGrouping != null && userForGrouping.ParentGroup!= null)
+                if (userForGrouping != null && userForGrouping.ParentGroup != null)
                 {
                     var userGrpDict = new List<MySqlParameter>
-        {
-            new("@UserId", user.UserId),
-            new("@GroupId", group.Group.UserGroupId)
-        };
+                    {
+                        new("@UserId", user.UserId),
+                        new("@GroupId", group.Group.UserGroupId)
+                    };
 
                     var (affectedRows, _, errorMessage) = await dataAccess.ExecuteNonQuery($"DELETE FROM user_roles WHERE user_id=@UserId and group_id=@GroupId", userGrpDict);
                     if (affectedRows == 1)
@@ -226,7 +231,7 @@ namespace MAM.Views.AdminPanelViews
         }
         private async void SaveUserGroup()
         {
-            ObservableCollection<UserGroup> dbUserGroupList = GetUserGroup();
+            ObservableCollection<UserGroup> dbUserGroupList = await GetUserGroup();
             Dictionary<PropertyInfo, string> DbFields = new Dictionary<PropertyInfo, string>();
             foreach (UserGroup userGroup in UserGroupsList)
             {
@@ -269,7 +274,7 @@ namespace MAM.Views.AdminPanelViews
         }
         private void CancelButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         {
-            GetUserGroup();
+            LoadUSerGroup();
         }
         private async void DeleteUserGroup_Click(object sender, RoutedEventArgs e)
         {
@@ -297,7 +302,7 @@ namespace MAM.Views.AdminPanelViews
                 }
             }
             else
-               await GlobalClass.Instance.ShowDialogAsync($"Action blocked: 'Admin' group is protected from deletion.", XamlRoot, "Action Not Allowed!");
+                await GlobalClass.Instance.ShowDialogAsync($"Action blocked: 'Admin' group is protected from deletion.", XamlRoot, "Action Not Allowed!");
         }
         private async Task<int> InsertUserGroup(UserGroup userGroup)
         {
@@ -342,10 +347,10 @@ namespace MAM.Views.AdminPanelViews
         private void UserGroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
         }
-        private void GetUserInUserGroup()
+        private async void GetUserInUserGroup()
         {
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData($"select user_id,user_name FROM user;");
+            dt = await dataAccess.GetDataAsync($"select user_id,user_name FROM user;");
             // dt = dataAccess.GetData($"select u.user_id,u.user_name FROM user u inner join user_roles ur on u.user_id = ur.user_id where ur.group_id={groupId};");
 
             foreach (DataRow row in dt.Rows)
@@ -366,7 +371,7 @@ namespace MAM.Views.AdminPanelViews
                 if (result == 1)
                 {
                     GetGroupedData();
-                    //Right right= GetUserGroupRights(SelectedUserGroup.UserGroupId);
+                    //Right right = GetUserGroupRights(SelectedUserGroup.UserGroupId);
                     //await UpdatePermission(SelectedUserGroup.UserGroupId, right);
 
                 }
@@ -383,21 +388,69 @@ namespace MAM.Views.AdminPanelViews
         private async Task<int> InsertUserToGroup()
         {
             List<MySqlParameter> parameters = new();
-            string query = string.Empty;
             parameters.Add(new MySqlParameter("@UserId", SelectedUser.UserId));
             parameters.Add(new MySqlParameter("@GroupId", SelectedUserGroup.UserGroupId));
-            query = $"insert into user_roles(user_id,group_id) values(@UserId,@GroupId)";
-            var (affectedRows, newUserGroupId, errorMessage) = await dataAccess.ExecuteNonQuery(query, parameters);
-            await GlobalClass.Instance.AddtoHistoryAsync("Add user to group", $"User '{SelectedUser.UserName}' is added to User Group '{SelectedUserGroup.GroupName}'");
+
+            string query = "INSERT INTO user_roles(user_id, group_id) VALUES(@UserId, @GroupId)";
+            var (affectedRows, _, errorMessage) = await dataAccess.ExecuteNonQuery(query, parameters);
+
             if (!string.IsNullOrEmpty(errorMessage))
             {
-                await GlobalClass.Instance.ShowDialogAsync($"Unable to add '{SelectedUser.UserName}' to group '{SelectedUserGroup.GroupName}'\n {errorMessage}", this.XamlRoot);
+                await GlobalClass.Instance.ShowDialogAsync(
+                    $"Unable to add '{SelectedUser.UserName}' to group '{SelectedUserGroup.GroupName}'\n {errorMessage}",
+                    this.XamlRoot);
                 return -1;
             }
-            else
-                return affectedRows;
 
+            if (affectedRows == 1)
+            {
+                // ✅ Step 2: Get permissions for this group
+                string permQuery = "SELECT permission_id, 1 as allowed FROM group_permissions WHERE group_id=@GroupId";
+                var permParams = new List<MySqlParameter> { new("@GroupId", SelectedUserGroup.UserGroupId) };
+                DataTable dt = await dataAccess.GetDataAsync(permQuery, permParams);
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    int permissionId = Convert.ToInt32(row["permission_id"]);
+                    int allowed = Convert.ToInt32(row["allowed"]);
+
+                    // ✅ Step 3: Assign permission to user using stored procedure
+                    var spParams = new List<MySqlParameter>
+                    {
+                        new("in_user_id", SelectedUser.UserId),
+                        new("in_permission_id", permissionId),
+                        new("in_allowed", allowed)
+                    };
+                    await dataAccess.ExecuteNonQueryStoredProcedure("InsertOrUpdateUserPermission", spParams);
+                }
+
+                await GlobalClass.Instance.AddtoHistoryAsync("Add user to group",
+                    $"User '{SelectedUser.UserName}' added to User Group '{SelectedUserGroup.GroupName}' with default rights");
+            }
+
+            return affectedRows;
         }
+
+        //private async Task<int> InsertUserToGroup()
+        //{
+        //    List<MySqlParameter> parameters = new();
+        //    string query = string.Empty;
+        //    parameters.Add(new MySqlParameter("@UserId", SelectedUser.UserId));
+        //    parameters.Add(new MySqlParameter("@GroupId", SelectedUserGroup.UserGroupId));
+        //    query = $"insert into user_roles(user_id,group_id) values(@UserId,@GroupId)";
+        //    var (affectedRows, newUserGroupId, errorMessage) = await dataAccess.ExecuteNonQuery(query, parameters);
+        //    await GlobalClass.Instance.AddtoHistoryAsync("Add user to group", $"User '{SelectedUser.UserName}' is added to User Group '{SelectedUserGroup.GroupName}'");
+        //    if (!string.IsNullOrEmpty(errorMessage))
+        //    {
+        //        await GlobalClass.Instance.ShowDialogAsync($"Unable to add '{SelectedUser.UserName}' to group '{SelectedUserGroup.GroupName}'\n {errorMessage}", this.XamlRoot);
+        //        return -1;
+        //    }
+        //    else
+        //        return affectedRows;
+
+        //}
+
+
         //private Right GetUserGroupRights(int groupId)
         //{
         //    DataTable dt = new DataTable();
@@ -480,8 +533,7 @@ namespace MAM.Views.AdminPanelViews
         //}
         private void RefreshGroups_Click(object sender, RoutedEventArgs e)
         {
-            UserGroupsList.Clear();
-            UserGroupsList = GetUserGroup();
+            LoadUSerGroup();
         }
 
         private void RefreshGroupedUsers_Click(object sender, RoutedEventArgs e)
@@ -559,7 +611,7 @@ namespace MAM.Views.AdminPanelViews
         }
 
     }
-    public class UserForGrouping:ObservableObject
+    public class UserForGrouping : ObservableObject
     {
         private User user;
         private UserGroupForGrouping parentGroup;
@@ -578,10 +630,10 @@ namespace MAM.Views.AdminPanelViews
 
     }
 
-    public class UserGroupForGrouping:ObservableObject
+    public class UserGroupForGrouping : ObservableObject
     {
         private UserGroup group;
-        private ObservableCollection<UserForGrouping> users=new();
+        private ObservableCollection<UserForGrouping> users = new();
 
         public UserGroup Group
         {

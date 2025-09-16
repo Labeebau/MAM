@@ -57,7 +57,8 @@
             <Border Background="Transparent" Padding="1"  >
                 <local1:CustomBinMedia x:Name="customMediaPlayer" MediaItem="{Binding}" 
                                        DeleteRequested="CustomMediaPlayer_DeleteRequested"
-                                       PlayButtonClicked="CustomMediaPlayer_PlayButtonClicked"/>
+                                       PlayButtonClicked="CustomMediaPlayer_PlayButtonClicked"
+                                       AuthorizeButtonClicked="customMediaPlayer_AuthorizeButtonClicked"/>
             </Border>
         </DataTemplate>
 

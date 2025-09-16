@@ -26,10 +26,17 @@ namespace MAM.Views.AdminPanelViews
         public UsersPage()
         {
             this.InitializeComponent();
-            UserList = new ObservableCollection<User>((IEnumerable<User>)dataAccess.GetUsers());
-            FilterData();
+            this.Loading += UsersPage_LoadingAsync;
+
             // Data binding for GridView
             DataContext = this;
+        }
+
+        private async void UsersPage_LoadingAsync(FrameworkElement sender, object args)
+        {
+            UserList = new ObservableCollection<User>((IEnumerable<User>)(await dataAccess.GetUsers()));
+            FilterData();
+
         }
 
         private void OnSearchTextChanged(object sender, TextChangedEventArgs e)

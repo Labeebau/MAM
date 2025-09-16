@@ -34,24 +34,24 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
 
         // public string mediaPath { get; private set; }
         DataTable categoryTable;
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             if (e.Parameter is MediaPlayerViewModel viewmodel)
             {
                 Viewmodel = (MediaPlayerViewModel)viewmodel;
                 //mediaPath =viewmodel.Media.MediaPath.ToString();
-                categoryTable = dataAccess.GetData("select category_id,category_name,parent_id from metadata_category");
+                categoryTable =await dataAccess.GetDataAsync("select category_id,category_name,parent_id from metadata_category");
                 ConvertDataTableToListAsync(categoryTable, AllCategories);
                 AllCategories = LoadAllCategories();
                 GetAssetCategories();
                 HasCategories = AssetCategories.Any();
             }
         }
-        private void GetAssetCategories()
+        private async void GetAssetCategories()
         {
             categoryTable.Clear();
-            categoryTable = dataAccess.GetData($"select c.category_id,c.category_name,c.parent_id from metadata_category c inner join asset_category a on c.category_id=a.category_id where a.asset_id={Viewmodel.Media.MediaId}");
+            categoryTable =await dataAccess.GetDataAsync($"select c.category_id,c.category_name,c.parent_id from metadata_category c inner join asset_category a on c.category_id=a.category_id where a.asset_id={Viewmodel.Media.MediaId}");
             AssetCategories.Clear();
             ConvertDataTableToListAsync(categoryTable, AssetCategories);
         }

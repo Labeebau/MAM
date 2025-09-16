@@ -5,6 +5,7 @@ using MAM.Views.ProcessesViews;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using PdfSharp.Snippets.Drawing;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Windows.Storage.Pickers;
@@ -50,20 +51,10 @@ namespace MAM.Windows
             if (_instance == null)
             {
                 _instance = new DownloadOriginalFile(media);
-                _instance.Activate(); // Show the window
+                // When the window closes, clear the instance so it can be opened again
+                _instance.Closed += (s, e) => _instance = null;
             }
-            else
-            {
-                try
-                {
-                    _instance.Activate(); // Bring the existing window to the front
-                }
-                catch (Exception ex)
-                {
-                    _instance = new DownloadOriginalFile(media);
-                    _instance.Activate();
-                }
-            }
+            _instance.Activate();
         }
         private void Window_Closed(object sender, WindowEventArgs args)
         {

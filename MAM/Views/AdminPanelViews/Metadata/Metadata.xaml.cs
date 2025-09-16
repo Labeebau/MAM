@@ -37,11 +37,11 @@ namespace MAM.Views.AdminPanelViews.Metadata
             DataContext = this;
         }
         public string SelectedItem { get; set; }
-        private void GetMetadata(ObservableCollection<MetadataClass> metadataList = null)
+        private async void GetMetadata(ObservableCollection<MetadataClass> metadataList = null)
         {
             MetadataClass NewMetadata;
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select metadata_id,metadata_name,metadata_type from metadata");
+            dt =await dataAccess.GetDataAsync("select metadata_id,metadata_name,metadata_type from metadata");
             MetadataList.Clear();
             foreach (DataRow row in dt.Rows)
             {
@@ -120,14 +120,14 @@ namespace MAM.Views.AdminPanelViews.Metadata
                 
                 if (metadata != null)
                 {
-                    string errorMessage = string.Empty;
-                    int errorCode = 0;
-                    if (dataAccess.Delete("metadata", "metadata_id", metadata.MetadataId,out errorMessage, out errorCode))
+                    (int rowsDeleted,string errorMessage, int errorCode)= await dataAccess.Delete("metadata", "metadata_id", metadata.MetadataId);
+                    if (rowsDeleted > 0)
+                    {
                         MetadataList.Remove(metadata);
+                    }
                     else
                     {
-                        await GlobalClass.Instance.ShowDialogAsync(string.IsNullOrWhiteSpace(errorMessage) ? "An unknown error occurred while trying to delete metadata.": errorMessage, this.XamlRoot, "Delete Failed");
-
+                        await GlobalClass.Instance.ShowDialogAsync(string.IsNullOrWhiteSpace(errorMessage) ? "An unknown error occurred while trying to delete metadata." : errorMessage, this.XamlRoot, "Delete Failed");
                     }
                 }
             }

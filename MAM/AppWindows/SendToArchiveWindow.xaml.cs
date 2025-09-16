@@ -1,4 +1,5 @@
-﻿using MAM.Data;
+﻿using MAM.AppWindows;
+using MAM.Data;
 using MAM.Utilities;
 using MAM.Views.AdminPanelViews;
 using MAM.Views.MediaBinViews;
@@ -62,10 +63,13 @@ namespace MAM.Windows
 
         public static void ShowWindow(ObservableCollection<MediaPlayerItem> medias, Action onAarchived)
         {
-
-            _instance = new SendToArchiveWindow(medias);
-            _instance.Activate(); // Show the window
-            _instance.ViewModel.ArchiveUpdatedCallback = onAarchived;
+            if (_instance == null)
+            {
+                _instance = new SendToArchiveWindow(medias);
+                // When the window closes, clear the instance so it can be opened again
+                _instance.Closed += (s, e) => _instance = null;
+            }
+            _instance.Activate();
 
         }
 
@@ -76,34 +80,33 @@ namespace MAM.Windows
 
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
-
+            var xamlRoot = (App.MainAppWindow.Content as FrameworkElement)?.XamlRoot;            // Fire and forget
+            await SendToArchive(xamlRoot);
+            this.Close(); // Immediately close the window
+        }
+        private async Task SendToArchive(XamlRoot xamlRoot)
+        {
             var checkedItems = ViewModel.MediaList.Where(item => item.IsChecked).ToList();
             foreach (var media in checkedItems)
             {
                 App.MainAppWindow.StatusBar.ShowStatus($"Archiving {media}...");
                 if (!media.Model.IsArchived)
                 {
-                    //string normalizedPath =PathHelper.NormalizePath(media.Model.MediaSource.LocalPath);
-                    //string normalizedProxyPath = PathHelper.NormalizePath(media.Model.ProxyPath);
                     string normalizedArchivePath = PathHelper.NormalizePath(media.Model.MediaSource.LocalPath);
                     string title = media.Model.Title;
                     string now = DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss");
                     string archiveDirectory = Path.Combine(GlobalClass.Instance.ActiveArchiveServer.ServerName, GlobalClass.Instance.ActiveArchiveServer.ArchivePath, now);
                     archiveDirectory = PathHelper.NormalizePath(archiveDirectory);
                     Directory.CreateDirectory(archiveDirectory);
-                    //string destinationPath = Path.Combine(archiveDirectory, title);
-                    //string destinationProxyPath = Path.Combine(archiveDirectory, Path.GetFileName(media.Model.ProxyPath));
-
                     string sourceMain = PathHelper.NormalizePath(media.Model.MediaSource.LocalPath);
                     string sourceProxy = PathHelper.NormalizePath(media.Model.ProxyPath);
                     string destMain = Path.Combine(archiveDirectory, title); ;
                     string destProxy = Path.Combine(archiveDirectory, Path.GetFileName(media.Model.ProxyPath));
-
                     string movedMain = null;
                     string movedProxy = null;
                     try
                     {
-                        if (File.Exists(sourceMain) && File.Exists(sourceProxy) )
+                        if (File.Exists(sourceMain) && File.Exists(sourceProxy))
                         {
                             File.Move(sourceMain, destMain, false);
                             movedMain = destMain;
@@ -122,15 +125,15 @@ namespace MAM.Windows
                             await GlobalClass.Instance.AddtoHistoryAsync("Send to archive", $"Send asset '{media.Model.MediaPath}' to archive .");
                         }
                         else
-                            await GlobalClass.Instance.ShowDialogAsync($"'{sourceMain}' does not exist.", this.Content.XamlRoot);
+                            await GlobalClass.Instance.ShowDialogAsync($"'{sourceMain}' does not exist.", xamlRoot);
                     }
                     catch (IOException ioEx)
                     {
-                        await GlobalClass.Instance.ShowDialogAsync($"File operation failed: {ioEx.Message}", this.Content.XamlRoot);
+                        await GlobalClass.Instance.ShowDialogAsync($"File operation failed: {ioEx.Message}", xamlRoot);
                     }
                     catch (UnauthorizedAccessException authEx)
                     {
-                        await GlobalClass.Instance.ShowDialogAsync($"Permission error: {authEx.Message}", this.Content.XamlRoot);
+                        await GlobalClass.Instance.ShowDialogAsync($"Permission error: {authEx.Message}", xamlRoot);
                     }
                     catch (Exception ex)
                     {
@@ -145,7 +148,7 @@ namespace MAM.Windows
                             {
                                 await GlobalClass.Instance.ShowDialogAsync(
                                     $"Rollback failed! Manual fix required.\n{rollbackEx.Message}",
-                                    this.Content.XamlRoot);
+                                    xamlRoot);
                             }
                         }
 
@@ -160,7 +163,7 @@ namespace MAM.Windows
                             {
                                 await GlobalClass.Instance.ShowDialogAsync(
                                     $"Rollback of proxy failed! Manual fix required.\n{rollbackEx.Message}",
-                                    this.Content.XamlRoot);
+                                    xamlRoot);
                             }
                         }
 
@@ -170,7 +173,7 @@ namespace MAM.Windows
 
                 else
                 {
-                    await GlobalClass.Instance.ShowDialogAsync($"'{media.Model.MediaSource.LocalPath}' is already archived.", this.Content.XamlRoot);
+                    await GlobalClass.Instance.ShowDialogAsync($"'{media.Model.MediaSource.LocalPath}' is already archived.", xamlRoot);
                 }
             }
             App.MainAppWindow.StatusBar.HideStatus();

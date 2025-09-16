@@ -47,19 +47,12 @@ namespace MAM.Windows
             if (_instance == null)
             {
                 _instance = new SendToTargetWindow();
-                _instance.Activate(); // Show the window
+                _instance.Closed += (s, e) => _instance = null;
             }
-            else
-            {
-                _instance.Activate(); // Bring the existing window to the front
-            }
-
+            _instance.Activate(); // Bring the existing window to the front
         }
        
-        private void Window_Closed(object sender, WindowEventArgs args)
-        {
-            _instance = null;
-        }
+        
 
         private void SendButton_Click(object sender, RoutedEventArgs e)
         {

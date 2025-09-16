@@ -212,11 +212,11 @@ namespace MAM.Data
         //    else
         //        return null;
         //}
-        public UserGroup GetUserGroupWithRights(int groupId)
+        public async Task<UserGroup> GetUserGroupWithRights(int groupId)
         {
             DataTable dt = new DataTable();
             UserGroup NewUserGroup;
-            dt = dataAccess.GetData("SELECT ug.group_id, ug.group_name,GROUP_CONCAT(p.permission_name ORDER BY p.permission_name SEPARATOR ', ') AS permissions " +
+            dt =await dataAccess.GetDataAsync("SELECT ug.group_id, ug.group_name,GROUP_CONCAT(p.permission_name ORDER BY p.permission_name SEPARATOR ', ') AS permissions " +
                                     "FROM user_group ug " +
                                     "LEFT JOIN group_permissions gp ON ug.group_id = gp.group_id " +
                                     "LEFT JOIN permissions p ON gp.permission_id = p.permission_id " +
@@ -378,7 +378,7 @@ namespace MAM.Data
             FileServerList.Clear();
             FileServer newFileServer = new();
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select * from file_server; ");
+            dt =await dataAccess.GetDataAsync("select * from file_server; ");
             if (dt.Rows.Count > 0)
             {
                 foreach (DataRow row in dt.Rows)
@@ -416,7 +416,7 @@ namespace MAM.Data
             ArchiveServerList.Clear();
             ArchiveServer newArchiveServer = new();
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select * from archive_server; ");
+            dt = await dataAccess.GetDataAsync("select * from archive_server; ");
             if (dt.Rows.Count > 0)
             {
                 foreach (DataRow row in dt.Rows)
@@ -448,7 +448,7 @@ namespace MAM.Data
         {
             FileServer newFileServer = new();
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select * from file_server where active=1; ");
+            dt = await dataAccess.GetDataAsync("select * from file_server where active=1; ");
             if (dt.Rows.Count > 0)
             {
                 foreach (DataRow row in dt.Rows)
@@ -483,7 +483,7 @@ namespace MAM.Data
         {
             ArchiveServer newArchiveServer = new();
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select * from archive_server where active=1; ");
+            dt =await dataAccess.GetDataAsync("select * from archive_server where active=1; ");
             if (dt.Rows.Count > 0)
             {
                 foreach (DataRow row in dt.Rows)
@@ -514,11 +514,11 @@ namespace MAM.Data
         {
             if (userId == 0)
                 userId = GlobalClass.Instance.CurrentUser.UserId;
-            var parameters = new Dictionary<string, object>
+            var parameters = new List<MySqlParameter>
                     {
-                        { "user_id", userId },
-                        { "action", action },
-                        { "description", description }
+                        { new MySqlParameter("user_id", userId) },
+                        { new MySqlParameter("action", action) },
+                        { new MySqlParameter("description", description) }
                     };
 
             await dataAccess.ExecuteNonQueryStoredProcedure("InsertUserAction", parameters);

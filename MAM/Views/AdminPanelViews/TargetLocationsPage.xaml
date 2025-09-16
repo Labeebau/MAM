@@ -217,7 +217,7 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                               Background="{StaticResource ThemeSecondaryBackgroundColor}">
 
                     <controls:DataGrid.Columns>
-                        <controls:DataGridTemplateColumn Header="User Groups" Width="auto" >
+                        <controls:DataGridTemplateColumn Header="User Name" Width="auto" >
                             <controls:DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate >
                                     <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
@@ -226,7 +226,6 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                                 </DataTemplate>
                             </controls:DataGridTemplateColumn.CellTemplate>
                         </controls:DataGridTemplateColumn>
-
 
                         <controls:DataGridTemplateColumn Header="File" Width="auto" >
                             <controls:DataGridTemplateColumn.CellTemplate>

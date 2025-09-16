@@ -35,11 +35,11 @@ namespace MAM.Views.AdminPanelViews.Metadata
             GetFormats();
             DataContext = this;
         }
-        private void GetFormats(ObservableCollection<Format> formatList = null)
+        private async void GetFormats(ObservableCollection<Format> formatList = null)
         {
             Format NewFormat;
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select ft.file_type,f.format_id,f.extension,f.description from format f inner join file_type ft on ft.file_id=f.file_id");
+            dt =await dataAccess.GetDataAsync("select ft.file_type,f.format_id,f.extension,f.description from format f inner join file_type ft on ft.file_id=f.file_id");
             FormatList.Clear();
             foreach (DataRow row in dt.Rows)
             {
@@ -57,10 +57,10 @@ namespace MAM.Views.AdminPanelViews.Metadata
                     formatList.Add(NewFormat);
             }
         }
-        private void GetFileTypes()
+        private async void GetFileTypes()
         {
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select file_id, file_type from  file_type");
+            dt =await dataAccess.GetDataAsync("select file_id, file_type from  file_type");
             FileTypeList.Clear();
             foreach (DataRow row in dt.Rows)
             {
@@ -120,13 +120,14 @@ namespace MAM.Views.AdminPanelViews.Metadata
             {
                 if (format != null)
                 {
-                    string errorMessage = string.Empty;
-                    int errorCode = 0;
-                    if (dataAccess.Delete("format", "format_id", format.FormatId, out errorMessage, out errorCode))
+                    (int rowsDeleted,string errorMessage,int errorCode) = await dataAccess.Delete("format", "format_id", format.FormatId);
+                    if (rowsDeleted > 0)
+                    {
                         FormatList.Remove(format);
+                    }
                     else
                     {
-                        await GlobalClass.Instance.ShowDialogAsync(string.IsNullOrWhiteSpace(errorMessage) ? "An unknown error occurred while trying to delete metadata.": errorMessage, XamlRoot, "Delete Failed!!!");
+                        await GlobalClass.Instance.ShowDialogAsync(string.IsNullOrWhiteSpace(errorMessage) ? "An unknown error occurred while trying to delete metadata." : errorMessage, XamlRoot, "Delete Failed!!!");
                     }
                 }
             }

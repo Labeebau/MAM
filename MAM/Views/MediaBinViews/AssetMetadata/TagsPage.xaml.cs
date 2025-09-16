@@ -92,10 +92,10 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             }
         }
 
-        private void GetAllTags()
+        private async void GetAllTags()
         {
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData("select tag_id,tag_name from tag");
+            dt =await dataAccess.GetDataAsync("select tag_id,tag_name from tag");
             allTags.Clear();
             foreach (DataRow row in dt.Rows)
             {
@@ -107,10 +107,10 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
             }
             ViewModel.AllTags = allTags.ToList();
         }
-        private void GetAssetTags()
+        private async void GetAssetTags()
         {
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData($"select t.tag_id,t.tag_name from tag t inner join asset_tag a on t.tag_id=a.tag_id where a.asset_id={Asset.Media.MediaId}");
+            dt =await dataAccess.GetDataAsync($"select t.tag_id,t.tag_name from tag t inner join asset_tag a on t.tag_id=a.tag_id where a.asset_id={Asset.Media.MediaId}");
             ViewModel.AssetTags.Clear();
             foreach (DataRow row in dt.Rows)
             {
@@ -276,10 +276,8 @@ namespace MAM.Views.MediaBinViews.AssetMetadata
                 ContentDialogResult result=await GlobalClass.Instance.ShowDialogAsync($"Are you sure you want to delete {ViewModel.NewTag.TagName}?", this.XamlRoot,"Delete","Cancel", "Delete Confirmation");
                 if (result == ContentDialogResult.Primary)
                 {
-
-                    string errorMessage = string.Empty;
-                    int errorCode = 0;
-                    if (dataAccess.Delete("tag", "tag_id", ViewModel.NewTag.TagId, out errorMessage, out errorCode))
+                    (int rowsDeleted, string errorMessage, int errorCode) = await dataAccess.Delete("tag", "tag_id", ViewModel.NewTag.TagId);
+                    if(rowsDeleted>0)
                     {
                         await GlobalClass.Instance.AddtoHistoryAsync("Delete tag", $"Deleted tag '{ViewModel.NewTag.TagName}' ");
                         allTags.Remove(ViewModel.NewTag);

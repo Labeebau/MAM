@@ -51,21 +51,21 @@ namespace MAM.Views
             DataContext = ViewModel;
 
         }
-        private void GetUsers()
+        private async void GetUsers()
         {
             ViewModel.UserList.Add("All Users");
             DataTable dt = new DataTable();
-            dt = dataAccess.GetData($"select user_name FROM user;");
+            dt =await dataAccess.GetDataAsync($"select user_name FROM user;");
             foreach (DataRow row in dt.Rows)
             {
                 ViewModel.UserList.Add(row[0].ToString());
             }
 
         }
-        private void GetHistory()
+        private async void GetHistory()
         {
             string query = "select u.user_id, u.user_name,h.action,h.description,h.date from history h inner join user u on h.user_id=u.user_id  ORDER BY date DESC";
-            DataTable dt = dataAccess.GetData(query);
+            DataTable dt =await dataAccess.GetDataAsync(query);
             foreach (DataRow row in dt.Rows)
             {
                 ViewModel.HistoryList.Add(new History

@@ -71,7 +71,7 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
-                        
+
                         <controls:DataGridTemplateColumn.CellEditingTemplate>
                             <DataTemplate>
                                 <TextBox Text="{Binding Domain,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
@@ -148,12 +148,12 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
                         <controls:DataGridTemplateColumn.CellEditingTemplate>
-                        <DataTemplate>
-                            <TextBox Text="{Binding ThumbnailFolder,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
-                        </DataTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding ThumbnailFolder,Mode=TwoWay}" IsReadOnly="{Binding IsReadOnly}"  />
+                            </DataTemplate>
                         </controls:DataGridTemplateColumn.CellEditingTemplate>
                     </controls:DataGridTemplateColumn>
-                    
+
                     <controls:DataGridTemplateColumn Header="RecycleFolder" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="local:FileServer">
@@ -168,17 +168,20 @@ HorizontalAlignment="Center"   Height="500" Width="auto" Padding="20" >
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellEditingTemplate>
                     </controls:DataGridTemplateColumn>
-                    
+
                     <controls:DataGridTemplateColumn Header="Active" Width="auto" >
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate x:DataType="local:FileServer">
                                 <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Width="20">
-                                    <CheckBox IsChecked="{Binding Active,Mode=TwoWay}" IsEnabled="{Binding IsReadOnly,Mode=TwoWay,Converter={StaticResource BooleanToVisibilityConverter}}" Padding="10,0,10,0" />
+                                    <CheckBox IsChecked="{Binding Active,Mode=TwoWay}" 
+                                              IsEnabled="{Binding IsReadOnly,Mode=TwoWay,Converter={StaticResource InverseBooleanToVisibilityConverter}}" 
+                                              Checked="ActiveCheckBox_Checked"
+                                              Padding="10,0,10,0" />
                                 </StackPanel>
                             </DataTemplate>
                         </controls:DataGridTemplateColumn.CellTemplate>
                     </controls:DataGridTemplateColumn>
-                    
+
                     <controls:DataGridTemplateColumn Width="80">
                         <controls:DataGridTemplateColumn.CellTemplate>
                             <DataTemplate >

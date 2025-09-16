@@ -100,13 +100,13 @@ namespace MAM.Views.AdminPanelViews
         }
         private async Task<int> SaveDbProperties()
         {
-            var parameters = new Dictionary<string, object>
+            var parameters = new List<MySqlParameter>
             {
-                        { "server_IP", viewModel.ServerIP },
-                        { "server_name", viewModel.ServerName },
-                        { "db_name", viewModel.DBName },
-                        { "db_user_name", viewModel.DBUserName },
-                        { "db_password", viewModel.DBPassword },
+                        { new MySqlParameter("server_IP", viewModel.ServerIP) },
+                        { new MySqlParameter("server_name", viewModel.ServerName) },
+                        { new MySqlParameter("db_name", viewModel.DBName) },
+                        { new MySqlParameter("db_user_name", viewModel.DBUserName) },
+                        { new MySqlParameter("db_password", viewModel.DBPassword) },
             };
 
             return await dataAccess.ExecuteNonQueryStoredProcedure("InsertDbProperty", parameters);
