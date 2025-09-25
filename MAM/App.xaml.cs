@@ -1,6 +1,8 @@
 ﻿using MAM.Data;
 using MAM.Views.AdminPanelViews;
+using MAM.Views.MediaBinViews;
 using MAM.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,11 +19,11 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
+using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using Windows.UI;
 using Windows.Globalization;
-using Windows.ApplicationModel.Core;
+using Windows.UI;
 //using MAM.Windows;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -62,6 +64,9 @@ namespace MAM
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
+        /// public static IServiceProvider Services { get; private set; }
+        public static IServiceProvider Services { get; private set; }
+
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
 		{
             //m_window = new TestWindow();
@@ -111,6 +116,11 @@ namespace MAM
             {
                 File.AppendAllText("log.txt", "Error: " + ex.ToString() + "\n");
             }
+            var services = new ServiceCollection();
+
+            services.AddSingleton<MediaLibraryViewModel>();
+
+            Services = services.BuildServiceProvider();
         }
 
         private Window m_window;

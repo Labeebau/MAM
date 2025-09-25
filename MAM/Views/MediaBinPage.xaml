@@ -12,6 +12,7 @@
 
     <Grid >
         <NavigationView x:Name="navMediaBin" 
+                 HorizontalAlignment="Left"       
                  PaneDisplayMode="Top"
                  IsBackEnabled="True"
                  IsSettingsVisible="False"
@@ -22,33 +23,114 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem  Content="Media Library" Tag="MediaLibraryPage" />
                 <NavigationViewItem  Content="Archive" Tag="ArchivePage" />
-               
+
             </NavigationView.MenuItems>
             <ScrollViewer>
                 <Frame x:Name="ContentFrame" IsTabStop="True">
                 </Frame>
             </ScrollViewer>
         </NavigationView>
+        <Grid HorizontalAlignment="Stretch"
+              VerticalAlignment="Top"
+              Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <!--LeftVerticalSplitter + Left Panel+ Central panel -->
+                <ColumnDefinition Width="310"/>
+                <!--RightVerticalSplitter width + Right panel width -->
+            </Grid.ColumnDefinitions>
 
+            <StackPanel Grid.Column="0"
+            Orientation="Horizontal"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Margin="0,10,10,0"
+            Spacing="8">
+                <Grid Width="45" Height="32">
+                    <ToggleButton x:Name="BtnFilter" 
+                                  Style="{StaticResource SmallToggleButton}" 
+                                  VerticalAlignment="Top"
+                                  HorizontalAlignment="Left"
+                                  CornerRadius="5"
+                                  Margin="0,2,0,0"
+                                  Click="BtnFilter_Clicked">
+                        <!-- Filter Icon -->
+                        <FontIcon Glyph="&#xE16E;" 
+                                    FontFamily="Segoe Fluent Icons" 
+                                    FontSize="18"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"/>
+                    </ToggleButton>
+
+                    <!-- Badge with number -->
+                    <InfoBadge Visibility="{x:Bind CheckedTagCount,Converter={StaticResource IntToVisibilityConverter},Mode=OneWay}"
+                               Value="{x:Bind CheckedTagCount, Mode=TwoWay}" 
+                               Background="DodgerBlue"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Top"/>
+                </Grid>
+
+                <Grid Background="{StaticResource ThemePrimaryBackgroundColor}"  Width="380" Height="36" CornerRadius="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Search Icon -->
+                    <FontIcon Glyph="&#xE721;"
+                                  FontFamily="Segoe Fluent Icons" 
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Left"
+                                  Width="20"
+                                  Height="20"
+                                  Margin="8,0,12,0" />
+
+                    <!-- Multi-select dropdown -->
+
+                    <DropDownButton x:Name="SearchFieldDropdown"
+                                    VerticalAlignment="Stretch"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Width="50"
+                                    CornerRadius="0"
+                                    FlowDirection="LeftToRight">
+
+                        <DropDownButton.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedLeft">
+                                <Flyout.FlyoutPresenterStyle>
+                                    <Style TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Setter Property="Background" Value="{ThemeResource ThemeSecondaryBackgroundColor}"/>
+                                        <Setter Property="CornerRadius" Value="5"/>
+                                    </Style>
+                                </Flyout.FlyoutPresenterStyle>
+                                <StackPanel Background="{StaticResource ThemeSecondaryBackgroundColor}" Padding="5">
+                                    <CheckBox x:Name="ChkTitle" Content="Title" Margin="2"/>
+                                    <CheckBox x:Name="ChkTag" Content="Tag" Margin="2"/>
+                                    <CheckBox x:Name="ChkInfo" Content="Info" Margin="2"/>
+                                    <CheckBox x:Name="ChkName" Content="Name" Margin="2"/>
+                                    <CheckBox x:Name="ChkWriter" Content="Writer" Margin="2"/>
+                                </StackPanel>
+                            </Flyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+
+                    <!-- Search Box -->
+                    <TextBox x:Name="SearchTextBox"
+                 Grid.Column="2"
+                 PlaceholderText="Search"
+                 PlaceholderForeground="WhiteSmoke"
+                 BorderThickness="0"
+                 CornerRadius="0"
+                 Background="Transparent"
+                 Foreground="White"
+                 VerticalAlignment="Stretch"
+                 KeyDown="SearchTextBox_KeyDown"/>
+                </Grid>
+            </StackPanel>
+        </Grid>
     </Grid>
 
-
-
-    <!--<GridView x:Name="mediaPlayerGridView"
-                  ItemsSource="{x:Bind MediaPlayerItems}"
-                  HorizontalAlignment="Left"
-                  VerticalAlignment="Top"
-                  Margin="10">
-            --><!-- Template for each media player item --><!--
-            <GridView.ItemTemplate>
-                <DataTemplate x:DataType="local:MediaPlayerItem">
-                    --><!--<Border BorderBrush="Silver" BorderThickness="1" Margin="5">-->
-                        <!-- Custom Media Player Control --><!--
-                        <local1:CustomMedia x:Name="customMediaPlayer" Loaded="CustomMediaPlayer_Loaded"/>
-                    --><!--</Border>--><!--
-                </DataTemplate>
-            </GridView.ItemTemplate>
-        </GridView>-->
-
-        
 </Page>

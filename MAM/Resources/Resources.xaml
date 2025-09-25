@@ -69,7 +69,131 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="CornerRadius" Value="3"/>
+    </Style>
+    <Style TargetType="ToggleButton" x:Key="SmallToggleButton">
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <Border x:Name="RootBorder"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <!-- You can add your badge here if needed -->
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootBorder.Background" Value="#333"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootBorder.Background" Value="#444"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootBorder.Background" Value="#333333"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOverChecked">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootBorder.Background" Value="#40B5AD"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled"/>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
+    <Style x:Key="IconToggleButtonStyle" TargetType="ToggleButton">
+        <Setter Property="Height" Value="35"/>
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <!--<Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid x:Name="RootGrid" Background="{TemplateBinding Background}">
+                        --><!-- Content (icon) centered --><!--
+                        <ContentPresenter
+                        x:Name="ContentPresenter"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                        Storyboard.TargetName="RootGrid"
+                                        Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="#22000000"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                        Storyboard.TargetName="RootGrid"
+                                        Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="#33000000"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+
+                            <VisualStateGroup x:Name="CheckStates">
+                                <VisualState x:Name="Unchecked"/>
+                                <VisualState x:Name="Checked">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                        Storyboard.TargetName="RootGrid"
+                                        Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="#55007ACC"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>-->
+        <!--</Setter>-->
+    </Style>
+
+
+
+
+
+
+    <Style TargetType="DropDownButton" x:Key="TabDropDownButton">
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Width" Value="Auto"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="3"/>
     </Style>
     <Style TargetType="GridView">
         <Setter Property="SelectionMode" Value="Single"/>
@@ -126,22 +250,36 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <!--<Style x:Key="CircularThumbStyle" TargetType="Thumb">
-        <Setter Property="Width" Value="20"/>
-        <Setter Property="Height" Value="20"/>
-        <Setter Property="Background" Value="DodgerBlue"/>
-        <Setter Property="BorderBrush" Value="White"/>
-        <Setter Property="BorderThickness" Value="2"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Thumb">
-                    <Ellipse Fill="{TemplateBinding Background}"
-                         Stroke="{TemplateBinding BorderBrush}"
-                         StrokeThickness="{TemplateBinding BorderThickness}"/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+    <Style x:Key="BorderlessFlyoutPresenterStyle" TargetType="FlyoutPresenter">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <!-- ThemeResource keeps it consistent in light/dark -->
+        <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBase}"/>
+        <!-- optional: remove corner radius if you want a perfect rectangle -->
+        <Setter Property="CornerRadius" Value="5"/>
+    </Style>
+
+    <!-- 2) Apply it to ALL Flyouts by default -->
+    <Style TargetType="Flyout">
+        <Setter Property="FlyoutPresenterStyle" Value="{StaticResource BorderlessFlyoutPresenterStyle}"/>
+    </Style>
+
+    <!-- 3) If you also use MenuFlyout, do the same -->
+    <Style x:Key="BorderlessMenuFlyoutPresenterStyle" TargetType="MenuFlyoutPresenter">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBase}"/>
+        <Setter Property="CornerRadius" Value="0"/>
+    </Style>
+
+    <Style TargetType="MenuFlyout">
+        <Setter Property="MenuFlyoutPresenterStyle" Value="{StaticResource BorderlessMenuFlyoutPresenterStyle}"/>
+    </Style>
+    <!--<Style x:Key="BorderlessMenuFlyoutPresenterStyle" TargetType="MenuFlyoutPresenter">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Background" Value="{ThemeResource ThemePrimaryBackgroundColor}"/>
+        <Setter Property="CornerRadius" Value="0"/>
     </Style>-->
 
-   
 </ResourceDictionary>

@@ -43,11 +43,14 @@
     <None Remove="AppWindows\AssetAuthorizationWindow.xaml" />
     <None Remove="AppWindows\UpdateMetadata.xaml" />
     <None Remove="Assets\4k.png" />
+    <None Remove="Assets\equals.png" />
     <None Remove="Assets\Fonts\Font Awesome 6 Free-Solid-900.otf" />
+    <None Remove="Assets\intersect.png" />
     <None Remove="Assets\MediaLibraryStorage.png" />
     <None Remove="Assets\MediaLibraryStorage1.png" />
     <None Remove="Assets\process.png" />
     <None Remove="Assets\Quality Server.png" />
+    <None Remove="Assets\union.png" />
     <None Remove="BlankPage.xaml" />
     <None Remove="Fonts.xaml" />
     <None Remove="HomePage.xaml" />
@@ -145,6 +148,9 @@
     <Content Update="Assets\Fonts\Font Awesome 6 Free-Solid-900.otf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Assets\intersect.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="Assets\MediaLibraryStorage.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -155,6 +161,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="Assets\Quality Server.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\union.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -208,6 +217,9 @@
     <Page Update="AppWindows\UpdateMetadata.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Content Update="Assets\equals.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Update="Assets\ffmpeg\ffmpeg.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

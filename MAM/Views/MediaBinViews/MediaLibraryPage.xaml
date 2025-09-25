@@ -271,7 +271,7 @@
         <Border x:Name="CenterPanel"  Grid.Row="0" Grid.Column="2" Height="700" Width="auto"  Padding="20" >
             <Grid x:Name="CenterGrid"  Width="auto" VerticalAlignment="Top" >
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="32"/>
                     <RowDefinition Height="20"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="30"/>
@@ -285,15 +285,207 @@
                         <!-- Takes only required space -->
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="1" x:Name="txtSearchBin" Width="auto" Margin="0,0,0,10" Text="{x:Bind ViewModel.CurrentPath,Mode=OneWay}"
-                                     HorizontalAlignment="Left"/>
+                    <StackPanel x:Name="FilterPanel" Orientation="Horizontal"              
+                                Visibility="{Binding IsFilterVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <DropDownButton x:Name="TagsDropDownButton" Content="Tags" HorizontalAlignment="Left" FontSize="13" Style="{StaticResource TabDropDownButton}" Click="FilterTagsDropDownButton_Click">
+                            <DropDownButton.Flyout >
+                                <Flyout Placement="BottomEdgeAlignedLeft" >
+                                    <Flyout.FlyoutPresenterStyle>
+                                        <StaticResource ResourceKey="BorderlessFlyoutPresenterStyle"/>
+                                    </Flyout.FlyoutPresenterStyle>
+
+                                    <!-- Separator line -->
+
+
+
+                                    <Grid Width="420" Height="400" Background="{ThemeResource SolidBackgroundFillColorBase}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!--Search bar-->
+                                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="5"  Padding="10">
+
+                                            <AutoSuggestBox x:Name="TagAutoSuggestBox"
+                                                            Width="180"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Top"
+                                                            PlaceholderText="Type to search tag ..."
+                                                            Text="{Binding SelectedTag.TagName, Mode=TwoWay}"
+                                                            ItemsSource="{Binding TagsList}"
+                                                            DisplayMemberPath="TagName"
+                                                            TextChanged="TagAutoSuggestBox_TextChanged"
+                                                            SuggestionChosen="TagAutoSuggestBox_SuggestionChosen"
+                                                            QuerySubmitted="TagAutoSuggestBox_QuerySubmitted"
+                                                           />
+                                            <Button Style="{StaticResource SmallIconButton}"  
+                                                    Click="TagButton_Click" Margin="0,2,0,0"
+                                                    VerticalAlignment="Center"  
+                                                    CornerRadius="3" 
+                                                    ToolTipService.ToolTip="Search by tag">
+                                                <FontIcon Glyph="&#xf002;" FontSize="12" />
+                                            </Button>
+                                            <TextBlock Text="Rule:" VerticalAlignment="Center"  Margin="20,0,0,0"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="2" x:Name="RuleToggleGroup" Background="#363636" CornerRadius="5" >
+                                                <ToggleButton x:Name="BtnUnion"
+                                                              Tag="Union"
+                                                              Style="{StaticResource IconToggleButtonStyle }"
+                                                              Click="TagFilterMode_Click">
+                                                    <Image Source="ms-appx:///Assets/union.png"
+                                                           Stretch="Uniform"/>
+                                                </ToggleButton>
+
+                                                <ToggleButton x:Name="BtnIntersect"
+                                                              Tag="Intersection"
+                                                              Style="{StaticResource IconToggleButtonStyle}"
+                                                              Click="TagFilterMode_Click">
+                                                    <Image Source="ms-appx:///Assets/intersect.png"
+                                                           Stretch="Uniform"/>
+                                                </ToggleButton>
+
+                                                <ToggleButton x:Name="BtnEqual"
+                                                              Tag="Equal"
+                                                              Style="{StaticResource IconToggleButtonStyle}"
+                                                              Click="TagFilterMode_Click">
+                                                    <Image Source="ms-appx:///Assets/equals.png"
+                                                           Stretch="Uniform"/>
+                                                </ToggleButton>
+                                            </StackPanel>
+
+
+
+
+                                        </StackPanel>
+                                        <!--Two-column filter layout-->
+                                        <Grid Grid.Row="1" HorizontalAlignment="Stretch"  Margin="0,20,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="180"/>
+                                                <ColumnDefinition Width="1"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!--Left side (categories)-->
+                                            <ListView ItemsSource="{x:Bind ViewModel.TagSummaries, Mode=OneWay}"
+                                                      Grid.Column="0" 
+                                                      Height="280"
+                                                      VerticalAlignment="Top">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate x:DataType="local:TagSummary">
+                                                        <Grid >
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="{x:Bind Name,Mode=OneWay}" />
+                                                            <TextBlock Grid.Column="1" Text="{x:Bind Count,Mode=OneWay}" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+
+                                            </ListView>
+                                            <!-- Separator line -->
+                                            <Border Grid.Column="1"
+                                                    Background="#444"
+                                                    Height="300"
+                                                    Width="1"
+                                                    VerticalAlignment="Top"/>
+
+                                            <!-- Right side (checkbox list with counts) -->
+
+                                            <ListView Grid.Column="2"  
+                                                      x:Name="TagsListView"
+                                                      ItemsSource="{x:Bind ViewModel.DisplayTags}"  
+                                                      Height="280"
+                                                      VerticalAlignment="Top">
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate x:DataType="local:TagItem">
+                                                        <Grid ColumnSpacing="8">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <!-- Checkbox -->
+                                                                <ColumnDefinition Width="*"/>
+                                                                <!-- Tag Name -->
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <!-- Checkbox -->
+                                                            <CheckBox Grid.Column="0" 
+                                                                      IsChecked="{x:Bind IsChecked,Mode=TwoWay}"
+                                                                      VerticalAlignment="Center"
+                                                                      MinWidth="20"
+                                                                      Content=""/>
+
+                                                            <!-- Tag name -->
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{x:Bind Name,Mode=OneWay}"
+                                                                       VerticalAlignment="Center"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </Grid>
+
+                                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="5">
+                                            <TextBlock Text="Select: L-Click   Exclude: R-Click" VerticalAlignment="Center"/>
+                                            <Button Content="Apply" Click="ApplyTagFilter_Click"/>
+                                            <!--<Button Content="Close" Click="CloseFilter_Click"/>-->
+                                        </StackPanel>
+                                    </Grid>
+                                </Flyout>
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+                        <DropDownButton Content="Categories" HorizontalAlignment="Left" FontSize="13" Style="{StaticResource TabDropDownButton}">
+                            <DropDownButton.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedLeft">
+                                    <Flyout.FlyoutPresenterStyle>
+                                        <StaticResource ResourceKey="BorderlessFlyoutPresenterStyle"/>
+                                    </Flyout.FlyoutPresenterStyle>
+
+                                    <Grid Width="400" Height="300" Background="{ThemeResource SolidBackgroundFillColorBase}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Search bar -->
+                                        <AutoSuggestBox PlaceholderText="Search tags" Margin="5"/>
+                                    </Grid>
+                                </Flyout>
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+                        <DropDownButton Content="Date" HorizontalAlignment="Left" FontSize="13" Style="{StaticResource TabDropDownButton}">
+                            <DropDownButton.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedLeft">
+                                    <Flyout.FlyoutPresenterStyle>
+                                        <StaticResource ResourceKey="BorderlessFlyoutPresenterStyle"/>
+                                    </Flyout.FlyoutPresenterStyle>
+
+                                    <Grid Width="400" Height="300" Background="{ThemeResource SolidBackgroundFillColorBase}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Search bar -->
+                                        <AutoSuggestBox PlaceholderText="Search tags" Margin="5"/>
+                                    </Grid>
+                                </Flyout>
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+
+                    </StackPanel>
+                    <!--<TextBlock Grid.Row="1" x:Name="txtSearchBin" Width="auto" Margin="0,0,0,10" Text="{x:Bind ViewModel.CurrentPath,Mode=OneWay}"
+                                     HorizontalAlignment="Left"/>-->
                     <Button x:Name="BtnRefreshGroup" Style="{StaticResource SmallIconButton}" 
                                     VerticalAlignment="Center" Click="RefreshMediaLibrary_Click"
                                     HorizontalAlignment="Right" CornerRadius="5">
                         <FontIcon  Glyph="&#xf2f9;" />
                     </Button>
                 </Grid>
-               
+
                 <Grid Grid.Row="1" x:Name="DetailsHeader"  Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="80" />
@@ -329,7 +521,7 @@
                             DragLeave="MediaBinGridView_DragLeave"
                             DragOver="MediaBinGridView_DragOver"
                             Drop="MediaBinGridView_Drop">
-                    
+
                     <GridView.ItemsPanel >
                         <ItemsPanelTemplate >
                             <ItemsWrapGrid Orientation="Horizontal"
@@ -337,7 +529,7 @@
                                            AllowDrop="True"/>
                         </ItemsPanelTemplate>
                     </GridView.ItemsPanel>
-                    
+
                     <GridView.ItemContainerStyle>
                         <Style TargetType="GridViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -568,7 +760,7 @@
                                 </Button>
                             </StackPanel>
                             <TextBlock Text="Tag" HorizontalAlignment="Left"/>
-                            <StackPanel Orientation="Horizontal" Spacing="5"  Margin="0,-10,0,0">
+                            <!--<StackPanel Orientation="Horizontal" Spacing="5"  Margin="0,-10,0,0">
 
                                 <AutoSuggestBox x:Name="TagAutoSuggestBox"
                                                         Width="180"
@@ -585,7 +777,7 @@
                                             VerticalAlignment="Center"  CornerRadius="3" ToolTipService.ToolTip="Search by tag">
                                     <FontIcon Glyph="&#xf002;" FontSize="12" />
                                 </Button>
-                            </StackPanel>
+                            </StackPanel>-->
 
                             <ListView ItemsSource="{Binding MetadataList}" SelectionMode="None" Margin="-2,-15,0,0" Padding="-15,0,-15,0" >
                                 <ListView.ItemTemplate>
